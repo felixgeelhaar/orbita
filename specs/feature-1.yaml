@@ -1,0 +1,4 @@
+feature:
+  name: "Orbita CLI"
+  tasks:
+    - name: "Scaffolding"

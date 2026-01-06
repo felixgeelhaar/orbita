@@ -1,0 +1,37 @@
+{
+  "id": "11111111-1111-1111-1111-111111111111",
+  "summary": "Deep Work",
+  "description": "Type: focus\nStatus: Completed",
+  "extendedProperties": {
+    "private": {
+      "orbita": "1"
+    }
+  },
+  "attendees": [
+    {
+      "email": "alice@example.com"
+    },
+    {
+      "email": "bob@example.com"
+    }
+  ],
+  "reminders": {
+    "useDefault": false,
+    "overrides": [
+      {
+        "method": "popup",
+        "minutes": 10
+      },
+      {
+        "method": "popup",
+        "minutes": 30
+      }
+    ]
+  },
+  "start": {
+    "dateTime": "2024-05-01T09:00:00Z"
+  },
+  "end": {
+    "dateTime": "2024-05-01T10:00:00Z"
+  }
+}

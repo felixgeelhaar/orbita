@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__exa__get_code_context_exa",
+      "Bash(go mod init:*)",
+      "Bash(go get:*)",
+      "Bash(go test:*)",
+      "Bash(go mod tidy:*)",
+      "Bash(go build:*)",
+      "Bash(/tmp/orbita:*)",
+      "Bash(go run:*)",
+      "Bash(sqlc generate:*)"
+    ]
+  }
+}

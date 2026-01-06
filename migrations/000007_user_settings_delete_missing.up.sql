@@ -1,0 +1,2 @@
+ALTER TABLE user_settings
+ADD COLUMN delete_missing BOOLEAN NOT NULL DEFAULT FALSE;

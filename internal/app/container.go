@@ -15,15 +15,21 @@ import (
 	identityOAuth "github.com/felixgeelhaar/orbita/internal/identity/application/oauth"
 	identitySettings "github.com/felixgeelhaar/orbita/internal/identity/application/settings"
 	identityPersistence "github.com/felixgeelhaar/orbita/internal/identity/infrastructure/persistence"
+	inboxCommands "github.com/felixgeelhaar/orbita/internal/inbox/application/commands"
+	inboxQueries "github.com/felixgeelhaar/orbita/internal/inbox/application/queries"
+	inboxPersistence "github.com/felixgeelhaar/orbita/internal/inbox/persistence"
+	inboxServices "github.com/felixgeelhaar/orbita/internal/inbox/services"
 	meetingCommands "github.com/felixgeelhaar/orbita/internal/meetings/application/commands"
 	meetingQueries "github.com/felixgeelhaar/orbita/internal/meetings/application/queries"
 	meetingPersistence "github.com/felixgeelhaar/orbita/internal/meetings/infrastructure/persistence"
 	"github.com/felixgeelhaar/orbita/internal/productivity/application/commands"
 	"github.com/felixgeelhaar/orbita/internal/productivity/application/queries"
+	priorityServices "github.com/felixgeelhaar/orbita/internal/productivity/application/services"
+	"github.com/felixgeelhaar/orbita/internal/productivity/domain/task"
 	"github.com/felixgeelhaar/orbita/internal/productivity/infrastructure/persistence"
 	scheduleCommands "github.com/felixgeelhaar/orbita/internal/scheduling/application/commands"
 	scheduleQueries "github.com/felixgeelhaar/orbita/internal/scheduling/application/queries"
-	"github.com/felixgeelhaar/orbita/internal/scheduling/application/services"
+	schedulerServices "github.com/felixgeelhaar/orbita/internal/scheduling/application/services"
 	schedulePersistence "github.com/felixgeelhaar/orbita/internal/scheduling/infrastructure/persistence"
 	sharedApplication "github.com/felixgeelhaar/orbita/internal/shared/application"
 	sharedCrypto "github.com/felixgeelhaar/orbita/internal/shared/infrastructure/crypto"
@@ -50,6 +56,7 @@ type Container struct {
 	SubscriptionRepo      *billingPersistence.PostgresSubscriptionRepository
 	ScheduleRepo          *schedulePersistence.PostgresScheduleRepository
 	RescheduleAttemptRepo *schedulePersistence.PostgresRescheduleAttemptRepository
+	PriorityScoreRepo     task.PriorityScoreRepository
 	OAuthTokenRepo        *identityPersistence.OAuthTokenRepository
 	SettingsRepo          *identityPersistence.SettingsRepository
 	OutboxRepo            outbox.Repository
@@ -95,9 +102,10 @@ type Container struct {
 	RescheduleBlockHandler *scheduleCommands.RescheduleBlockHandler
 	AutoScheduleHandler    *scheduleCommands.AutoScheduleHandler
 	AutoRescheduleHandler  *scheduleCommands.AutoRescheduleHandler
+	PriorityRecalcHandler  *commands.RecalculatePrioritiesHandler
 
 	// Scheduler Engine
-	SchedulerEngine *services.SchedulerEngine
+	SchedulerEngine *schedulerServices.SchedulerEngine
 
 	// Auth
 	AuthService     *identityOAuth.Service
@@ -111,6 +119,13 @@ type Container struct {
 	GetScheduleHandler            *scheduleQueries.GetScheduleHandler
 	FindAvailableSlotsHandler     *scheduleQueries.FindAvailableSlotsHandler
 	ListRescheduleAttemptsHandler *scheduleQueries.ListRescheduleAttemptsHandler
+
+	// Inbox
+	InboxRepo               *inboxPersistence.PostgresInboxRepository
+	InboxClassifier         *inboxServices.Classifier
+	CaptureInboxItemHandler *inboxCommands.CaptureInboxItemHandler
+	PromoteInboxItemHandler *inboxCommands.PromoteInboxItemHandler
+	ListInboxItemsHandler   *inboxQueries.ListInboxItemsHandler
 
 	// Outbox Processor
 	OutboxProcessor *outbox.Processor
@@ -146,10 +161,13 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 	c.SubscriptionRepo = billingPersistence.NewPostgresSubscriptionRepository(pool)
 	c.ScheduleRepo = schedulePersistence.NewPostgresScheduleRepository(pool)
 	c.RescheduleAttemptRepo = schedulePersistence.NewPostgresRescheduleAttemptRepository(pool)
+	c.PriorityScoreRepo = persistence.NewPostgresPriorityScoreRepository(pool)
 	c.OAuthTokenRepo = identityPersistence.NewOAuthTokenRepository(pool)
 	c.SettingsRepo = identityPersistence.NewSettingsRepository(pool)
 	c.OutboxRepo = outbox.NewPostgresRepository(pool)
 	c.UnitOfWork = sharedPersistence.NewPostgresUnitOfWork(pool)
+	c.InboxRepo = inboxPersistence.NewPostgresInboxRepository(pool)
+	c.InboxClassifier = inboxServices.NewClassifier()
 
 	// Create event publisher
 	publisher, err := eventbus.NewRabbitMQPublisher(cfg.RabbitMQURL, logger)
@@ -194,16 +212,32 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 	c.ListMeetingsHandler = meetingQueries.NewListMeetingsHandler(c.MeetingRepo)
 	c.ListMeetingCandidatesHandler = meetingQueries.NewListMeetingCandidatesHandler(c.MeetingRepo)
 
+	// Create inbox handlers
+	c.CaptureInboxItemHandler = inboxCommands.NewCaptureInboxItemHandler(c.InboxRepo, c.InboxClassifier, c.UnitOfWork)
+	c.ListInboxItemsHandler = inboxQueries.NewListInboxItemsHandler(c.InboxRepo)
+	c.PromoteInboxItemHandler = inboxCommands.NewPromoteInboxItemHandler(
+		c.InboxRepo,
+		c.CreateTaskHandler,
+		c.CreateHabitHandler,
+		c.CreateMeetingHandler,
+	)
+
 	// Create scheduler engine
-	c.SchedulerEngine = services.NewSchedulerEngine(services.DefaultSchedulerConfig())
+	c.SchedulerEngine = schedulerServices.NewSchedulerEngine(schedulerServices.DefaultSchedulerConfig())
 
 	// Create schedule command handlers
 	c.AddBlockHandler = scheduleCommands.NewAddBlockHandler(c.ScheduleRepo, c.OutboxRepo, c.UnitOfWork)
 	c.CompleteBlockHandler = scheduleCommands.NewCompleteBlockHandler(c.ScheduleRepo, c.OutboxRepo, c.UnitOfWork)
 	c.RemoveBlockHandler = scheduleCommands.NewRemoveBlockHandler(c.ScheduleRepo, c.OutboxRepo, c.UnitOfWork)
 	c.RescheduleBlockHandler = scheduleCommands.NewRescheduleBlockHandler(c.ScheduleRepo, c.OutboxRepo, c.UnitOfWork)
-	c.AutoScheduleHandler = scheduleCommands.NewAutoScheduleHandler(c.ScheduleRepo, c.OutboxRepo, c.UnitOfWork, c.SchedulerEngine, logger)
+	c.AutoScheduleHandler = scheduleCommands.NewAutoScheduleHandler(c.ScheduleRepo, c.OutboxRepo, c.UnitOfWork, c.SchedulerEngine, c.PriorityScoreRepo, logger)
 	c.AutoRescheduleHandler = scheduleCommands.NewAutoRescheduleHandler(c.ScheduleRepo, c.RescheduleAttemptRepo, c.OutboxRepo, c.UnitOfWork, c.SchedulerEngine)
+	c.PriorityRecalcHandler = commands.NewRecalculatePrioritiesHandler(
+		c.TaskRepo,
+		c.PriorityScoreRepo,
+		priorityServices.NewPriorityEngine(priorityServices.DefaultPriorityEngineConfig()),
+		c.UnitOfWork,
+	)
 
 	// Create schedule query handlers
 	c.GetScheduleHandler = scheduleQueries.NewGetScheduleHandler(c.ScheduleRepo)

@@ -8,3 +8,6 @@
 ## Reschedule Attempts
 - `orbita schedule reschedule-attempts`
 - `orbita schedule reschedule-attempts --date 2024-02-02`
+
+## Priority Engine
+- `orbita priority recalc`

@@ -298,6 +298,40 @@ func TestSchedulerEngine_SortTasks(t *testing.T) {
 	assert.Equal(t, "High with due date", sorted[1].Title)
 }
 
+func TestSchedulerEngine_ScoreOverridesPriority(t *testing.T) {
+	ctx := context.Background()
+	engine := NewSchedulerEngine(DefaultSchedulerConfig())
+	userID := uuid.New()
+	today := time.Now().Truncate(24 * time.Hour)
+	schedule := schedulingDomain.NewSchedule(userID, today)
+
+	lowScoreID := uuid.New()
+	highScoreID := uuid.New()
+
+	tasks := []SchedulableTask{
+		{
+			ID:       lowScoreID,
+			Title:    "Low score task",
+			Priority: 1,
+			Duration: 30 * time.Minute,
+			Score:    0.5,
+		},
+		{
+			ID:       highScoreID,
+			Title:    "High score task",
+			Priority: 1,
+			Duration: 30 * time.Minute,
+			Score:    5.0,
+		},
+	}
+
+	results, err := engine.ScheduleTasks(ctx, schedule, tasks)
+	require.NoError(t, err)
+	require.Len(t, results, 2)
+	assert.Equal(t, highScoreID, results[0].TaskID)
+	assert.Equal(t, lowScoreID, results[1].TaskID)
+}
+
 func TestSchedulerEngine_MinBreakBetweenTasks(t *testing.T) {
 	ctx := context.Background()
 	config := DefaultSchedulerConfig()

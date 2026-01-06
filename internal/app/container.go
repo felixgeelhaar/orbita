@@ -20,6 +20,7 @@ import (
 	meetingPersistence "github.com/felixgeelhaar/orbita/internal/meetings/infrastructure/persistence"
 	"github.com/felixgeelhaar/orbita/internal/productivity/application/commands"
 	"github.com/felixgeelhaar/orbita/internal/productivity/application/queries"
+	"github.com/felixgeelhaar/orbita/internal/productivity/domain/task"
 	"github.com/felixgeelhaar/orbita/internal/productivity/infrastructure/persistence"
 	scheduleCommands "github.com/felixgeelhaar/orbita/internal/scheduling/application/commands"
 	scheduleQueries "github.com/felixgeelhaar/orbita/internal/scheduling/application/queries"
@@ -50,6 +51,7 @@ type Container struct {
 	SubscriptionRepo      *billingPersistence.PostgresSubscriptionRepository
 	ScheduleRepo          *schedulePersistence.PostgresScheduleRepository
 	RescheduleAttemptRepo *schedulePersistence.PostgresRescheduleAttemptRepository
+	PriorityScoreRepo     task.PriorityScoreRepository
 	OAuthTokenRepo        *identityPersistence.OAuthTokenRepository
 	SettingsRepo          *identityPersistence.SettingsRepository
 	OutboxRepo            outbox.Repository
@@ -95,6 +97,7 @@ type Container struct {
 	RescheduleBlockHandler *scheduleCommands.RescheduleBlockHandler
 	AutoScheduleHandler    *scheduleCommands.AutoScheduleHandler
 	AutoRescheduleHandler  *scheduleCommands.AutoRescheduleHandler
+	PriorityRecalcHandler  *commands.RecalculatePrioritiesHandler
 
 	// Scheduler Engine
 	SchedulerEngine *services.SchedulerEngine
@@ -146,6 +149,7 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 	c.SubscriptionRepo = billingPersistence.NewPostgresSubscriptionRepository(pool)
 	c.ScheduleRepo = schedulePersistence.NewPostgresScheduleRepository(pool)
 	c.RescheduleAttemptRepo = schedulePersistence.NewPostgresRescheduleAttemptRepository(pool)
+	c.PriorityScoreRepo = persistence.NewPostgresPriorityScoreRepository(pool)
 	c.OAuthTokenRepo = identityPersistence.NewOAuthTokenRepository(pool)
 	c.SettingsRepo = identityPersistence.NewSettingsRepository(pool)
 	c.OutboxRepo = outbox.NewPostgresRepository(pool)
@@ -202,8 +206,14 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 	c.CompleteBlockHandler = scheduleCommands.NewCompleteBlockHandler(c.ScheduleRepo, c.OutboxRepo, c.UnitOfWork)
 	c.RemoveBlockHandler = scheduleCommands.NewRemoveBlockHandler(c.ScheduleRepo, c.OutboxRepo, c.UnitOfWork)
 	c.RescheduleBlockHandler = scheduleCommands.NewRescheduleBlockHandler(c.ScheduleRepo, c.OutboxRepo, c.UnitOfWork)
-	c.AutoScheduleHandler = scheduleCommands.NewAutoScheduleHandler(c.ScheduleRepo, c.OutboxRepo, c.UnitOfWork, c.SchedulerEngine, logger)
+	c.AutoScheduleHandler = scheduleCommands.NewAutoScheduleHandler(c.ScheduleRepo, c.OutboxRepo, c.UnitOfWork, c.SchedulerEngine, c.PriorityScoreRepo, logger)
 	c.AutoRescheduleHandler = scheduleCommands.NewAutoRescheduleHandler(c.ScheduleRepo, c.RescheduleAttemptRepo, c.OutboxRepo, c.UnitOfWork, c.SchedulerEngine)
+	c.PriorityRecalcHandler = commands.NewRecalculatePrioritiesHandler(
+		c.TaskRepo,
+		c.PriorityScoreRepo,
+		services.NewPriorityEngine(services.DefaultPriorityEngineConfig()),
+		c.UnitOfWork,
+	)
 
 	// Create schedule query handlers
 	c.GetScheduleHandler = scheduleQueries.NewGetScheduleHandler(c.ScheduleRepo)

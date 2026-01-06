@@ -13,6 +13,7 @@ import (
 	"github.com/felixgeelhaar/orbita/adapter/cli/habit"
 	"github.com/felixgeelhaar/orbita/adapter/cli/mcp"
 	"github.com/felixgeelhaar/orbita/adapter/cli/meeting"
+	"github.com/felixgeelhaar/orbita/adapter/cli/priority"
 	"github.com/felixgeelhaar/orbita/adapter/cli/schedule"
 	cliSettings "github.com/felixgeelhaar/orbita/adapter/cli/settings"
 	"github.com/felixgeelhaar/orbita/adapter/cli/task"
@@ -101,6 +102,7 @@ func main() {
 			container.RescheduleBlockHandler,
 			container.AutoScheduleHandler,
 			container.AutoRescheduleHandler,
+			container.PriorityRecalcHandler,
 			container.GetScheduleHandler,
 			container.FindAvailableSlotsHandler,
 			container.ListRescheduleAttemptsHandler,
@@ -136,6 +138,7 @@ func main() {
 	cli.AddCommand(habit.Cmd)
 	cli.AddCommand(meeting.Cmd)
 	cli.AddCommand(mcp.Cmd)
+	cli.AddCommand(priority.Cmd)
 	cli.AddCommand(schedule.Cmd)
 	cli.AddCommand(cliBilling.Cmd)
 	cli.AddCommand(cliAuth.Cmd)

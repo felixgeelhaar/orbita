@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/felixgeelhaar/orbita/internal/productivity/domain/task"
 	"github.com/felixgeelhaar/orbita/internal/scheduling/application/services"
 	"github.com/felixgeelhaar/orbita/internal/scheduling/domain"
 	sharedApplication "github.com/felixgeelhaar/orbita/internal/shared/application"
@@ -53,11 +54,12 @@ type ItemScheduleResult struct {
 
 // AutoScheduleHandler handles the AutoScheduleCommand.
 type AutoScheduleHandler struct {
-	scheduleRepo    domain.ScheduleRepository
-	schedulerEngine *services.SchedulerEngine
-	outboxRepo      outbox.Repository
-	uow             sharedApplication.UnitOfWork
-	logger          *slog.Logger
+	scheduleRepo      domain.ScheduleRepository
+	schedulerEngine   *services.SchedulerEngine
+	outboxRepo        outbox.Repository
+	uow               sharedApplication.UnitOfWork
+	logger            *slog.Logger
+	priorityScoreRepo task.PriorityScoreRepository
 }
 
 // NewAutoScheduleHandler creates a new AutoScheduleHandler.
@@ -66,17 +68,19 @@ func NewAutoScheduleHandler(
 	outboxRepo outbox.Repository,
 	uow sharedApplication.UnitOfWork,
 	schedulerEngine *services.SchedulerEngine,
+	priorityScoreRepo task.PriorityScoreRepository,
 	logger *slog.Logger,
 ) *AutoScheduleHandler {
 	if logger == nil {
 		logger = slog.Default()
 	}
 	return &AutoScheduleHandler{
-		scheduleRepo:    scheduleRepo,
-		schedulerEngine: schedulerEngine,
-		outboxRepo:      outboxRepo,
-		uow:             uow,
-		logger:          logger,
+		scheduleRepo:      scheduleRepo,
+		schedulerEngine:   schedulerEngine,
+		outboxRepo:        outboxRepo,
+		uow:               uow,
+		logger:            logger,
+		priorityScoreRepo: priorityScoreRepo,
 	}
 }
 
@@ -86,6 +90,17 @@ func (h *AutoScheduleHandler) Handle(ctx context.Context, cmd AutoScheduleComman
 
 	err := sharedApplication.WithUnitOfWork(ctx, h.uow, func(txCtx context.Context) error {
 		start := time.Now()
+
+		scoreMap := map[uuid.UUID]task.PriorityScore{}
+		if h.priorityScoreRepo != nil {
+			scores, err := h.priorityScoreRepo.ListByUser(txCtx, cmd.UserID)
+			if err != nil {
+				return err
+			}
+			for _, score := range scores {
+				scoreMap[score.TaskID] = score
+			}
+		}
 
 		// Find or create schedule for the date
 		schedule, err := h.scheduleRepo.FindByUserAndDate(txCtx, cmd.UserID, cmd.Date)
@@ -108,6 +123,11 @@ func (h *AutoScheduleHandler) Handle(ctx context.Context, cmd AutoScheduleComman
 				blockType = domain.BlockTypeMeeting
 			}
 
+			score := 0.0
+			if s, ok := scoreMap[item.ID]; ok {
+				score = s.Score
+			}
+
 			schedulableTasks = append(schedulableTasks, services.SchedulableTask{
 				ID:        item.ID,
 				Title:     item.Title,
@@ -115,6 +135,7 @@ func (h *AutoScheduleHandler) Handle(ctx context.Context, cmd AutoScheduleComman
 				Duration:  item.Duration,
 				DueDate:   item.DueDate,
 				BlockType: blockType,
+				Score:     score,
 			})
 		}
 

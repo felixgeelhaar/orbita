@@ -63,6 +63,7 @@ func TestCLIHabitEndToEnd(t *testing.T) {
 		container.RescheduleBlockHandler,
 		container.AutoScheduleHandler,
 		container.AutoRescheduleHandler,
+		container.PriorityRecalcHandler,
 		container.GetScheduleHandler,
 		container.FindAvailableSlotsHandler,
 		container.ListRescheduleAttemptsHandler,

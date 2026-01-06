@@ -52,6 +52,7 @@ type App struct {
 	RescheduleBlockHandler *scheduleCommands.RescheduleBlockHandler
 	AutoScheduleHandler    *scheduleCommands.AutoScheduleHandler
 	AutoRescheduleHandler  *scheduleCommands.AutoRescheduleHandler
+	PriorityRecalcHandler  *commands.RecalculatePrioritiesHandler
 
 	// Schedule Query Handlers
 	GetScheduleHandler            *scheduleQueries.GetScheduleHandler
@@ -93,6 +94,7 @@ func NewApp(
 	rescheduleBlockHandler *scheduleCommands.RescheduleBlockHandler,
 	autoScheduleHandler *scheduleCommands.AutoScheduleHandler,
 	autoRescheduleHandler *scheduleCommands.AutoRescheduleHandler,
+	priorityRecalcHandler *commands.RecalculatePrioritiesHandler,
 	getScheduleHandler *scheduleQueries.GetScheduleHandler,
 	findAvailableSlotsHandler *scheduleQueries.FindAvailableSlotsHandler,
 	listRescheduleAttemptsHandler *scheduleQueries.ListRescheduleAttemptsHandler,
@@ -121,6 +123,7 @@ func NewApp(
 		RescheduleBlockHandler:        rescheduleBlockHandler,
 		AutoScheduleHandler:           autoScheduleHandler,
 		AutoRescheduleHandler:         autoRescheduleHandler,
+		PriorityRecalcHandler:         priorityRecalcHandler,
 		GetScheduleHandler:            getScheduleHandler,
 		FindAvailableSlotsHandler:     findAvailableSlotsHandler,
 		ListRescheduleAttemptsHandler: listRescheduleAttemptsHandler,

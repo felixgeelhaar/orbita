@@ -15,11 +15,11 @@
 - [x] Tests for reschedule scenarios
 
 ## Priority Engine Pro
-- [ ] Priority score model (signals: due date, effort, streak risk, meeting cadence)
-- [ ] Store computed score and explanation
-- [ ] CLI command to recalc priorities
-- [ ] Integrate scheduler with priority scores
-- [ ] Tests for scoring + ordering
+- [x] Priority score model (signals: due date, effort, streak risk, meeting cadence)
+- [x] Store computed score and explanation
+- [x] CLI command to recalc priorities
+- [x] Integrate scheduler with priority scores
+- [x] Tests for scoring + ordering
 
 ## AI Inbox Pro
 - [ ] Inbox domain model + persistence

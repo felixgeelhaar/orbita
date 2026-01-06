@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"math"
 	"sort"
 	"time"
 
@@ -22,6 +23,7 @@ type SchedulableTask struct {
 	Priority    int // 1 = urgent, 2 = high, 3 = medium, 4 = low, 5 = none
 	Duration    time.Duration
 	DueDate     *time.Time
+	Score       float64
 	Constraints []schedulingDomain.Constraint
 	BlockType   schedulingDomain.BlockType
 }
@@ -256,6 +258,10 @@ func (e *SchedulerEngine) sortTasks(tasks []SchedulableTask) []SchedulableTask {
 	copy(sorted, tasks)
 
 	sort.Slice(sorted, func(i, j int) bool {
+		if math.Abs(sorted[i].Score-sorted[j].Score) > 0.01 {
+			return sorted[i].Score > sorted[j].Score
+		}
+
 		// First, sort by priority (lower number = higher priority)
 		if sorted[i].Priority != sorted[j].Priority {
 			return sorted[i].Priority < sorted[j].Priority

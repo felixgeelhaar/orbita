@@ -62,6 +62,7 @@ func TestCLIMeetingEndToEnd(t *testing.T) {
 		container.RescheduleBlockHandler,
 		container.AutoScheduleHandler,
 		container.AutoRescheduleHandler,
+		container.PriorityRecalcHandler,
 		container.GetScheduleHandler,
 		container.FindAvailableSlotsHandler,
 		container.ListRescheduleAttemptsHandler,

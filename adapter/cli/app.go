@@ -6,6 +6,8 @@ import (
 	habitCommands "github.com/felixgeelhaar/orbita/internal/habits/application/commands"
 	habitQueries "github.com/felixgeelhaar/orbita/internal/habits/application/queries"
 	identitySettings "github.com/felixgeelhaar/orbita/internal/identity/application/settings"
+	inboxCommands "github.com/felixgeelhaar/orbita/internal/inbox/application/commands"
+	inboxQueries "github.com/felixgeelhaar/orbita/internal/inbox/application/queries"
 	meetingCommands "github.com/felixgeelhaar/orbita/internal/meetings/application/commands"
 	meetingQueries "github.com/felixgeelhaar/orbita/internal/meetings/application/queries"
 	"github.com/felixgeelhaar/orbita/internal/productivity/application/commands"
@@ -59,6 +61,13 @@ type App struct {
 	FindAvailableSlotsHandler     *scheduleQueries.FindAvailableSlotsHandler
 	ListRescheduleAttemptsHandler *scheduleQueries.ListRescheduleAttemptsHandler
 
+	// Inbox Command Handlers
+	CaptureInboxItemHandler *inboxCommands.CaptureInboxItemHandler
+	PromoteInboxItemHandler *inboxCommands.PromoteInboxItemHandler
+
+	// Inbox Query Handlers
+	ListInboxItemsHandler *inboxQueries.ListInboxItemsHandler
+
 	// Calendar Sync
 	CalendarSyncer calendarApp.Syncer
 
@@ -98,6 +107,9 @@ func NewApp(
 	getScheduleHandler *scheduleQueries.GetScheduleHandler,
 	findAvailableSlotsHandler *scheduleQueries.FindAvailableSlotsHandler,
 	listRescheduleAttemptsHandler *scheduleQueries.ListRescheduleAttemptsHandler,
+	captureInboxItemHandler *inboxCommands.CaptureInboxItemHandler,
+	promoteInboxItemHandler *inboxCommands.PromoteInboxItemHandler,
+	listInboxItemsHandler *inboxQueries.ListInboxItemsHandler,
 	billingService *billingApp.Service,
 ) *App {
 	return &App{
@@ -127,6 +139,9 @@ func NewApp(
 		GetScheduleHandler:            getScheduleHandler,
 		FindAvailableSlotsHandler:     findAvailableSlotsHandler,
 		ListRescheduleAttemptsHandler: listRescheduleAttemptsHandler,
+		CaptureInboxItemHandler:       captureInboxItemHandler,
+		PromoteInboxItemHandler:       promoteInboxItemHandler,
+		ListInboxItemsHandler:         listInboxItemsHandler,
 		BillingService:                billingService,
 		CurrentUserID:                 uuid.Nil,
 	}

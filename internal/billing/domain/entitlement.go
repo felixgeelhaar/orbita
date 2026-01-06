@@ -8,6 +8,7 @@ const (
 	ModuleSmartHabits       = "smart-habits"
 	ModuleSmartMeetings     = "smart-1to1"
 	ModuleAutoRescheduler   = "auto-rescheduler"
+	ModuleAIInbox           = "ai-inbox"
 	ModulePriorityEngine    = "priority-engine"
 )
 

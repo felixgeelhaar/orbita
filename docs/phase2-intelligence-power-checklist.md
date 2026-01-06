@@ -22,11 +22,11 @@
 - [x] Tests for scoring + ordering
 
 ## AI Inbox Pro
-- [ ] Inbox domain model + persistence
-- [ ] CLI capture command (text + metadata)
-- [ ] Classification pipeline (rules + AI placeholder)
-- [ ] Promote inbox items to tasks/habits/meetings
-- [ ] Tests for ingestion and promotion
+- [x] Inbox domain model + persistence
+- [x] CLI capture command (text + metadata)
+- [x] Classification pipeline (rules + AI placeholder)
+- [x] Promote inbox items to tasks/habits/meetings
+- [x] Tests for ingestion and promotion
 
 ## Automations Pro
 - [ ] Automation rule model (trigger + conditions + action)

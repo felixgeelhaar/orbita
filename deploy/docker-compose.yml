@@ -49,6 +49,22 @@ services:
       timeout: 10s
       retries: 5
 
+  migrate:
+    image: migrate/migrate:v4.16.0
+    container_name: orbita-migrate
+    depends_on:
+      - postgres
+    entrypoint: ["migrate"]
+    command:
+      - "-path"
+      - "/migrations"
+      - "-database"
+      - "postgres://orbita:orbita_dev@postgres:5432/orbita?sslmode=disable"
+      - "up"
+    volumes:
+      - ../migrations:/migrations
+    restart: "no"
+
 volumes:
   postgres_data:
   redis_data:

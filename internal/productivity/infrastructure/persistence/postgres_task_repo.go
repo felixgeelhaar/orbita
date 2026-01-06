@@ -7,7 +7,6 @@ import (
 
 	"github.com/felixgeelhaar/orbita/internal/productivity/domain/task"
 	"github.com/felixgeelhaar/orbita/internal/productivity/domain/value_objects"
-	sharedDomain "github.com/felixgeelhaar/orbita/internal/shared/domain"
 	sharedPersistence "github.com/felixgeelhaar/orbita/internal/shared/infrastructure/persistence"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -274,11 +273,6 @@ func (r *PostgresTaskRepository) rowToTask(row taskRow) (*task.Task, error) {
 
 	// Clear events since we're rehydrating from storage
 	t.ClearDomainEvents()
-
-	t.BaseAggregateRoot = sharedDomain.RehydrateBaseAggregateRoot(
-		sharedDomain.RehydrateBaseEntity(row.ID, row.CreatedAt, row.UpdatedAt),
-		row.Version,
-	)
 
 	return t, nil
 }

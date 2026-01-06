@@ -38,9 +38,6 @@ func RegisterCLITools(srv *mcp.Server, deps ToolDependencies) error {
 	if err := registerScheduleTools(srv, deps); err != nil {
 		return err
 	}
-	if err := registerInboxTools(srv, deps); err != nil {
-		return err
-	}
 	if err := registerBillingTools(srv, deps); err != nil {
 		return err
 	}

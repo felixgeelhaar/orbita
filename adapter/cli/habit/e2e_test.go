@@ -67,9 +67,6 @@ func TestCLIHabitEndToEnd(t *testing.T) {
 		container.GetScheduleHandler,
 		container.FindAvailableSlotsHandler,
 		container.ListRescheduleAttemptsHandler,
-		container.CaptureInboxItemHandler,
-		container.PromoteInboxItemHandler,
-		container.ListInboxItemsHandler,
 		container.BillingService,
 	)
 	userID := uuid.New()

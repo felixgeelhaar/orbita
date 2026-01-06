@@ -11,7 +11,6 @@ import (
 	cliAuth "github.com/felixgeelhaar/orbita/adapter/cli/auth"
 	cliBilling "github.com/felixgeelhaar/orbita/adapter/cli/billing"
 	"github.com/felixgeelhaar/orbita/adapter/cli/habit"
-	"github.com/felixgeelhaar/orbita/adapter/cli/inbox"
 	"github.com/felixgeelhaar/orbita/adapter/cli/mcp"
 	"github.com/felixgeelhaar/orbita/adapter/cli/meeting"
 	"github.com/felixgeelhaar/orbita/adapter/cli/priority"
@@ -107,9 +106,6 @@ func main() {
 			container.GetScheduleHandler,
 			container.FindAvailableSlotsHandler,
 			container.ListRescheduleAttemptsHandler,
-			container.CaptureInboxItemHandler,
-			container.PromoteInboxItemHandler,
-			container.ListInboxItemsHandler,
 			container.BillingService,
 		)
 
@@ -140,7 +136,6 @@ func main() {
 	// Register commands
 	cli.AddCommand(task.Cmd)
 	cli.AddCommand(habit.Cmd)
-	cli.AddCommand(inbox.Cmd)
 	cli.AddCommand(meeting.Cmd)
 	cli.AddCommand(mcp.Cmd)
 	cli.AddCommand(priority.Cmd)

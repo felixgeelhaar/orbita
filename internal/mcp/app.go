@@ -35,9 +35,6 @@ func NewCLIApp(container *app.Container, currentUser uuid.UUID) *cli.App {
 		container.GetScheduleHandler,
 		container.FindAvailableSlotsHandler,
 		container.ListRescheduleAttemptsHandler,
-		container.CaptureInboxItemHandler,
-		container.PromoteInboxItemHandler,
-		container.ListInboxItemsHandler,
 		container.BillingService,
 	)
 

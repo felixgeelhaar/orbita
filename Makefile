@@ -1,4 +1,4 @@
-.PHONY: all build build-worker build-mcp test test-unit test-integration coverage lint migrate-up migrate-down migrate-create sqlc docker-up docker-down docker-logs dev worker clean help
+.PHONY: all build build-worker build-mcp test test-unit test-integration coverage security coverage-check coverage-report coverage-badge migrate-up migrate-down migrate-create sqlc docker-up docker-down docker-logs dev worker clean help tools
 
 # Variables
 BINARY_NAME=orbita
@@ -38,12 +38,20 @@ coverage:
 	$(GO) tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated: coverage.html"
 
-# Lint
-lint:
-	golangci-lint run
+# Security & Coverage
+security:
+	verdict sast --path .
+	verdict vuln --path .
+	verdict secrets --path .
 
-lint-fix:
-	golangci-lint run --fix
+coverage-check:
+	coverctl check --profile coverage.out
+
+coverage-report:
+	coverctl report --profile coverage.out
+
+coverage-badge:
+	coverctl badge --profile coverage.out --output coverage-badge.svg
 
 # Database migrations
 migrate-up:
@@ -99,7 +107,8 @@ clean:
 
 # Install tools
 tools:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	go install github.com/felixgeelhaar/verdictsec@latest
+	go install github.com/felixgeelhaar/coverctl@latest
 	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 	go install github.com/vektra/mockery/v2@latest
@@ -114,8 +123,10 @@ help:
 	@echo "  test-unit       - Run unit tests only"
 	@echo "  test-integration- Run integration tests only"
 	@echo "  coverage        - Generate test coverage report"
-	@echo "  lint            - Run linter"
-	@echo "  lint-fix        - Run linter with auto-fix"
+	@echo "  security        - Run security scans (SAST, vuln, secrets)"
+	@echo "  coverage-check  - Check coverage against policy"
+	@echo "  coverage-report - Generate coverage report"
+	@echo "  coverage-badge  - Generate coverage badge SVG"
 	@echo "  migrate-up      - Apply all migrations"
 	@echo "  migrate-down    - Rollback last migration"
 	@echo "  migrate-create  - Create new migration"

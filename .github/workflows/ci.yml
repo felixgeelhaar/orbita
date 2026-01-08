@@ -3,15 +3,30 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - 'LICENSE'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - 'LICENSE'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   GO_VERSION: '1.25'
 
 jobs:
-  lint:
-    name: Lint
+  # Fast security scan - runs in parallel with test
+  security:
+    name: Security
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,18 +35,24 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+          cache: true
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
+      - name: Install verdict
+        run: go install github.com/felixgeelhaar/verdictsec@latest
 
+      - name: Run all security scans
+        run: |
+          verdict sast --path .
+          verdict vuln --path .
+          verdict secrets --path .
+
+  # Test + Coverage combined to avoid artifact transfer overhead
   test:
-    name: Test
+    name: Test & Coverage
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:15
+        image: postgres:15-alpine
         env:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
@@ -45,7 +66,7 @@ jobs:
           --health-retries 5
 
       redis:
-        image: redis:7
+        image: redis:7-alpine
         ports:
           - 6379:6379
         options: >-
@@ -55,10 +76,9 @@ jobs:
           --health-retries 5
 
       rabbitmq:
-        image: rabbitmq:3.12-management
+        image: rabbitmq:3.12-alpine
         ports:
           - 5672:5672
-          - 15672:15672
         options: >-
           --health-cmd "rabbitmq-diagnostics -q ping"
           --health-interval 10s
@@ -72,44 +92,46 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+          cache: true
 
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - name: Install migrate
+      - name: Install tools
         run: |
           curl -L https://github.com/golang-migrate/migrate/releases/download/v4.17.0/migrate.linux-amd64.tar.gz | tar xvz
           sudo mv migrate /usr/local/bin/migrate
+          go install github.com/felixgeelhaar/coverctl@latest
 
       - name: Run migrations
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/orbita_test?sslmode=disable
         run: migrate -path migrations -database "$DATABASE_URL" up
 
-      - name: Run tests
+      - name: Run tests with coverage
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/orbita_test?sslmode=disable
           REDIS_URL: localhost:6379
           RABBITMQ_URL: amqp://guest:guest@localhost:5672/
-        run: go test -v -race -coverprofile=coverage.out ./...
+        run: go test -race -coverprofile=coverage.out ./...
 
-      - name: Upload coverage
-        uses: codecov/codecov-action@v4
+      - name: Coverage policy check
+        run: |
+          coverctl check --profile coverage.out
+          coverctl report --profile coverage.out
+
+      - name: Generate coverage badge
+        run: coverctl badge --profile coverage.out --output coverage-badge.svg
+
+      - name: Upload coverage badge
+        uses: actions/upload-artifact@v4
         with:
-          files: coverage.out
-          fail_ci_if_error: false
+          name: coverage-badge
+          path: coverage-badge.svg
+          retention-days: 30
 
+  # Build only after tests pass
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [security, test]
     steps:
       - uses: actions/checkout@v4
 
@@ -117,15 +139,13 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+          cache: true
 
-      - name: Build CLI
-        run: go build -o bin/orbita ./cmd/orbita
-
-      - name: Build Worker
-        run: go build -o bin/worker ./cmd/worker
-
-      - name: Build MCP
-        run: go build -o bin/mcp ./cmd/mcp
+      - name: Build all binaries
+        run: |
+          go build -o bin/orbita ./cmd/orbita
+          go build -o bin/worker ./cmd/worker
+          go build -o bin/mcp ./cmd/mcp
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -134,8 +154,9 @@ jobs:
           path: bin/
           retention-days: 7
 
-  sqlc-check:
-    name: sqlc Check
+  # sqlc runs in parallel - fast check
+  sqlc:
+    name: sqlc
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -144,9 +165,9 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-
-      - name: Install sqlc
-        run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+          cache: true
 
       - name: Verify sqlc
-        run: sqlc diff -f db/sqlc.yaml
+        run: |
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+          sqlc diff -f db/sqlc.yaml

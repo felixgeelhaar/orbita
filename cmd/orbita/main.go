@@ -130,6 +130,12 @@ func main() {
 		if container.BillingService != nil {
 			cliApp.SetBillingService(container.BillingService)
 		}
+		if container.EngineRegistry != nil {
+			cliApp.SetEngineRegistry(container.EngineRegistry)
+		}
+		if container.EngineExecutor != nil {
+			cliApp.SetEngineExecutor(container.EngineExecutor)
+		}
 	}
 
 	// Set the CLI app

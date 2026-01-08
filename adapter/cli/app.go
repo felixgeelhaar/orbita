@@ -3,6 +3,8 @@ package cli
 import (
 	billingApp "github.com/felixgeelhaar/orbita/internal/billing/application"
 	calendarApp "github.com/felixgeelhaar/orbita/internal/calendar/application"
+	"github.com/felixgeelhaar/orbita/internal/engine/registry"
+	"github.com/felixgeelhaar/orbita/internal/engine/runtime"
 	habitCommands "github.com/felixgeelhaar/orbita/internal/habits/application/commands"
 	habitQueries "github.com/felixgeelhaar/orbita/internal/habits/application/queries"
 	identitySettings "github.com/felixgeelhaar/orbita/internal/identity/application/settings"
@@ -73,6 +75,10 @@ type App struct {
 	// Settings
 	SettingsService *identitySettings.Service
 	BillingService  *billingApp.Service
+
+	// Engine SDK
+	EngineRegistry *registry.Registry
+	EngineExecutor *runtime.Executor
 
 	// Current user (configured per environment)
 	CurrentUserID uuid.UUID
@@ -162,6 +168,16 @@ func (a *App) SetSettingsService(service *identitySettings.Service) {
 // SetBillingService updates the billing service.
 func (a *App) SetBillingService(service *billingApp.Service) {
 	a.BillingService = service
+}
+
+// SetEngineRegistry updates the engine registry.
+func (a *App) SetEngineRegistry(reg *registry.Registry) {
+	a.EngineRegistry = reg
+}
+
+// SetEngineExecutor updates the engine executor.
+func (a *App) SetEngineExecutor(exec *runtime.Executor) {
+	a.EngineExecutor = exec
 }
 
 // app is the global CLI application instance

@@ -9,6 +9,9 @@ import (
 	billingPersistence "github.com/felixgeelhaar/orbita/internal/billing/infrastructure/persistence"
 	calendarApp "github.com/felixgeelhaar/orbita/internal/calendar/application"
 	googleCalendar "github.com/felixgeelhaar/orbita/internal/calendar/infrastructure/google"
+	"github.com/felixgeelhaar/orbita/internal/engine/builtin"
+	"github.com/felixgeelhaar/orbita/internal/engine/registry"
+	"github.com/felixgeelhaar/orbita/internal/engine/runtime"
 	habitCommands "github.com/felixgeelhaar/orbita/internal/habits/application/commands"
 	habitQueries "github.com/felixgeelhaar/orbita/internal/habits/application/queries"
 	habitPersistence "github.com/felixgeelhaar/orbita/internal/habits/infrastructure/persistence"
@@ -24,8 +27,6 @@ import (
 	meetingPersistence "github.com/felixgeelhaar/orbita/internal/meetings/infrastructure/persistence"
 	"github.com/felixgeelhaar/orbita/internal/productivity/application/commands"
 	"github.com/felixgeelhaar/orbita/internal/productivity/application/queries"
-	priorityServices "github.com/felixgeelhaar/orbita/internal/productivity/application/services"
-	"github.com/felixgeelhaar/orbita/internal/productivity/domain/task"
 	"github.com/felixgeelhaar/orbita/internal/productivity/infrastructure/persistence"
 	scheduleCommands "github.com/felixgeelhaar/orbita/internal/scheduling/application/commands"
 	scheduleQueries "github.com/felixgeelhaar/orbita/internal/scheduling/application/queries"
@@ -56,7 +57,6 @@ type Container struct {
 	SubscriptionRepo      *billingPersistence.PostgresSubscriptionRepository
 	ScheduleRepo          *schedulePersistence.PostgresScheduleRepository
 	RescheduleAttemptRepo *schedulePersistence.PostgresRescheduleAttemptRepository
-	PriorityScoreRepo     task.PriorityScoreRepository
 	OAuthTokenRepo        *identityPersistence.OAuthTokenRepository
 	SettingsRepo          *identityPersistence.SettingsRepository
 	OutboxRepo            outbox.Repository
@@ -100,9 +100,8 @@ type Container struct {
 	CompleteBlockHandler   *scheduleCommands.CompleteBlockHandler
 	RemoveBlockHandler     *scheduleCommands.RemoveBlockHandler
 	RescheduleBlockHandler *scheduleCommands.RescheduleBlockHandler
-	AutoScheduleHandler    *scheduleCommands.AutoScheduleHandler
-	AutoRescheduleHandler  *scheduleCommands.AutoRescheduleHandler
-	PriorityRecalcHandler  *commands.RecalculatePrioritiesHandler
+	AutoScheduleHandler   *scheduleCommands.AutoScheduleHandler
+	AutoRescheduleHandler *scheduleCommands.AutoRescheduleHandler
 
 	// Scheduler Engine
 	SchedulerEngine *schedulerServices.SchedulerEngine
@@ -129,6 +128,10 @@ type Container struct {
 
 	// Outbox Processor
 	OutboxProcessor *outbox.Processor
+
+	// Engine SDK
+	EngineRegistry *registry.Registry
+	EngineExecutor *runtime.Executor
 }
 
 // NewContainer creates and wires all dependencies.
@@ -161,7 +164,6 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 	c.SubscriptionRepo = billingPersistence.NewPostgresSubscriptionRepository(pool)
 	c.ScheduleRepo = schedulePersistence.NewPostgresScheduleRepository(pool)
 	c.RescheduleAttemptRepo = schedulePersistence.NewPostgresRescheduleAttemptRepository(pool)
-	c.PriorityScoreRepo = persistence.NewPostgresPriorityScoreRepository(pool)
 	c.OAuthTokenRepo = identityPersistence.NewOAuthTokenRepository(pool)
 	c.SettingsRepo = identityPersistence.NewSettingsRepository(pool)
 	c.OutboxRepo = outbox.NewPostgresRepository(pool)
@@ -230,14 +232,8 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 	c.CompleteBlockHandler = scheduleCommands.NewCompleteBlockHandler(c.ScheduleRepo, c.OutboxRepo, c.UnitOfWork)
 	c.RemoveBlockHandler = scheduleCommands.NewRemoveBlockHandler(c.ScheduleRepo, c.OutboxRepo, c.UnitOfWork)
 	c.RescheduleBlockHandler = scheduleCommands.NewRescheduleBlockHandler(c.ScheduleRepo, c.OutboxRepo, c.UnitOfWork)
-	c.AutoScheduleHandler = scheduleCommands.NewAutoScheduleHandler(c.ScheduleRepo, c.OutboxRepo, c.UnitOfWork, c.SchedulerEngine, c.PriorityScoreRepo, logger)
+	c.AutoScheduleHandler = scheduleCommands.NewAutoScheduleHandler(c.ScheduleRepo, c.OutboxRepo, c.UnitOfWork, c.SchedulerEngine, logger)
 	c.AutoRescheduleHandler = scheduleCommands.NewAutoRescheduleHandler(c.ScheduleRepo, c.RescheduleAttemptRepo, c.OutboxRepo, c.UnitOfWork, c.SchedulerEngine)
-	c.PriorityRecalcHandler = commands.NewRecalculatePrioritiesHandler(
-		c.TaskRepo,
-		c.PriorityScoreRepo,
-		priorityServices.NewPriorityEngine(priorityServices.DefaultPriorityEngineConfig()),
-		c.UnitOfWork,
-	)
 
 	// Create schedule query handlers
 	c.GetScheduleHandler = scheduleQueries.NewGetScheduleHandler(c.ScheduleRepo)
@@ -294,11 +290,43 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 	}
 	c.OutboxProcessor = outbox.NewProcessor(c.OutboxRepo, c.EventPublisher, processorConfig, logger)
 
+	// Create engine registry and register built-in engines
+	c.EngineRegistry = registry.NewRegistry(logger)
+
+	// Register built-in engines
+	if err := c.EngineRegistry.RegisterBuiltin(builtin.NewDefaultSchedulerEngine()); err != nil {
+		logger.Warn("failed to register default scheduler engine", "error", err)
+	}
+	if err := c.EngineRegistry.RegisterBuiltin(builtin.NewDefaultPriorityEngine()); err != nil {
+		logger.Warn("failed to register default priority engine", "error", err)
+	}
+	if err := c.EngineRegistry.RegisterBuiltin(builtin.NewDefaultClassifierEngine()); err != nil {
+		logger.Warn("failed to register default classifier engine", "error", err)
+	}
+	if err := c.EngineRegistry.RegisterBuiltin(builtin.NewDefaultAutomationEngine()); err != nil {
+		logger.Warn("failed to register default automation engine", "error", err)
+	}
+
+	// Create engine executor with circuit breaker
+	executorConfig := runtime.DefaultExecutorConfig()
+	metricsCollector := runtime.NewMetricsCollector()
+	c.EngineExecutor = runtime.NewExecutor(c.EngineRegistry, metricsCollector, logger, executorConfig)
+
+	logger.Info("registered engines", "count", c.EngineRegistry.Count())
+
 	return c, nil
 }
 
 // Close cleans up all resources.
 func (c *Container) Close() {
+	// Shutdown all engines via registry
+	if c.EngineRegistry != nil {
+		ctx := context.Background()
+		if err := c.EngineRegistry.ShutdownAll(ctx); err != nil {
+			c.Logger.Warn("error shutting down engines", "error", err)
+		}
+	}
+
 	if c.OutboxProcessor != nil {
 		c.OutboxProcessor.Stop()
 	}

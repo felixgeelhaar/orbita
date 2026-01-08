@@ -1,0 +1,108 @@
+syntax = "proto3";
+
+package orbita.engine.v1;
+
+option go_package = "github.com/felixgeelhaar/orbita/internal/engine/grpc/proto;enginepb";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+import "internal/engine/grpc/proto/engine.proto";
+
+// PriorityEngine provides priority calculation capabilities.
+service PriorityEngine {
+    // CalculatePriority computes a priority score for a single item.
+    rpc CalculatePriority(PriorityRequest) returns (PriorityResponse);
+
+    // BatchCalculate computes priority scores for multiple items.
+    rpc BatchCalculate(BatchPriorityRequest) returns (BatchPriorityResponse);
+
+    // ExplainFactors provides detailed breakdown of score calculation.
+    rpc ExplainFactors(PriorityRequest) returns (PriorityExplanationResponse);
+}
+
+// PriorityRequest contains signals for priority calculation.
+message PriorityRequest {
+    ExecutionContext context = 1;
+    PriorityInput input = 2;
+}
+
+// PriorityInput contains the signals used to calculate priority.
+message PriorityInput {
+    string id = 1;
+    int32 priority = 2;
+    google.protobuf.Timestamp due_date = 3;
+    google.protobuf.Duration duration = 4;
+    google.protobuf.Timestamp created_at = 5;
+    double streak_risk = 6;
+    double meeting_cadence = 7;
+    repeated string tags = 8;
+    PriorityContext context = 9;
+    map<string, double> custom_signals = 10;
+}
+
+// PriorityContext provides situational information.
+message PriorityContext {
+    string time_of_day = 1;
+    string day_of_week = 2;
+    int32 energy_level = 3;
+    bool focus_mode = 4;
+    int32 related_completions = 5;
+}
+
+// PriorityResponse contains the calculated priority.
+message PriorityResponse {
+    PriorityOutput output = 1;
+}
+
+// PriorityOutput contains the calculated priority score.
+message PriorityOutput {
+    string id = 1;
+    double score = 2;
+    double normalized_score = 3;
+    int32 rank = 4;
+    string explanation = 5;
+    map<string, double> factors = 6;
+    UrgencyLevel urgency = 7;
+    string suggested_action = 8;
+}
+
+// UrgencyLevel categorizes priority.
+enum UrgencyLevel {
+    URGENCY_LEVEL_UNSPECIFIED = 0;
+    URGENCY_LEVEL_CRITICAL = 1;
+    URGENCY_LEVEL_HIGH = 2;
+    URGENCY_LEVEL_MEDIUM = 3;
+    URGENCY_LEVEL_LOW = 4;
+    URGENCY_LEVEL_NONE = 5;
+}
+
+// BatchPriorityRequest contains multiple items to score.
+message BatchPriorityRequest {
+    ExecutionContext context = 1;
+    repeated PriorityInput inputs = 2;
+}
+
+// BatchPriorityResponse contains scores for all items.
+message BatchPriorityResponse {
+    repeated PriorityOutput outputs = 1;
+}
+
+// PriorityExplanationResponse provides detailed breakdown.
+message PriorityExplanationResponse {
+    string id = 1;
+    double total_score = 2;
+    repeated FactorBreakdown factors = 3;
+    string algorithm = 4;
+    map<string, double> weights = 5;
+    repeated string recommendations = 6;
+}
+
+// FactorBreakdown shows how a factor contributed.
+message FactorBreakdown {
+    string name = 1;
+    double raw_value = 2;
+    double weight = 3;
+    double weighted_value = 4;
+    double contribution = 5;
+    string description = 6;
+}

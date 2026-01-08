@@ -9,12 +9,19 @@ import (
 	billingPersistence "github.com/felixgeelhaar/orbita/internal/billing/infrastructure/persistence"
 	calendarApp "github.com/felixgeelhaar/orbita/internal/calendar/application"
 	googleCalendar "github.com/felixgeelhaar/orbita/internal/calendar/infrastructure/google"
+	"github.com/felixgeelhaar/orbita/internal/engine/builtin"
+	"github.com/felixgeelhaar/orbita/internal/engine/registry"
+	"github.com/felixgeelhaar/orbita/internal/engine/runtime"
 	habitCommands "github.com/felixgeelhaar/orbita/internal/habits/application/commands"
 	habitQueries "github.com/felixgeelhaar/orbita/internal/habits/application/queries"
 	habitPersistence "github.com/felixgeelhaar/orbita/internal/habits/infrastructure/persistence"
 	identityOAuth "github.com/felixgeelhaar/orbita/internal/identity/application/oauth"
 	identitySettings "github.com/felixgeelhaar/orbita/internal/identity/application/settings"
 	identityPersistence "github.com/felixgeelhaar/orbita/internal/identity/infrastructure/persistence"
+	inboxCommands "github.com/felixgeelhaar/orbita/internal/inbox/application/commands"
+	inboxQueries "github.com/felixgeelhaar/orbita/internal/inbox/application/queries"
+	inboxPersistence "github.com/felixgeelhaar/orbita/internal/inbox/persistence"
+	inboxServices "github.com/felixgeelhaar/orbita/internal/inbox/services"
 	meetingCommands "github.com/felixgeelhaar/orbita/internal/meetings/application/commands"
 	meetingQueries "github.com/felixgeelhaar/orbita/internal/meetings/application/queries"
 	meetingPersistence "github.com/felixgeelhaar/orbita/internal/meetings/infrastructure/persistence"
@@ -23,7 +30,7 @@ import (
 	"github.com/felixgeelhaar/orbita/internal/productivity/infrastructure/persistence"
 	scheduleCommands "github.com/felixgeelhaar/orbita/internal/scheduling/application/commands"
 	scheduleQueries "github.com/felixgeelhaar/orbita/internal/scheduling/application/queries"
-	"github.com/felixgeelhaar/orbita/internal/scheduling/application/services"
+	schedulerServices "github.com/felixgeelhaar/orbita/internal/scheduling/application/services"
 	schedulePersistence "github.com/felixgeelhaar/orbita/internal/scheduling/infrastructure/persistence"
 	sharedApplication "github.com/felixgeelhaar/orbita/internal/shared/application"
 	sharedCrypto "github.com/felixgeelhaar/orbita/internal/shared/infrastructure/crypto"
@@ -93,11 +100,11 @@ type Container struct {
 	CompleteBlockHandler   *scheduleCommands.CompleteBlockHandler
 	RemoveBlockHandler     *scheduleCommands.RemoveBlockHandler
 	RescheduleBlockHandler *scheduleCommands.RescheduleBlockHandler
-	AutoScheduleHandler    *scheduleCommands.AutoScheduleHandler
-	AutoRescheduleHandler  *scheduleCommands.AutoRescheduleHandler
+	AutoScheduleHandler   *scheduleCommands.AutoScheduleHandler
+	AutoRescheduleHandler *scheduleCommands.AutoRescheduleHandler
 
 	// Scheduler Engine
-	SchedulerEngine *services.SchedulerEngine
+	SchedulerEngine *schedulerServices.SchedulerEngine
 
 	// Auth
 	AuthService     *identityOAuth.Service
@@ -112,8 +119,19 @@ type Container struct {
 	FindAvailableSlotsHandler     *scheduleQueries.FindAvailableSlotsHandler
 	ListRescheduleAttemptsHandler *scheduleQueries.ListRescheduleAttemptsHandler
 
+	// Inbox
+	InboxRepo               *inboxPersistence.PostgresInboxRepository
+	InboxClassifier         *inboxServices.Classifier
+	CaptureInboxItemHandler *inboxCommands.CaptureInboxItemHandler
+	PromoteInboxItemHandler *inboxCommands.PromoteInboxItemHandler
+	ListInboxItemsHandler   *inboxQueries.ListInboxItemsHandler
+
 	// Outbox Processor
 	OutboxProcessor *outbox.Processor
+
+	// Engine SDK
+	EngineRegistry *registry.Registry
+	EngineExecutor *runtime.Executor
 }
 
 // NewContainer creates and wires all dependencies.
@@ -150,6 +168,8 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 	c.SettingsRepo = identityPersistence.NewSettingsRepository(pool)
 	c.OutboxRepo = outbox.NewPostgresRepository(pool)
 	c.UnitOfWork = sharedPersistence.NewPostgresUnitOfWork(pool)
+	c.InboxRepo = inboxPersistence.NewPostgresInboxRepository(pool)
+	c.InboxClassifier = inboxServices.NewClassifier()
 
 	// Create event publisher
 	publisher, err := eventbus.NewRabbitMQPublisher(cfg.RabbitMQURL, logger)
@@ -194,8 +214,18 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 	c.ListMeetingsHandler = meetingQueries.NewListMeetingsHandler(c.MeetingRepo)
 	c.ListMeetingCandidatesHandler = meetingQueries.NewListMeetingCandidatesHandler(c.MeetingRepo)
 
+	// Create inbox handlers
+	c.CaptureInboxItemHandler = inboxCommands.NewCaptureInboxItemHandler(c.InboxRepo, c.InboxClassifier, c.UnitOfWork)
+	c.ListInboxItemsHandler = inboxQueries.NewListInboxItemsHandler(c.InboxRepo)
+	c.PromoteInboxItemHandler = inboxCommands.NewPromoteInboxItemHandler(
+		c.InboxRepo,
+		c.CreateTaskHandler,
+		c.CreateHabitHandler,
+		c.CreateMeetingHandler,
+	)
+
 	// Create scheduler engine
-	c.SchedulerEngine = services.NewSchedulerEngine(services.DefaultSchedulerConfig())
+	c.SchedulerEngine = schedulerServices.NewSchedulerEngine(schedulerServices.DefaultSchedulerConfig())
 
 	// Create schedule command handlers
 	c.AddBlockHandler = scheduleCommands.NewAddBlockHandler(c.ScheduleRepo, c.OutboxRepo, c.UnitOfWork)
@@ -260,11 +290,43 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 	}
 	c.OutboxProcessor = outbox.NewProcessor(c.OutboxRepo, c.EventPublisher, processorConfig, logger)
 
+	// Create engine registry and register built-in engines
+	c.EngineRegistry = registry.NewRegistry(logger)
+
+	// Register built-in engines
+	if err := c.EngineRegistry.RegisterBuiltin(builtin.NewDefaultSchedulerEngine()); err != nil {
+		logger.Warn("failed to register default scheduler engine", "error", err)
+	}
+	if err := c.EngineRegistry.RegisterBuiltin(builtin.NewDefaultPriorityEngine()); err != nil {
+		logger.Warn("failed to register default priority engine", "error", err)
+	}
+	if err := c.EngineRegistry.RegisterBuiltin(builtin.NewDefaultClassifierEngine()); err != nil {
+		logger.Warn("failed to register default classifier engine", "error", err)
+	}
+	if err := c.EngineRegistry.RegisterBuiltin(builtin.NewDefaultAutomationEngine()); err != nil {
+		logger.Warn("failed to register default automation engine", "error", err)
+	}
+
+	// Create engine executor with circuit breaker
+	executorConfig := runtime.DefaultExecutorConfig()
+	metricsCollector := runtime.NewMetricsCollector()
+	c.EngineExecutor = runtime.NewExecutor(c.EngineRegistry, metricsCollector, logger, executorConfig)
+
+	logger.Info("registered engines", "count", c.EngineRegistry.Count())
+
 	return c, nil
 }
 
 // Close cleans up all resources.
 func (c *Container) Close() {
+	// Shutdown all engines via registry
+	if c.EngineRegistry != nil {
+		ctx := context.Background()
+		if err := c.EngineRegistry.ShutdownAll(ctx); err != nil {
+			c.Logger.Warn("error shutting down engines", "error", err)
+		}
+	}
+
 	if c.OutboxProcessor != nil {
 		c.OutboxProcessor.Stop()
 	}

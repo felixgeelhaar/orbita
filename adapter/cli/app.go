@@ -3,9 +3,13 @@ package cli
 import (
 	billingApp "github.com/felixgeelhaar/orbita/internal/billing/application"
 	calendarApp "github.com/felixgeelhaar/orbita/internal/calendar/application"
+	"github.com/felixgeelhaar/orbita/internal/engine/registry"
+	"github.com/felixgeelhaar/orbita/internal/engine/runtime"
 	habitCommands "github.com/felixgeelhaar/orbita/internal/habits/application/commands"
 	habitQueries "github.com/felixgeelhaar/orbita/internal/habits/application/queries"
 	identitySettings "github.com/felixgeelhaar/orbita/internal/identity/application/settings"
+	inboxCommands "github.com/felixgeelhaar/orbita/internal/inbox/application/commands"
+	inboxQueries "github.com/felixgeelhaar/orbita/internal/inbox/application/queries"
 	meetingCommands "github.com/felixgeelhaar/orbita/internal/meetings/application/commands"
 	meetingQueries "github.com/felixgeelhaar/orbita/internal/meetings/application/queries"
 	"github.com/felixgeelhaar/orbita/internal/productivity/application/commands"
@@ -58,12 +62,23 @@ type App struct {
 	FindAvailableSlotsHandler     *scheduleQueries.FindAvailableSlotsHandler
 	ListRescheduleAttemptsHandler *scheduleQueries.ListRescheduleAttemptsHandler
 
+	// Inbox Command Handlers
+	CaptureInboxItemHandler *inboxCommands.CaptureInboxItemHandler
+	PromoteInboxItemHandler *inboxCommands.PromoteInboxItemHandler
+
+	// Inbox Query Handlers
+	ListInboxItemsHandler *inboxQueries.ListInboxItemsHandler
+
 	// Calendar Sync
 	CalendarSyncer calendarApp.Syncer
 
 	// Settings
 	SettingsService *identitySettings.Service
 	BillingService  *billingApp.Service
+
+	// Engine SDK
+	EngineRegistry *registry.Registry
+	EngineExecutor *runtime.Executor
 
 	// Current user (configured per environment)
 	CurrentUserID uuid.UUID
@@ -96,6 +111,9 @@ func NewApp(
 	getScheduleHandler *scheduleQueries.GetScheduleHandler,
 	findAvailableSlotsHandler *scheduleQueries.FindAvailableSlotsHandler,
 	listRescheduleAttemptsHandler *scheduleQueries.ListRescheduleAttemptsHandler,
+	captureInboxItemHandler *inboxCommands.CaptureInboxItemHandler,
+	promoteInboxItemHandler *inboxCommands.PromoteInboxItemHandler,
+	listInboxItemsHandler *inboxQueries.ListInboxItemsHandler,
 	billingService *billingApp.Service,
 ) *App {
 	return &App{
@@ -124,6 +142,9 @@ func NewApp(
 		GetScheduleHandler:            getScheduleHandler,
 		FindAvailableSlotsHandler:     findAvailableSlotsHandler,
 		ListRescheduleAttemptsHandler: listRescheduleAttemptsHandler,
+		CaptureInboxItemHandler:       captureInboxItemHandler,
+		PromoteInboxItemHandler:       promoteInboxItemHandler,
+		ListInboxItemsHandler:         listInboxItemsHandler,
 		BillingService:                billingService,
 		CurrentUserID:                 uuid.Nil,
 	}
@@ -147,6 +168,16 @@ func (a *App) SetSettingsService(service *identitySettings.Service) {
 // SetBillingService updates the billing service.
 func (a *App) SetBillingService(service *billingApp.Service) {
 	a.BillingService = service
+}
+
+// SetEngineRegistry updates the engine registry.
+func (a *App) SetEngineRegistry(reg *registry.Registry) {
+	a.EngineRegistry = reg
+}
+
+// SetEngineExecutor updates the engine executor.
+func (a *App) SetEngineExecutor(exec *runtime.Executor) {
+	a.EngineExecutor = exec
 }
 
 // app is the global CLI application instance

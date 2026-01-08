@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+package orbita.engine.v1;
+
+option go_package = "github.com/felixgeelhaar/orbita/internal/engine/grpc/proto;enginepb";
+
+import "google/protobuf/struct.proto";
+import "internal/engine/grpc/proto/engine.proto";
+
+// ClassifierEngine provides classification capabilities.
+service ClassifierEngine {
+    // Classify analyzes content and returns classification results.
+    rpc Classify(ClassifyRequest) returns (ClassifyResponse);
+
+    // BatchClassify classifies multiple items.
+    rpc BatchClassify(BatchClassifyRequest) returns (BatchClassifyResponse);
+
+    // GetCategories returns supported categories.
+    rpc GetCategories(GetCategoriesRequest) returns (GetCategoriesResponse);
+}
+
+// ClassifyRequest contains content to classify.
+message ClassifyRequest {
+    ExecutionContext context = 1;
+    ClassifyInput input = 2;
+}
+
+// ClassifyInput contains the content to be classified.
+message ClassifyInput {
+    string id = 1;
+    string content = 2;
+    map<string, string> metadata = 3;
+    string source = 4;
+    repeated string hints = 5;
+}
+
+// ClassifyResponse contains classification results.
+message ClassifyResponse {
+    ClassifyOutput output = 1;
+}
+
+// ClassifyOutput contains the classification result.
+message ClassifyOutput {
+    string id = 1;
+    string category = 2;
+    double confidence = 3;
+    repeated ClassificationAlternative alternatives = 4;
+    ExtractedEntities extracted_entities = 5;
+    string explanation = 6;
+    bool requires_review = 7;
+    string review_reason = 8;
+}
+
+// ClassificationAlternative represents an alternative classification.
+message ClassificationAlternative {
+    string category = 1;
+    double confidence = 2;
+    string reason = 3;
+}
+
+// ExtractedEntities contains structured data extracted from content.
+message ExtractedEntities {
+    string title = 1;
+    string description = 2;
+    string due_date = 3;
+    string duration = 4;
+    string priority = 5;
+    repeated string people = 6;
+    repeated string tags = 7;
+    repeated string urls = 8;
+    google.protobuf.Struct custom = 9;
+}
+
+// BatchClassifyRequest contains multiple items to classify.
+message BatchClassifyRequest {
+    ExecutionContext context = 1;
+    repeated ClassifyInput inputs = 2;
+}
+
+// BatchClassifyResponse contains results for all items.
+message BatchClassifyResponse {
+    repeated ClassifyOutput outputs = 1;
+}
+
+// GetCategoriesRequest requests supported categories.
+message GetCategoriesRequest {
+    ExecutionContext context = 1;
+}
+
+// GetCategoriesResponse contains supported categories.
+message GetCategoriesResponse {
+    repeated Category categories = 1;
+}
+
+// Category represents a classification category.
+message Category {
+    string id = 1;
+    string name = 2;
+    string description = 3;
+    repeated string examples = 4;
+    repeated string keywords = 5;
+}

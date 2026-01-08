@@ -1,0 +1,143 @@
+syntax = "proto3";
+
+package orbita.engine.v1;
+
+option go_package = "github.com/felixgeelhaar/orbita/internal/engine/grpc/proto;enginepb";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// Engine is the base service that all engine plugins must implement.
+service Engine {
+    // Metadata returns engine identification and capabilities.
+    rpc Metadata(MetadataRequest) returns (MetadataResponse);
+
+    // ConfigSchema returns the JSON Schema for configuration.
+    rpc ConfigSchema(ConfigSchemaRequest) returns (ConfigSchemaResponse);
+
+    // Initialize sets up the engine with the provided configuration.
+    rpc Initialize(InitializeRequest) returns (InitializeResponse);
+
+    // HealthCheck returns the current health status.
+    rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+
+    // Shutdown gracefully stops the engine.
+    rpc Shutdown(ShutdownRequest) returns (ShutdownResponse);
+}
+
+// MetadataRequest is the request for Metadata RPC.
+message MetadataRequest {}
+
+// MetadataResponse contains engine metadata.
+message MetadataResponse {
+    string id = 1;
+    string name = 2;
+    string version = 3;
+    string author = 4;
+    string description = 5;
+    string license = 6;
+    string homepage = 7;
+    repeated string tags = 8;
+    string min_api_version = 9;
+    repeated string capabilities = 10;
+    EngineType type = 11;
+}
+
+// EngineType identifies the type of engine.
+enum EngineType {
+    ENGINE_TYPE_UNSPECIFIED = 0;
+    ENGINE_TYPE_SCHEDULER = 1;
+    ENGINE_TYPE_PRIORITY = 2;
+    ENGINE_TYPE_CLASSIFIER = 3;
+    ENGINE_TYPE_AUTOMATION = 4;
+}
+
+// ConfigSchemaRequest is the request for ConfigSchema RPC.
+message ConfigSchemaRequest {}
+
+// ConfigSchemaResponse contains the configuration schema.
+message ConfigSchemaResponse {
+    string schema = 1;  // JSON Schema version
+    string type = 2;    // Always "object"
+    string title = 3;
+    string description = 4;
+    map<string, PropertySchema> properties = 5;
+    repeated string required = 6;
+}
+
+// PropertySchema defines a configuration property.
+message PropertySchema {
+    string type = 1;
+    string title = 2;
+    string description = 3;
+    google.protobuf.Value default = 4;
+    repeated google.protobuf.Value enum = 5;
+    optional double minimum = 6;
+    optional double maximum = 7;
+    optional int32 min_length = 8;
+    optional int32 max_length = 9;
+    string pattern = 10;
+    string format = 11;
+    PropertySchema items = 12;
+    UIHints ui_hints = 13;
+}
+
+// UIHints provides rendering hints for UI generation.
+message UIHints {
+    string widget = 1;
+    string placeholder = 2;
+    string help_text = 3;
+    string group = 4;
+    int32 order = 5;
+    bool advanced = 6;
+    bool disabled = 7;
+    VisibilityCondition visible = 8;
+}
+
+// VisibilityCondition defines field visibility rules.
+message VisibilityCondition {
+    string field = 1;
+    string operator = 2;
+    google.protobuf.Value value = 3;
+}
+
+// InitializeRequest contains engine initialization parameters.
+message InitializeRequest {
+    string engine_id = 1;
+    string user_id = 2;
+    google.protobuf.Struct config = 3;
+}
+
+// InitializeResponse is the response from Initialize.
+message InitializeResponse {
+    bool success = 1;
+    string error = 2;
+}
+
+// HealthCheckRequest is the request for HealthCheck RPC.
+message HealthCheckRequest {}
+
+// HealthCheckResponse contains the health status.
+message HealthCheckResponse {
+    bool healthy = 1;
+    string message = 2;
+    google.protobuf.Struct details = 3;
+    google.protobuf.Timestamp checked_at = 4;
+}
+
+// ShutdownRequest is the request for Shutdown RPC.
+message ShutdownRequest {}
+
+// ShutdownResponse is the response from Shutdown.
+message ShutdownResponse {
+    bool success = 1;
+    string error = 2;
+}
+
+// ExecutionContext provides context for engine operations.
+message ExecutionContext {
+    string user_id = 1;
+    string engine_id = 2;
+    string request_id = 3;
+    google.protobuf.Timestamp start_time = 4;
+}

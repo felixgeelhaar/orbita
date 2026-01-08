@@ -1,0 +1,189 @@
+syntax = "proto3";
+
+package orbita.engine.v1;
+
+option go_package = "github.com/felixgeelhaar/orbita/internal/engine/grpc/proto;enginepb";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/struct.proto";
+import "internal/engine/grpc/proto/engine.proto";
+
+// AutomationEngine provides automation capabilities.
+service AutomationEngine {
+    // Evaluate checks triggers and returns actions to execute.
+    rpc Evaluate(EvaluateRequest) returns (EvaluateResponse);
+
+    // ValidateRule validates an automation rule.
+    rpc ValidateRule(ValidateRuleRequest) returns (ValidateRuleResponse);
+
+    // GetSupportedTriggers returns supported triggers.
+    rpc GetSupportedTriggers(GetTriggersRequest) returns (GetTriggersResponse);
+
+    // GetSupportedActions returns supported actions.
+    rpc GetSupportedActions(GetActionsRequest) returns (GetActionsResponse);
+}
+
+// EvaluateRequest contains automation evaluation parameters.
+message EvaluateRequest {
+    ExecutionContext context = 1;
+    AutomationEvent event = 2;
+    repeated AutomationRule rules = 3;
+    AutomationContext automation_context = 4;
+}
+
+// AutomationEvent represents a triggering event.
+message AutomationEvent {
+    string id = 1;
+    string type = 2;
+    string entity_id = 3;
+    string entity_type = 4;
+    google.protobuf.Timestamp timestamp = 5;
+    google.protobuf.Struct data = 6;
+    google.protobuf.Struct previous_state = 7;
+    google.protobuf.Struct current_state = 8;
+}
+
+// AutomationRule defines an automation rule.
+message AutomationRule {
+    string id = 1;
+    string name = 2;
+    string description = 3;
+    bool enabled = 4;
+    RuleTrigger trigger = 5;
+    repeated RuleCondition conditions = 6;
+    repeated RuleAction actions = 7;
+    google.protobuf.Duration cooldown = 8;
+    int32 priority = 9;
+    bool stop_on_match = 10;
+}
+
+// RuleTrigger defines what triggers a rule.
+message RuleTrigger {
+    string type = 1;
+    repeated string event_types = 2;
+    string schedule = 3;
+    string state_field = 4;
+    repeated google.protobuf.Value from_values = 5;
+    repeated google.protobuf.Value to_values = 6;
+}
+
+// RuleCondition is a condition for rule evaluation.
+message RuleCondition {
+    string field = 1;
+    string operator = 2;
+    google.protobuf.Value value = 3;
+    bool not = 4;
+}
+
+// RuleAction defines an action to execute.
+message RuleAction {
+    string type = 1;
+    string target = 2;
+    google.protobuf.Struct parameters = 3;
+    google.protobuf.Duration delay = 4;
+    RuleCondition condition = 5;
+}
+
+// AutomationContext provides evaluation context.
+message AutomationContext {
+    string user_id = 1;
+    string timezone = 2;
+    google.protobuf.Timestamp now = 3;
+    google.protobuf.Struct variables = 4;
+    repeated AutomationEvent recent_events = 5;
+}
+
+// EvaluateResponse contains evaluation results.
+message EvaluateResponse {
+    repeated TriggeredRule triggered_rules = 1;
+    repeated PendingAction pending_actions = 2;
+    repeated SkippedRule skipped_rules = 3;
+    google.protobuf.Duration evaluation_duration = 4;
+}
+
+// TriggeredRule represents a rule that matched.
+message TriggeredRule {
+    string rule_id = 1;
+    string rule_name = 2;
+    repeated string matched_conditions = 3;
+}
+
+// PendingAction is an action to execute.
+message PendingAction {
+    string id = 1;
+    string rule_id = 2;
+    string type = 3;
+    string target = 4;
+    google.protobuf.Struct parameters = 5;
+    google.protobuf.Timestamp execute_at = 6;
+}
+
+// SkippedRule represents a rule that didn't match.
+message SkippedRule {
+    string rule_id = 1;
+    string rule_name = 2;
+    string reason = 3;
+    string failed_condition = 4;
+}
+
+// ValidateRuleRequest contains a rule to validate.
+message ValidateRuleRequest {
+    ExecutionContext context = 1;
+    AutomationRule rule = 2;
+}
+
+// ValidateRuleResponse contains validation results.
+message ValidateRuleResponse {
+    bool valid = 1;
+    repeated string errors = 2;
+    repeated string warnings = 3;
+}
+
+// GetTriggersRequest requests supported triggers.
+message GetTriggersRequest {
+    ExecutionContext context = 1;
+}
+
+// GetTriggersResponse contains supported triggers.
+message GetTriggersResponse {
+    repeated TriggerDefinition triggers = 1;
+}
+
+// TriggerDefinition describes a supported trigger.
+message TriggerDefinition {
+    string type = 1;
+    string name = 2;
+    string description = 3;
+    repeated string event_types = 4;
+    repeated ParameterDefinition parameters = 5;
+}
+
+// GetActionsRequest requests supported actions.
+message GetActionsRequest {
+    ExecutionContext context = 1;
+}
+
+// GetActionsResponse contains supported actions.
+message GetActionsResponse {
+    repeated ActionDefinition actions = 1;
+}
+
+// ActionDefinition describes a supported action.
+message ActionDefinition {
+    string type = 1;
+    string name = 2;
+    string description = 3;
+    repeated ParameterDefinition parameters = 4;
+    repeated string required_permissions = 5;
+}
+
+// ParameterDefinition describes an action/trigger parameter.
+message ParameterDefinition {
+    string name = 1;
+    string type = 2;
+    bool required = 3;
+    string description = 4;
+    google.protobuf.Value default = 5;
+    repeated google.protobuf.Value enum = 6;
+}

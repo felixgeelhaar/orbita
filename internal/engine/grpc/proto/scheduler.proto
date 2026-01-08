@@ -1,0 +1,153 @@
+syntax = "proto3";
+
+package orbita.engine.v1;
+
+option go_package = "github.com/felixgeelhaar/orbita/internal/engine/grpc/proto;enginepb";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/struct.proto";
+import "internal/engine/grpc/proto/engine.proto";
+
+// SchedulerEngine provides scheduling capabilities.
+service SchedulerEngine {
+    // ScheduleTasks schedules multiple tasks into time blocks.
+    rpc ScheduleTasks(ScheduleTasksRequest) returns (ScheduleTasksResponse);
+
+    // FindOptimalSlot finds the best available time slot.
+    rpc FindOptimalSlot(FindSlotRequest) returns (FindSlotResponse);
+
+    // RescheduleConflicts handles rescheduling when conflicts arise.
+    rpc RescheduleConflicts(RescheduleRequest) returns (RescheduleResponse);
+
+    // CalculateUtilization calculates schedule utilization.
+    rpc CalculateUtilization(UtilizationRequest) returns (UtilizationResponse);
+}
+
+// ScheduleTasksRequest contains parameters for scheduling tasks.
+message ScheduleTasksRequest {
+    ExecutionContext context = 1;
+    google.protobuf.Timestamp date = 2;
+    repeated SchedulableTask tasks = 3;
+    repeated ExistingBlock existing_blocks = 4;
+    WorkingHours working_hours = 5;
+}
+
+// SchedulableTask represents a task to be scheduled.
+message SchedulableTask {
+    string id = 1;
+    string title = 2;
+    int32 priority = 3;
+    google.protobuf.Duration duration = 4;
+    google.protobuf.Timestamp due_date = 5;
+    string block_type = 6;
+    repeated Constraint constraints = 7;
+    google.protobuf.Struct metadata = 8;
+}
+
+// Constraint represents a scheduling constraint.
+message Constraint {
+    string type = 1;
+    google.protobuf.Timestamp start = 2;
+    google.protobuf.Timestamp end = 3;
+    string reference_id = 4;
+    bool flexible = 5;
+}
+
+// ExistingBlock represents a block already on the schedule.
+message ExistingBlock {
+    string id = 1;
+    string type = 2;
+    google.protobuf.Timestamp start = 3;
+    google.protobuf.Timestamp end = 4;
+    string title = 5;
+    bool immovable = 6;
+}
+
+// WorkingHours defines available scheduling windows.
+message WorkingHours {
+    google.protobuf.Duration start = 1;
+    google.protobuf.Duration end = 2;
+    repeated TimeWindow breaks = 3;
+}
+
+// TimeWindow represents a time range.
+message TimeWindow {
+    google.protobuf.Duration start = 1;
+    google.protobuf.Duration end = 2;
+}
+
+// ScheduleTasksResponse contains scheduling results.
+message ScheduleTasksResponse {
+    repeated ScheduleResult results = 1;
+    int32 total_scheduled = 2;
+    double utilization_percent = 3;
+}
+
+// ScheduleResult represents the result of scheduling a task.
+message ScheduleResult {
+    string task_id = 1;
+    string block_id = 2;
+    google.protobuf.Timestamp start_time = 3;
+    google.protobuf.Timestamp end_time = 4;
+    bool scheduled = 5;
+    string reason = 6;
+}
+
+// FindSlotRequest contains parameters for finding a slot.
+message FindSlotRequest {
+    ExecutionContext context = 1;
+    google.protobuf.Timestamp date = 2;
+    google.protobuf.Duration duration = 3;
+    google.protobuf.Timestamp preferred_start = 4;
+    repeated ExistingBlock existing_blocks = 5;
+    WorkingHours working_hours = 6;
+    int32 priority = 7;
+}
+
+// FindSlotResponse contains the found slot.
+message FindSlotResponse {
+    TimeSlot slot = 1;
+    bool found = 2;
+    string error = 3;
+}
+
+// TimeSlot represents an available time slot.
+message TimeSlot {
+    google.protobuf.Timestamp start = 1;
+    google.protobuf.Timestamp end = 2;
+    double score = 3;
+    string reason = 4;
+}
+
+// RescheduleRequest contains parameters for conflict resolution.
+message RescheduleRequest {
+    ExecutionContext context = 1;
+    google.protobuf.Timestamp date = 2;
+    ExistingBlock new_block = 3;
+    repeated ExistingBlock existing_blocks = 4;
+    WorkingHours working_hours = 5;
+}
+
+// RescheduleResponse contains conflict resolution results.
+message RescheduleResponse {
+    repeated ScheduleResult results = 1;
+    int32 conflicts_resolved = 2;
+    repeated string unresolved_conflicts = 3;
+}
+
+// UtilizationRequest contains parameters for utilization calculation.
+message UtilizationRequest {
+    ExecutionContext context = 1;
+    google.protobuf.Timestamp date = 2;
+    repeated ExistingBlock existing_blocks = 3;
+    WorkingHours working_hours = 4;
+}
+
+// UtilizationResponse contains utilization results.
+message UtilizationResponse {
+    double percent = 1;
+    google.protobuf.Duration total_available = 2;
+    google.protobuf.Duration total_scheduled = 3;
+    map<string, int64> by_block_type = 4;  // Duration in nanoseconds
+}

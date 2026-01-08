@@ -50,3 +50,6 @@ tmp/
 
 # Generated code (uncomment if you want to track)
 # db/generated/
+
+# Claude Code local settings
+.claude/settings.local.json

@@ -33,6 +33,9 @@ var (
 
 	// ErrCircuitOpen is returned when the circuit breaker is open.
 	ErrCircuitOpen = errors.New("circuit breaker open")
+
+	// ErrNoSlotAvailable is returned when no suitable time slot is available for scheduling.
+	ErrNoSlotAvailable = errors.New("no suitable time slot available")
 )
 
 // EngineError wraps an error with engine context.

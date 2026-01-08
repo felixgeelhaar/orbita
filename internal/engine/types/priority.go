@@ -54,6 +54,12 @@ type PriorityInput struct {
 
 	// CustomSignals allows engines to use additional signals.
 	CustomSignals map[string]float64 `json:"custom_signals,omitempty"`
+
+	// BlockingCount is the number of other tasks this task is blocking.
+	BlockingCount int `json:"blocking_count,omitempty"`
+
+	// DependsOn lists task IDs this task depends on.
+	DependsOn []uuid.UUID `json:"depends_on,omitempty"`
 }
 
 // PriorityContext provides situational information for priority calculation.
@@ -99,6 +105,9 @@ type PriorityOutput struct {
 
 	// SuggestedAction recommends what to do with this item.
 	SuggestedAction string `json:"suggested_action,omitempty"`
+
+	// Metadata contains engine-specific additional data.
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
 // UrgencyLevel categorizes priority into actionable levels.
@@ -174,3 +183,33 @@ const (
 	// CapabilityMeetingCadence indicates meeting cadence handling.
 	CapabilityMeetingCadence = "meeting_cadence"
 )
+
+// EisenhowerQuadrant represents the four quadrants of the Eisenhower matrix.
+type EisenhowerQuadrant int
+
+const (
+	// EisenhowerUrgentImportant is Quadrant 1: Do First
+	EisenhowerUrgentImportant EisenhowerQuadrant = iota + 1
+	// EisenhowerNotUrgentImportant is Quadrant 2: Schedule
+	EisenhowerNotUrgentImportant
+	// EisenhowerUrgentNotImportant is Quadrant 3: Delegate
+	EisenhowerUrgentNotImportant
+	// EisenhowerNotUrgentNotImportant is Quadrant 4: Eliminate
+	EisenhowerNotUrgentNotImportant
+)
+
+// String returns the string representation of the quadrant.
+func (q EisenhowerQuadrant) String() string {
+	switch q {
+	case EisenhowerUrgentImportant:
+		return "Do First (Urgent & Important)"
+	case EisenhowerNotUrgentImportant:
+		return "Schedule (Important, Not Urgent)"
+	case EisenhowerUrgentNotImportant:
+		return "Delegate (Urgent, Not Important)"
+	case EisenhowerNotUrgentNotImportant:
+		return "Eliminate (Not Urgent, Not Important)"
+	default:
+		return "Unknown"
+	}
+}

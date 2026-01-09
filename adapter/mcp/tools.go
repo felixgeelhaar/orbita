@@ -50,6 +50,24 @@ func RegisterCLITools(srv *mcp.Server, deps ToolDependencies) error {
 	if err := registerAuthTools(srv, deps); err != nil {
 		return err
 	}
+	if err := registerEngineTools(srv, deps); err != nil {
+		return err
+	}
+	if err := registerInsightsTools(srv, deps); err != nil {
+		return err
+	}
+	if err := registerAutomationTools(srv, deps); err != nil {
+		return err
+	}
+	if err := registerSearchTools(srv, deps); err != nil {
+		return err
+	}
+	if err := registerIdealWeekTools(srv, deps); err != nil {
+		return err
+	}
+	if err := registerWellnessTools(srv, deps); err != nil {
+		return err
+	}
 
 	return nil
 }

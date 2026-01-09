@@ -12,6 +12,8 @@ import (
 	inboxQueries "github.com/felixgeelhaar/orbita/internal/inbox/application/queries"
 	meetingCommands "github.com/felixgeelhaar/orbita/internal/meetings/application/commands"
 	meetingQueries "github.com/felixgeelhaar/orbita/internal/meetings/application/queries"
+	orbitRegistry "github.com/felixgeelhaar/orbita/internal/orbit/registry"
+	orbitRuntime "github.com/felixgeelhaar/orbita/internal/orbit/runtime"
 	"github.com/felixgeelhaar/orbita/internal/productivity/application/commands"
 	"github.com/felixgeelhaar/orbita/internal/productivity/application/queries"
 	scheduleCommands "github.com/felixgeelhaar/orbita/internal/scheduling/application/commands"
@@ -79,6 +81,11 @@ type App struct {
 	// Engine SDK
 	EngineRegistry *registry.Registry
 	EngineExecutor *runtime.Executor
+
+	// Orbit SDK
+	OrbitRegistry *orbitRegistry.Registry
+	OrbitSandbox  *orbitRuntime.Sandbox
+	OrbitExecutor *orbitRuntime.Executor
 
 	// Current user (configured per environment)
 	CurrentUserID uuid.UUID
@@ -178,6 +185,21 @@ func (a *App) SetEngineRegistry(reg *registry.Registry) {
 // SetEngineExecutor updates the engine executor.
 func (a *App) SetEngineExecutor(exec *runtime.Executor) {
 	a.EngineExecutor = exec
+}
+
+// SetOrbitRegistry updates the orbit registry.
+func (a *App) SetOrbitRegistry(reg *orbitRegistry.Registry) {
+	a.OrbitRegistry = reg
+}
+
+// SetOrbitSandbox updates the orbit sandbox.
+func (a *App) SetOrbitSandbox(sandbox *orbitRuntime.Sandbox) {
+	a.OrbitSandbox = sandbox
+}
+
+// SetOrbitExecutor updates the orbit executor.
+func (a *App) SetOrbitExecutor(exec *orbitRuntime.Executor) {
+	a.OrbitExecutor = exec
 }
 
 // app is the global CLI application instance

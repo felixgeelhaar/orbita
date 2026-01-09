@@ -12,10 +12,11 @@ import (
 	"github.com/felixgeelhaar/orbita/internal/engine/builtin"
 	"github.com/felixgeelhaar/orbita/internal/engine/registry"
 	"github.com/felixgeelhaar/orbita/internal/engine/runtime"
-	orbitRegistry "github.com/felixgeelhaar/orbita/internal/orbit/registry"
-	orbitRuntime "github.com/felixgeelhaar/orbita/internal/orbit/runtime"
+	orbitAPI "github.com/felixgeelhaar/orbita/internal/orbit/api"
 	"github.com/felixgeelhaar/orbita/internal/orbit/builtin/idealweek"
 	"github.com/felixgeelhaar/orbita/internal/orbit/builtin/wellness"
+	orbitRegistry "github.com/felixgeelhaar/orbita/internal/orbit/registry"
+	orbitRuntime "github.com/felixgeelhaar/orbita/internal/orbit/runtime"
 	habitCommands "github.com/felixgeelhaar/orbita/internal/habits/application/commands"
 	habitQueries "github.com/felixgeelhaar/orbita/internal/habits/application/queries"
 	habitPersistence "github.com/felixgeelhaar/orbita/internal/habits/infrastructure/persistence"
@@ -337,11 +338,27 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 		logger.Warn("failed to register ideal week orbit", "error", err)
 	}
 
-	// Create orbit sandbox (API factories would be wired here in full integration)
+	// Create API factories for orbit sandbox
+	apiFactories := &orbitAPI.APIFactories{
+		TaskHandler:     c.ListTasksHandler,
+		HabitHandler:    c.ListHabitsHandler,
+		ScheduleHandler: c.GetScheduleHandler,
+		MeetingHandler:  c.ListMeetingsHandler,
+		InboxHandler:    c.ListInboxItemsHandler,
+		// RedisClient will be nil in development mode (uses in-memory storage)
+	}
+
+	// Create orbit sandbox with full API factory integration
 	c.OrbitSandbox = orbitRuntime.NewSandbox(orbitRuntime.SandboxConfig{
-		Logger:   logger,
-		Registry: c.OrbitRegistry,
-		// Note: API factories will be added when full integration is completed
+		Logger:             logger,
+		Registry:           c.OrbitRegistry,
+		TaskAPIFactory:     apiFactories.TaskAPIFactory(),
+		HabitAPIFactory:    apiFactories.HabitAPIFactory(),
+		ScheduleAPIFactory: apiFactories.ScheduleAPIFactory(),
+		MeetingAPIFactory:  apiFactories.MeetingAPIFactory(),
+		InboxAPIFactory:    apiFactories.InboxAPIFactory(),
+		StorageAPIFactory:  apiFactories.StorageAPIFactory(),
+		MetricsFactory:     orbitAPI.NoopMetricsFactory(),
 	})
 
 	// Create orbit executor

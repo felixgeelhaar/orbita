@@ -1,0 +1,55 @@
+{
+    "id": "acme.pomodoro",
+    "name": "ACME Pomodoro Timer",
+    "version": "1.0.0",
+    "type": "orbit",
+    "author": "ACME Corp",
+    "description": "A Pomodoro technique timer that integrates with tasks and schedule",
+    "license": "MIT",
+    "homepage": "https://acme.example.com/orbita-orbits/pomodoro",
+    "min_api_version": "1.0.0",
+    "capabilities": [
+        "read:tasks",
+        "read:schedule",
+        "read:storage",
+        "write:storage",
+        "subscribe:events",
+        "register:tools"
+    ],
+    "config_schema": {
+        "properties": {
+            "work_duration_min": {
+                "type": "integer",
+                "title": "Work Duration (minutes)",
+                "description": "Duration of a work session in minutes",
+                "default": 25,
+                "minimum": 5,
+                "maximum": 120
+            },
+            "short_break_min": {
+                "type": "integer",
+                "title": "Short Break (minutes)",
+                "description": "Duration of short break in minutes",
+                "default": 5,
+                "minimum": 1,
+                "maximum": 30
+            },
+            "long_break_min": {
+                "type": "integer",
+                "title": "Long Break (minutes)",
+                "description": "Duration of long break (after 4 sessions) in minutes",
+                "default": 15,
+                "minimum": 5,
+                "maximum": 60
+            },
+            "sessions_until_long_break": {
+                "type": "integer",
+                "title": "Sessions Until Long Break",
+                "description": "Number of work sessions before a long break",
+                "default": 4,
+                "minimum": 2,
+                "maximum": 8
+            }
+        }
+    }
+}

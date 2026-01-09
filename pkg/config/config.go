@@ -57,6 +57,10 @@ type Config struct {
 	// MCP
 	MCPAddr      string
 	MCPAuthToken string
+
+	// Plugins
+	OrbitSearchPaths  []string
+	EngineSearchPaths []string
 }
 
 // Load loads configuration from environment variables.
@@ -99,6 +103,9 @@ func Load() (*Config, error) {
 
 		MCPAddr:      getEnv("MCP_ADDR", "0.0.0.0:8082"),
 		MCPAuthToken: getEnv("MCP_AUTH_TOKEN", ""),
+
+		OrbitSearchPaths:  getPathListEnv("ORBITA_ORBIT_PATH"),
+		EngineSearchPaths: getPathListEnv("ORBITA_ENGINE_PATH"),
 	}
 
 	return cfg, nil
@@ -146,4 +153,43 @@ func getBoolEnv(key string, defaultValue bool) bool {
 		}
 	}
 	return defaultValue
+}
+
+func getPathListEnv(key string) []string {
+	value := os.Getenv(key)
+	if value == "" {
+		return nil
+	}
+	// Split by colon (Unix) or semicolon (Windows)
+	paths := []string{}
+	for _, p := range splitPaths(value) {
+		if p != "" {
+			paths = append(paths, p)
+		}
+	}
+	return paths
+}
+
+func splitPaths(s string) []string {
+	// Use colon as separator on Unix, semicolon on Windows
+	separator := ":"
+	if os.PathSeparator == '\\' {
+		separator = ";"
+	}
+	result := []string{}
+	current := ""
+	for i := 0; i < len(s); i++ {
+		if string(s[i]) == separator {
+			if current != "" {
+				result = append(result, current)
+			}
+			current = ""
+		} else {
+			current += string(s[i])
+		}
+	}
+	if current != "" {
+		result = append(result, current)
+	}
+	return result
 }

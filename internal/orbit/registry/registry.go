@@ -151,6 +151,46 @@ func (r *Registry) RegisterFactory(id string, factory OrbitFactory, manifest *Ma
 	return nil
 }
 
+// RegisterManifest registers a manifest for a filesystem-discovered orbit.
+// The orbit is registered as unloaded without an implementation.
+// This allows the registry to track discovered orbits before they are loaded.
+func (r *Registry) RegisterManifest(manifest *Manifest, path string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if manifest == nil {
+		return sdk.ErrManifestInvalid
+	}
+
+	if manifest.ID == "" {
+		return sdk.ErrMissingID
+	}
+
+	if _, exists := r.orbits[manifest.ID]; exists {
+		return sdk.ErrOrbitAlreadyLoaded
+	}
+
+	r.orbits[manifest.ID] = &OrbitEntry{
+		Manifest: manifest,
+		Status:   StatusUnloaded,
+	}
+
+	r.logger.Info("registered orbit manifest",
+		"orbit_id", manifest.ID,
+		"path", path,
+	)
+
+	return nil
+}
+
+// Has checks if an orbit is registered by ID.
+func (r *Registry) Has(id string) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	_, exists := r.orbits[id]
+	return exists
+}
+
 // Get returns an orbit by ID, checking entitlements if configured.
 func (r *Registry) Get(ctx context.Context, id string, userID uuid.UUID) (sdk.Orbit, error) {
 	r.mu.RLock()

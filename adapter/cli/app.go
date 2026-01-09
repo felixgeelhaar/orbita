@@ -10,6 +10,7 @@ import (
 	identitySettings "github.com/felixgeelhaar/orbita/internal/identity/application/settings"
 	inboxCommands "github.com/felixgeelhaar/orbita/internal/inbox/application/commands"
 	inboxQueries "github.com/felixgeelhaar/orbita/internal/inbox/application/queries"
+	marketplaceQueries "github.com/felixgeelhaar/orbita/internal/marketplace/application/queries"
 	meetingCommands "github.com/felixgeelhaar/orbita/internal/meetings/application/commands"
 	meetingQueries "github.com/felixgeelhaar/orbita/internal/meetings/application/queries"
 	orbitRegistry "github.com/felixgeelhaar/orbita/internal/orbit/registry"
@@ -86,6 +87,12 @@ type App struct {
 	OrbitRegistry *orbitRegistry.Registry
 	OrbitSandbox  *orbitRuntime.Sandbox
 	OrbitExecutor *orbitRuntime.Executor
+
+	// Marketplace
+	ListMarketplacePackages   *marketplaceQueries.ListPackagesHandler
+	SearchMarketplacePackages *marketplaceQueries.SearchPackagesHandler
+	GetMarketplacePackage     *marketplaceQueries.GetPackageHandler
+	GetMarketplaceFeatured    *marketplaceQueries.GetFeaturedHandler
 
 	// Current user (configured per environment)
 	CurrentUserID uuid.UUID
@@ -200,6 +207,19 @@ func (a *App) SetOrbitSandbox(sandbox *orbitRuntime.Sandbox) {
 // SetOrbitExecutor updates the orbit executor.
 func (a *App) SetOrbitExecutor(exec *orbitRuntime.Executor) {
 	a.OrbitExecutor = exec
+}
+
+// SetMarketplaceHandlers updates all marketplace handlers.
+func (a *App) SetMarketplaceHandlers(
+	list *marketplaceQueries.ListPackagesHandler,
+	search *marketplaceQueries.SearchPackagesHandler,
+	get *marketplaceQueries.GetPackageHandler,
+	featured *marketplaceQueries.GetFeaturedHandler,
+) {
+	a.ListMarketplacePackages = list
+	a.SearchMarketplacePackages = search
+	a.GetMarketplacePackage = get
+	a.GetMarketplaceFeatured = featured
 }
 
 // app is the global CLI application instance

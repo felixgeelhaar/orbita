@@ -1,0 +1,81 @@
+{
+    "id": "acme.priority.eisenhower",
+    "name": "Eisenhower Matrix Priority Engine",
+    "version": "1.0.0",
+    "type": "priority",
+    "author": "ACME Corp",
+    "description": "Priority scoring based on the Eisenhower Matrix - categorizes tasks by urgency and importance into four quadrants",
+    "license": "MIT",
+    "homepage": "https://acme.example.com/orbita-engines/eisenhower",
+    "min_api_version": "1.0.0",
+    "capabilities": [
+        "calculate_priority",
+        "batch_calculate",
+        "explain_factors"
+    ],
+    "config_schema": {
+        "properties": {
+            "urgency_deadline_hours": {
+                "type": "integer",
+                "title": "Urgency Deadline (hours)",
+                "description": "Tasks due within this many hours are considered urgent",
+                "default": 24,
+                "minimum": 1,
+                "maximum": 168
+            },
+            "importance_priority_threshold": {
+                "type": "integer",
+                "title": "Importance Priority Threshold",
+                "description": "User-assigned priority at or below this value is considered important (1=highest)",
+                "default": 2,
+                "minimum": 1,
+                "maximum": 5
+            },
+            "quadrant_weights": {
+                "type": "object",
+                "title": "Quadrant Weights",
+                "description": "Base score weights for each Eisenhower quadrant",
+                "properties": {
+                    "do_first": {
+                        "type": "number",
+                        "title": "Do First (Q1)",
+                        "description": "Weight for Urgent & Important tasks",
+                        "default": 100
+                    },
+                    "schedule": {
+                        "type": "number",
+                        "title": "Schedule (Q2)",
+                        "description": "Weight for Important, Not Urgent tasks",
+                        "default": 75
+                    },
+                    "delegate": {
+                        "type": "number",
+                        "title": "Delegate (Q3)",
+                        "description": "Weight for Urgent, Not Important tasks",
+                        "default": 50
+                    },
+                    "eliminate": {
+                        "type": "number",
+                        "title": "Eliminate (Q4)",
+                        "description": "Weight for Not Urgent, Not Important tasks",
+                        "default": 25
+                    }
+                }
+            },
+            "deadline_bonus_enabled": {
+                "type": "boolean",
+                "title": "Enable Deadline Bonus",
+                "description": "Add bonus score as deadline approaches within urgent threshold",
+                "default": true
+            },
+            "blocking_bonus_weight": {
+                "type": "number",
+                "title": "Blocking Bonus Weight",
+                "description": "Extra score per task that this task is blocking",
+                "default": 5.0,
+                "minimum": 0,
+                "maximum": 20
+            }
+        }
+    }
+}

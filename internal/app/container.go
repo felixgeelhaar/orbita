@@ -8,11 +8,15 @@ import (
 	billingApp "github.com/felixgeelhaar/orbita/internal/billing/application"
 	billingPersistence "github.com/felixgeelhaar/orbita/internal/billing/infrastructure/persistence"
 	calendarApp "github.com/felixgeelhaar/orbita/internal/calendar/application"
+	marketplaceDomain "github.com/felixgeelhaar/orbita/internal/marketplace/domain"
+	marketplaceQueries "github.com/felixgeelhaar/orbita/internal/marketplace/application/queries"
+	marketplacePersistence "github.com/felixgeelhaar/orbita/internal/marketplace/infrastructure/persistence"
 	googleCalendar "github.com/felixgeelhaar/orbita/internal/calendar/infrastructure/google"
 	"github.com/felixgeelhaar/orbita/internal/engine/builtin"
 	"github.com/felixgeelhaar/orbita/internal/engine/registry"
 	"github.com/felixgeelhaar/orbita/internal/engine/runtime"
 	orbitAPI "github.com/felixgeelhaar/orbita/internal/orbit/api"
+	"github.com/felixgeelhaar/orbita/internal/orbit/builtin/focusmode"
 	"github.com/felixgeelhaar/orbita/internal/orbit/builtin/idealweek"
 	"github.com/felixgeelhaar/orbita/internal/orbit/builtin/wellness"
 	orbitRegistry "github.com/felixgeelhaar/orbita/internal/orbit/registry"
@@ -44,6 +48,7 @@ import (
 	sharedPersistence "github.com/felixgeelhaar/orbita/internal/shared/infrastructure/persistence"
 	"github.com/felixgeelhaar/orbita/pkg/config"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 )
 
 // Container holds all application dependencies.
@@ -53,6 +58,9 @@ type Container struct {
 
 	// Database
 	DB *pgxpool.Pool
+
+	// Redis
+	RedisClient *redis.Client
 
 	// Repositories
 	TaskRepo              *persistence.PostgresTaskRepository
@@ -142,6 +150,15 @@ type Container struct {
 	OrbitRegistry *orbitRegistry.Registry
 	OrbitSandbox  *orbitRuntime.Sandbox
 	OrbitExecutor *orbitRuntime.Executor
+
+	// Marketplace
+	MarketplacePackageRepo   marketplaceDomain.PackageRepository
+	MarketplaceVersionRepo   marketplaceDomain.VersionRepository
+	MarketplacePublisherRepo marketplaceDomain.PublisherRepository
+	ListMarketplacePackages  *marketplaceQueries.ListPackagesHandler
+	SearchMarketplacePackages *marketplaceQueries.SearchPackagesHandler
+	GetMarketplacePackage    *marketplaceQueries.GetPackageHandler
+	GetMarketplaceFeatured   *marketplaceQueries.GetFeaturedHandler
 }
 
 // NewContainer creates and wires all dependencies.
@@ -165,6 +182,30 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 
 	c.DB = pool
 	logger.Info("connected to database")
+
+	// Connect to Redis (optional in development)
+	if cfg.RedisURL != "" {
+		opt, err := redis.ParseURL(cfg.RedisURL)
+		if err != nil {
+			if !cfg.IsDevelopment() {
+				pool.Close()
+				return nil, fmt.Errorf("failed to parse Redis URL: %w", err)
+			}
+			logger.Warn("invalid Redis URL, orbit storage will use in-memory fallback", "error", err)
+		} else {
+			redisClient := redis.NewClient(opt)
+			if err := redisClient.Ping(ctx).Err(); err != nil {
+				if !cfg.IsDevelopment() {
+					pool.Close()
+					return nil, fmt.Errorf("failed to connect to Redis: %w", err)
+				}
+				logger.Warn("Redis not available, orbit storage will use in-memory fallback", "error", err)
+			} else {
+				c.RedisClient = redisClient
+				logger.Info("connected to Redis")
+			}
+		}
+	}
 
 	// Create repositories
 	c.TaskRepo = persistence.NewPostgresTaskRepository(pool)
@@ -254,6 +295,17 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 	c.SettingsService = identitySettings.NewService(c.SettingsRepo)
 	c.BillingService = billingApp.NewService(c.EntitlementRepo, c.SubscriptionRepo)
 
+	// Create marketplace repositories
+	c.MarketplacePackageRepo = marketplacePersistence.NewPostgresPackageRepository(pool)
+	c.MarketplaceVersionRepo = marketplacePersistence.NewPostgresVersionRepository(pool)
+	c.MarketplacePublisherRepo = marketplacePersistence.NewPostgresPublisherRepository(pool)
+
+	// Create marketplace query handlers
+	c.ListMarketplacePackages = marketplaceQueries.NewListPackagesHandler(c.MarketplacePackageRepo)
+	c.SearchMarketplacePackages = marketplaceQueries.NewSearchPackagesHandler(c.MarketplacePackageRepo)
+	c.GetMarketplacePackage = marketplaceQueries.NewGetPackageHandler(c.MarketplacePackageRepo, c.MarketplaceVersionRepo, c.MarketplacePublisherRepo)
+	c.GetMarketplaceFeatured = marketplaceQueries.NewGetFeaturedHandler(c.MarketplacePackageRepo)
+
 	// Create auth service if configured
 	scopes := identityOAuth.ScopesFromEnv(cfg.OAuthScopes)
 	if cfg.OAuthProvider != "" && cfg.OAuthClientID != "" && cfg.OAuthClientSecret != "" && cfg.OAuthAuthURL != "" && cfg.OAuthTokenURL != "" && cfg.OAuthRedirectURL != "" {
@@ -338,6 +390,55 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 		logger.Warn("failed to register ideal week orbit", "error", err)
 	}
 
+	focusmodeOrbit := focusmode.New()
+	if err := c.OrbitRegistry.RegisterBuiltin(focusmodeOrbit); err != nil {
+		logger.Warn("failed to register focus mode orbit", "error", err)
+	}
+
+	// Discover and load orbits from filesystem
+	orbitSearchPaths := cfg.OrbitSearchPaths
+	if len(orbitSearchPaths) == 0 {
+		// Use default search paths if none configured
+		orbitSearchPaths = orbitRegistry.DefaultOrbitSearchPaths()
+	}
+
+	orbitDiscovery := orbitRegistry.NewDiscovery(orbitSearchPaths, logger)
+	discoveredOrbits, err := orbitDiscovery.Discover()
+	if err != nil {
+		logger.Warn("orbit discovery failed", "error", err)
+	} else if len(discoveredOrbits) > 0 {
+		logger.Info("discovered orbits from filesystem",
+			"count", len(discoveredOrbits),
+			"paths", orbitSearchPaths,
+		)
+		for _, discovered := range discoveredOrbits {
+			// Check if already registered (built-in takes precedence)
+			if c.OrbitRegistry.Has(discovered.Manifest.ID) {
+				logger.Debug("skipping discovered orbit, already registered",
+					"orbit_id", discovered.Manifest.ID,
+				)
+				continue
+			}
+
+			// Register the manifest for filesystem orbits
+			// Note: Filesystem orbits use manifest-only registration since they
+			// don't have in-process implementations. The Orbit interface implementation
+			// would need to be loaded via a plugin mechanism (future enhancement).
+			if err := c.OrbitRegistry.RegisterManifest(discovered.Manifest, discovered.Path); err != nil {
+				logger.Warn("failed to register discovered orbit",
+					"orbit_id", discovered.Manifest.ID,
+					"path", discovered.Path,
+					"error", err,
+				)
+			} else {
+				logger.Info("registered discovered orbit",
+					"orbit_id", discovered.Manifest.ID,
+					"path", discovered.Path,
+				)
+			}
+		}
+	}
+
 	// Create API factories for orbit sandbox
 	apiFactories := &orbitAPI.APIFactories{
 		TaskHandler:     c.ListTasksHandler,
@@ -345,7 +446,7 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 		ScheduleHandler: c.GetScheduleHandler,
 		MeetingHandler:  c.ListMeetingsHandler,
 		InboxHandler:    c.ListInboxItemsHandler,
-		// RedisClient will be nil in development mode (uses in-memory storage)
+		RedisClient:     c.RedisClient, // nil in development mode (uses in-memory storage)
 	}
 
 	// Create orbit sandbox with full API factory integration
@@ -371,6 +472,7 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 	logger.Info("registered orbits",
 		"wellness", wellness.OrbitID,
 		"idealweek", idealweek.OrbitID,
+		"focusmode", focusmode.OrbitID,
 	)
 
 	return c, nil
@@ -400,6 +502,14 @@ func (c *Container) Close() {
 
 	if c.EventPublisher != nil {
 		c.EventPublisher.Close()
+	}
+
+	if c.RedisClient != nil {
+		if err := c.RedisClient.Close(); err != nil {
+			c.Logger.Warn("error closing Redis connection", "error", err)
+		} else {
+			c.Logger.Info("Redis connection closed")
+		}
 	}
 
 	if c.DB != nil {

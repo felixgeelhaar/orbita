@@ -6,12 +6,21 @@ import (
 	"github.com/felixgeelhaar/mcp-go"
 	"github.com/felixgeelhaar/orbita/adapter/cli"
 	identityOAuth "github.com/felixgeelhaar/orbita/internal/identity/application/oauth"
+	"github.com/felixgeelhaar/orbita/internal/orbit/registry"
+	"github.com/felixgeelhaar/orbita/internal/orbit/runtime"
+	"github.com/google/uuid"
 )
 
 // ToolDependencies provides handlers and context for MCP tools.
 type ToolDependencies struct {
 	App         *cli.App
 	AuthService *identityOAuth.Service
+
+	// Orbit system dependencies (optional)
+	OrbitRegistry *registry.Registry
+	OrbitSandbox  *runtime.Sandbox
+	OrbitExecutor *runtime.Executor
+	DefaultUserID uuid.UUID // Default user ID for orbit tool execution
 }
 
 // RegisterCLITools registers MCP tools that mirror CLI functionality.
@@ -67,6 +76,20 @@ func RegisterCLITools(srv *mcp.Server, deps ToolDependencies) error {
 	}
 	if err := registerWellnessTools(srv, deps); err != nil {
 		return err
+	}
+
+	// Register orbit tools if orbit system is configured
+	if deps.OrbitRegistry != nil {
+		orbitDeps := OrbitDependencies{
+			Registry: deps.OrbitRegistry,
+			Sandbox:  deps.OrbitSandbox,
+			Executor: deps.OrbitExecutor,
+			UserID:   deps.DefaultUserID,
+		}
+		if err := registerOrbitTools(srv, deps, orbitDeps); err != nil {
+			// Log warning but don't fail - orbits are optional
+			// This allows the MCP server to start even if orbit registration fails
+		}
 	}
 
 	return nil

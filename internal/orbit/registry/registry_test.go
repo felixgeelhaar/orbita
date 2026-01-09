@@ -375,3 +375,103 @@ func TestRegistry_ListAvailable(t *testing.T) {
 	available := registry.ListAvailable(ctx, userID)
 	assert.Len(t, available, 2) // free + premium, not exclusive
 }
+
+func TestRegistry_Has(t *testing.T) {
+	logger := slog.Default()
+	registry := NewRegistry(logger, nil)
+
+	orbit := newMockOrbit("test.orbit", "Test Orbit", "1.0.0")
+	err := registry.RegisterBuiltin(orbit)
+	require.NoError(t, err)
+
+	// Has should return true for registered orbit
+	assert.True(t, registry.Has("test.orbit"))
+
+	// Has should return false for unregistered orbit
+	assert.False(t, registry.Has("nonexistent.orbit"))
+}
+
+func TestRegistry_RegisterManifest(t *testing.T) {
+	logger := slog.Default()
+	registry := NewRegistry(logger, nil)
+
+	manifest := &Manifest{
+		ID:           "discovered.orbit",
+		Name:         "Discovered Orbit",
+		Version:      "1.0.0",
+		Type:         "orbit",
+		Capabilities: []string{"read:storage"},
+	}
+
+	err := registry.RegisterManifest(manifest, "/path/to/orbit")
+	require.NoError(t, err)
+
+	// Verify it was registered
+	entries := registry.List()
+	assert.Len(t, entries, 1)
+	assert.Equal(t, StatusUnloaded, entries[0].Status)
+	assert.Nil(t, entries[0].Orbit)
+	assert.Equal(t, manifest, entries[0].Manifest)
+}
+
+func TestRegistry_RegisterManifest_DuplicateID(t *testing.T) {
+	logger := slog.Default()
+	registry := NewRegistry(logger, nil)
+
+	manifest := &Manifest{
+		ID:      "discovered.orbit",
+		Name:    "Discovered Orbit",
+		Version: "1.0.0",
+		Type:    "orbit",
+	}
+
+	err := registry.RegisterManifest(manifest, "/path/to/orbit")
+	require.NoError(t, err)
+
+	// Second registration should fail
+	err = registry.RegisterManifest(manifest, "/another/path")
+	assert.ErrorIs(t, err, sdk.ErrOrbitAlreadyLoaded)
+}
+
+func TestRegistry_RegisterManifest_NilManifest(t *testing.T) {
+	logger := slog.Default()
+	registry := NewRegistry(logger, nil)
+
+	err := registry.RegisterManifest(nil, "/path/to/orbit")
+	assert.ErrorIs(t, err, sdk.ErrManifestInvalid)
+}
+
+func TestRegistry_RegisterManifest_MissingID(t *testing.T) {
+	logger := slog.Default()
+	registry := NewRegistry(logger, nil)
+
+	manifest := &Manifest{
+		Name:    "Discovered Orbit",
+		Version: "1.0.0",
+		Type:    "orbit",
+	}
+
+	err := registry.RegisterManifest(manifest, "/path/to/orbit")
+	assert.ErrorIs(t, err, sdk.ErrMissingID)
+}
+
+func TestRegistry_Has_AfterRegisterManifest(t *testing.T) {
+	logger := slog.Default()
+	registry := NewRegistry(logger, nil)
+
+	manifest := &Manifest{
+		ID:      "discovered.orbit",
+		Name:    "Discovered Orbit",
+		Version: "1.0.0",
+		Type:    "orbit",
+	}
+
+	// Before registration
+	assert.False(t, registry.Has("discovered.orbit"))
+
+	err := registry.RegisterManifest(manifest, "/path/to/orbit")
+	require.NoError(t, err)
+
+	// After registration
+	assert.True(t, registry.Has("discovered.orbit"))
+}

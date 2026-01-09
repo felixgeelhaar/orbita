@@ -10,19 +10,22 @@ import (
 
 // HabitAPIImpl implements sdk.HabitAPI with capability checking.
 type HabitAPIImpl struct {
-	handler      *habitQueries.ListHabitsHandler
+	listHandler  *habitQueries.ListHabitsHandler
+	getHandler   *habitQueries.GetHabitHandler
 	userID       uuid.UUID
 	capabilities sdk.CapabilitySet
 }
 
 // NewHabitAPI creates a new HabitAPI implementation.
 func NewHabitAPI(
-	handler *habitQueries.ListHabitsHandler,
+	listHandler *habitQueries.ListHabitsHandler,
+	getHandler *habitQueries.GetHabitHandler,
 	userID uuid.UUID,
 	caps sdk.CapabilitySet,
 ) *HabitAPIImpl {
 	return &HabitAPIImpl{
-		handler:      handler,
+		listHandler:  listHandler,
+		getHandler:   getHandler,
 		userID:       userID,
 		capabilities: caps,
 	}
@@ -41,7 +44,7 @@ func (a *HabitAPIImpl) List(ctx context.Context) ([]sdk.HabitDTO, error) {
 		return nil, err
 	}
 
-	habits, err := a.handler.Handle(ctx, habitQueries.ListHabitsQuery{
+	habits, err := a.listHandler.Handle(ctx, habitQueries.ListHabitsQuery{
 		UserID:          a.userID,
 		IncludeArchived: true,
 	})
@@ -58,29 +61,24 @@ func (a *HabitAPIImpl) Get(ctx context.Context, id string) (*sdk.HabitDTO, error
 		return nil, err
 	}
 
-	// List all habits and find the one with matching ID
-	// TODO: Add GetHabitHandler to habits domain for direct lookup
-	habits, err := a.handler.Handle(ctx, habitQueries.ListHabitsQuery{
-		UserID:          a.userID,
-		IncludeArchived: true,
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	habitID, err := uuid.Parse(id)
 	if err != nil {
 		return nil, sdk.ErrResourceNotFound
 	}
 
-	for _, h := range habits {
-		if h.ID == habitID {
-			dto := toHabitSDKDTO(h)
-			return &dto, nil
+	habit, err := a.getHandler.Handle(ctx, habitQueries.GetHabitQuery{
+		HabitID: habitID,
+		UserID:  a.userID,
+	})
+	if err != nil {
+		if err == habitQueries.ErrHabitNotFound {
+			return nil, sdk.ErrResourceNotFound
 		}
+		return nil, err
 	}
 
-	return nil, sdk.ErrResourceNotFound
+	dto := toHabitSDKDTO(*habit)
+	return &dto, nil
 }
 
 // GetActive returns all active (non-archived) habits.
@@ -89,7 +87,7 @@ func (a *HabitAPIImpl) GetActive(ctx context.Context) ([]sdk.HabitDTO, error) {
 		return nil, err
 	}
 
-	habits, err := a.handler.Handle(ctx, habitQueries.ListHabitsQuery{
+	habits, err := a.listHandler.Handle(ctx, habitQueries.ListHabitsQuery{
 		UserID:          a.userID,
 		IncludeArchived: false,
 	})
@@ -106,7 +104,7 @@ func (a *HabitAPIImpl) GetDueToday(ctx context.Context) ([]sdk.HabitDTO, error) 
 		return nil, err
 	}
 
-	habits, err := a.handler.Handle(ctx, habitQueries.ListHabitsQuery{
+	habits, err := a.listHandler.Handle(ctx, habitQueries.ListHabitsQuery{
 		UserID:       a.userID,
 		OnlyDueToday: true,
 	})

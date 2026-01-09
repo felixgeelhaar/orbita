@@ -11,19 +11,22 @@ import (
 
 // MeetingAPIImpl implements sdk.MeetingAPI with capability checking.
 type MeetingAPIImpl struct {
-	handler      *meetingQueries.ListMeetingsHandler
+	listHandler  *meetingQueries.ListMeetingsHandler
+	getHandler   *meetingQueries.GetMeetingHandler
 	userID       uuid.UUID
 	capabilities sdk.CapabilitySet
 }
 
 // NewMeetingAPI creates a new MeetingAPI implementation.
 func NewMeetingAPI(
-	handler *meetingQueries.ListMeetingsHandler,
+	listHandler *meetingQueries.ListMeetingsHandler,
+	getHandler *meetingQueries.GetMeetingHandler,
 	userID uuid.UUID,
 	caps sdk.CapabilitySet,
 ) *MeetingAPIImpl {
 	return &MeetingAPIImpl{
-		handler:      handler,
+		listHandler:  listHandler,
+		getHandler:   getHandler,
 		userID:       userID,
 		capabilities: caps,
 	}
@@ -42,7 +45,7 @@ func (a *MeetingAPIImpl) List(ctx context.Context) ([]sdk.MeetingDTO, error) {
 		return nil, err
 	}
 
-	meetings, err := a.handler.Handle(ctx, meetingQueries.ListMeetingsQuery{
+	meetings, err := a.listHandler.Handle(ctx, meetingQueries.ListMeetingsQuery{
 		UserID:          a.userID,
 		IncludeArchived: true,
 	})
@@ -59,29 +62,24 @@ func (a *MeetingAPIImpl) Get(ctx context.Context, id string) (*sdk.MeetingDTO, e
 		return nil, err
 	}
 
-	// List all meetings and find the one with matching ID
-	// TODO: Add GetMeetingHandler to meetings domain for direct lookup
-	meetings, err := a.handler.Handle(ctx, meetingQueries.ListMeetingsQuery{
-		UserID:          a.userID,
-		IncludeArchived: true,
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	meetingID, err := uuid.Parse(id)
 	if err != nil {
 		return nil, sdk.ErrResourceNotFound
 	}
 
-	for _, m := range meetings {
-		if m.ID == meetingID {
-			dto := toMeetingSDKDTO(m)
-			return &dto, nil
+	meeting, err := a.getHandler.Handle(ctx, meetingQueries.GetMeetingQuery{
+		MeetingID: meetingID,
+		UserID:    a.userID,
+	})
+	if err != nil {
+		if err == meetingQueries.ErrMeetingNotFound {
+			return nil, sdk.ErrResourceNotFound
 		}
+		return nil, err
 	}
 
-	return nil, sdk.ErrResourceNotFound
+	dto := toMeetingSDKDTO(*meeting)
+	return &dto, nil
 }
 
 // GetActive returns all active (non-archived) meetings.
@@ -90,7 +88,7 @@ func (a *MeetingAPIImpl) GetActive(ctx context.Context) ([]sdk.MeetingDTO, error
 		return nil, err
 	}
 
-	meetings, err := a.handler.Handle(ctx, meetingQueries.ListMeetingsQuery{
+	meetings, err := a.listHandler.Handle(ctx, meetingQueries.ListMeetingsQuery{
 		UserID:          a.userID,
 		IncludeArchived: false,
 	})
@@ -107,7 +105,7 @@ func (a *MeetingAPIImpl) GetUpcoming(ctx context.Context, days int) ([]sdk.Meeti
 		return nil, err
 	}
 
-	meetings, err := a.handler.Handle(ctx, meetingQueries.ListMeetingsQuery{
+	meetings, err := a.listHandler.Handle(ctx, meetingQueries.ListMeetingsQuery{
 		UserID:          a.userID,
 		IncludeArchived: false,
 	})

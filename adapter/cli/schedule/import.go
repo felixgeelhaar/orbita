@@ -95,8 +95,8 @@ Examples:
 			if title == "" {
 				title = "Imported event"
 			}
-			startTime := event.Start.In(time.Local)
-			endTime := event.End.In(time.Local)
+			startTime := event.StartTime.In(time.Local)
+			endTime := event.EndTime.In(time.Local)
 			if !endTime.After(startTime) {
 				failed++
 				fmt.Fprintf(cmd.ErrOrStderr(), "Skipping event %s: invalid time range\n", event.ID)

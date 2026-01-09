@@ -288,12 +288,26 @@ func TestSyncer_ListEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list failed: %v", err)
 	}
-	if len(events) != 1 {
-		t.Fatalf("unexpected events: %+v", events)
+	if len(events) != 2 {
+		t.Fatalf("expected 2 events, got: %+v", events)
 	}
+
+	// Verify timed event
 	if events[0].ID != "event-1" || events[0].Summary != "Imported" {
-		t.Fatalf("unexpected event: %+v", events[0])
+		t.Fatalf("unexpected timed event: %+v", events[0])
 	}
+	if events[0].IsAllDay {
+		t.Fatalf("event-1 should not be all-day")
+	}
+
+	// Verify all-day event
+	if events[1].ID != "event-2" || events[1].Summary != "All Day" {
+		t.Fatalf("unexpected all-day event: %+v", events[1])
+	}
+	if !events[1].IsAllDay {
+		t.Fatalf("event-2 should be all-day")
+	}
+
 	if seenQuery == "" {
 		t.Fatalf("expected query parameters to be set")
 	}

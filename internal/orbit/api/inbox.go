@@ -11,19 +11,22 @@ import (
 
 // InboxAPIImpl implements sdk.InboxAPI with capability checking.
 type InboxAPIImpl struct {
-	handler      *inboxQueries.ListInboxItemsHandler
+	listHandler  *inboxQueries.ListInboxItemsHandler
+	getHandler   *inboxQueries.GetInboxItemHandler
 	userID       uuid.UUID
 	capabilities sdk.CapabilitySet
 }
 
 // NewInboxAPI creates a new InboxAPI implementation.
 func NewInboxAPI(
-	handler *inboxQueries.ListInboxItemsHandler,
+	listHandler *inboxQueries.ListInboxItemsHandler,
+	getHandler *inboxQueries.GetInboxItemHandler,
 	userID uuid.UUID,
 	caps sdk.CapabilitySet,
 ) *InboxAPIImpl {
 	return &InboxAPIImpl{
-		handler:      handler,
+		listHandler:  listHandler,
+		getHandler:   getHandler,
 		userID:       userID,
 		capabilities: caps,
 	}
@@ -42,7 +45,7 @@ func (a *InboxAPIImpl) List(ctx context.Context) ([]sdk.InboxItemDTO, error) {
 		return nil, err
 	}
 
-	items, err := a.handler.Handle(ctx, inboxQueries.ListInboxItemsQuery{
+	items, err := a.listHandler.Handle(ctx, inboxQueries.ListInboxItemsQuery{
 		UserID: a.userID,
 	})
 	if err != nil {
@@ -58,28 +61,24 @@ func (a *InboxAPIImpl) Get(ctx context.Context, id string) (*sdk.InboxItemDTO, e
 		return nil, err
 	}
 
-	// List all items and find the one with matching ID
-	// TODO: Add GetInboxItemHandler for direct lookup
-	items, err := a.handler.Handle(ctx, inboxQueries.ListInboxItemsQuery{
-		UserID: a.userID,
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	itemID, err := uuid.Parse(id)
 	if err != nil {
 		return nil, sdk.ErrResourceNotFound
 	}
 
-	for _, item := range items {
-		if item.ID == itemID {
-			dto := toInboxSDKDTO(item)
-			return &dto, nil
+	item, err := a.getHandler.Handle(ctx, inboxQueries.GetInboxItemQuery{
+		ItemID: itemID,
+		UserID: a.userID,
+	})
+	if err != nil {
+		if err == inboxQueries.ErrInboxItemNotFound {
+			return nil, sdk.ErrResourceNotFound
 		}
+		return nil, err
 	}
 
-	return nil, sdk.ErrResourceNotFound
+	dto := toInboxSDKDTO(*item)
+	return &dto, nil
 }
 
 // GetPending returns items that haven't been promoted.
@@ -88,7 +87,7 @@ func (a *InboxAPIImpl) GetPending(ctx context.Context) ([]sdk.InboxItemDTO, erro
 		return nil, err
 	}
 
-	items, err := a.handler.Handle(ctx, inboxQueries.ListInboxItemsQuery{
+	items, err := a.listHandler.Handle(ctx, inboxQueries.ListInboxItemsQuery{
 		UserID: a.userID,
 	})
 	if err != nil {
@@ -112,7 +111,7 @@ func (a *InboxAPIImpl) GetByClassification(ctx context.Context, classification s
 		return nil, err
 	}
 
-	items, err := a.handler.Handle(ctx, inboxQueries.ListInboxItemsQuery{
+	items, err := a.listHandler.Handle(ctx, inboxQueries.ListInboxItemsQuery{
 		UserID: a.userID,
 	})
 	if err != nil {

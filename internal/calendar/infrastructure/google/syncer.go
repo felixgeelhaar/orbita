@@ -342,15 +342,8 @@ func (t *oauthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return t.base.RoundTrip(req)
 }
 
-// Calendar represents a Google Calendar list entry.
-type Calendar struct {
-	ID      string
-	Summary string
-	Primary bool
-}
-
-// ListCalendars returns calendars accessible to the user.
-func (s *Syncer) ListCalendars(ctx context.Context, userID uuid.UUID) ([]Calendar, error) {
+// ListCalendars returns calendars accessible to the user (implements Importer interface).
+func (s *Syncer) ListCalendars(ctx context.Context, userID uuid.UUID) ([]calendarApp.Calendar, error) {
 	if s.oauthService == nil {
 		return nil, fmt.Errorf("oauth service not configured")
 	}
@@ -391,11 +384,11 @@ func (s *Syncer) ListCalendars(ctx context.Context, userID uuid.UUID) ([]Calenda
 		return nil, err
 	}
 
-	calendars := make([]Calendar, 0, len(payload.Items))
+	calendars := make([]calendarApp.Calendar, 0, len(payload.Items))
 	for _, item := range payload.Items {
-		calendars = append(calendars, Calendar{
+		calendars = append(calendars, calendarApp.Calendar{
 			ID:      item.ID,
-			Summary: item.Summary,
+			Name:    item.Summary,
 			Primary: item.Primary,
 		})
 	}
@@ -443,8 +436,8 @@ type Event struct {
 	End     time.Time
 }
 
-// ListEvents returns events within the given time range.
-func (s *Syncer) ListEvents(ctx context.Context, userID uuid.UUID, start, end time.Time, onlyTagged bool) ([]Event, error) {
+// ListEvents returns events within the given time range (implements Importer interface).
+func (s *Syncer) ListEvents(ctx context.Context, userID uuid.UUID, start, end time.Time, onlyOrbitaEvents bool) ([]calendarApp.CalendarEvent, error) {
 	if s.oauthService == nil {
 		return nil, fmt.Errorf("oauth service not configured")
 	}
@@ -464,7 +457,7 @@ func (s *Syncer) ListEvents(ctx context.Context, userID uuid.UUID, start, end ti
 		start.UTC().Format(time.RFC3339),
 		end.UTC().Format(time.RFC3339),
 	)
-	if onlyTagged {
+	if onlyOrbitaEvents {
 		query += "&privateExtendedProperty=orbita=1"
 	}
 	listURL := fmt.Sprintf("%s/calendars/%s/events?%s", s.baseURL, s.calendarID, query)
@@ -483,13 +476,28 @@ func (s *Syncer) ListEvents(ctx context.Context, userID uuid.UUID, start, end ti
 
 	var payload struct {
 		Items []struct {
-			ID      string `json:"id"`
-			Summary string `json:"summary"`
-			Start   struct {
+			ID                 string `json:"id"`
+			Summary            string `json:"summary"`
+			Description        string `json:"description"`
+			Location           string `json:"location"`
+			Status             string `json:"status"`
+			RecurringEventId   string `json:"recurringEventId"`
+			Organizer          struct {
+				Email string `json:"email"`
+			} `json:"organizer"`
+			Attendees []struct {
+				Email string `json:"email"`
+			} `json:"attendees"`
+			ExtendedProperties struct {
+				Private map[string]string `json:"private"`
+			} `json:"extendedProperties"`
+			Start struct {
 				DateTime string `json:"dateTime"`
+				Date     string `json:"date"`
 			} `json:"start"`
 			End struct {
 				DateTime string `json:"dateTime"`
+				Date     string `json:"date"`
 			} `json:"end"`
 		} `json:"items"`
 	}
@@ -497,25 +505,83 @@ func (s *Syncer) ListEvents(ctx context.Context, userID uuid.UUID, start, end ti
 		return nil, err
 	}
 
-	events := make([]Event, 0, len(payload.Items))
+	events := make([]calendarApp.CalendarEvent, 0, len(payload.Items))
 	for _, item := range payload.Items {
-		if item.Start.DateTime == "" || item.End.DateTime == "" {
-			continue
+		event := calendarApp.CalendarEvent{
+			ID:          item.ID,
+			Summary:     item.Summary,
+			Description: item.Description,
+			Location:    item.Location,
+			Status:      item.Status,
+			Organizer:   item.Organizer.Email,
+			IsRecurring: item.RecurringEventId != "",
 		}
-		startTime, err := time.Parse(time.RFC3339, item.Start.DateTime)
-		if err != nil {
-			continue
+
+		// Check if this is an Orbita-created event
+		if item.ExtendedProperties.Private != nil {
+			if _, ok := item.ExtendedProperties.Private["orbita"]; ok {
+				event.IsOrbitaEvent = true
+			}
 		}
-		endTime, err := time.Parse(time.RFC3339, item.End.DateTime)
-		if err != nil {
-			continue
+
+		// Parse attendees
+		if len(item.Attendees) > 0 {
+			event.Attendees = make([]string, 0, len(item.Attendees))
+			for _, att := range item.Attendees {
+				event.Attendees = append(event.Attendees, att.Email)
+			}
 		}
-		events = append(events, Event{
-			ID:      item.ID,
-			Summary: item.Summary,
-			Start:   startTime,
-			End:     endTime,
-		})
+
+		// Parse times - handle both timed and all-day events
+		if item.Start.DateTime != "" && item.End.DateTime != "" {
+			startTime, err := time.Parse(time.RFC3339, item.Start.DateTime)
+			if err != nil {
+				continue
+			}
+			endTime, err := time.Parse(time.RFC3339, item.End.DateTime)
+			if err != nil {
+				continue
+			}
+			event.StartTime = startTime
+			event.EndTime = endTime
+			event.IsAllDay = false
+		} else if item.Start.Date != "" && item.End.Date != "" {
+			// All-day event
+			startTime, err := time.Parse("2006-01-02", item.Start.Date)
+			if err != nil {
+				continue
+			}
+			endTime, err := time.Parse("2006-01-02", item.End.Date)
+			if err != nil {
+				continue
+			}
+			event.StartTime = startTime
+			event.EndTime = endTime
+			event.IsAllDay = true
+		} else {
+			continue // Skip events without valid time info
+		}
+
+		events = append(events, event)
 	}
 	return events, nil
+}
+
+// ListEventsSimple returns events within the given time range (legacy method).
+func (s *Syncer) ListEventsSimple(ctx context.Context, userID uuid.UUID, start, end time.Time, onlyTagged bool) ([]Event, error) {
+	events, err := s.ListEvents(ctx, userID, start, end, onlyTagged)
+	if err != nil {
+		return nil, err
+	}
+
+	simple := make([]Event, 0, len(events))
+	for _, e := range events {
+		simple = append(simple, Event{
+			ID:      e.ID,
+			Summary: e.Summary,
+			Start:   e.StartTime,
+			End:     e.EndTime,
+		})
+	}
+	return simple, nil
 }

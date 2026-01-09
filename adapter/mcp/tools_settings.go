@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/felixgeelhaar/mcp-go"
+	calendarApp "github.com/felixgeelhaar/orbita/internal/calendar/application"
 	googleCalendar "github.com/felixgeelhaar/orbita/internal/calendar/infrastructure/google"
 )
 
@@ -70,7 +71,7 @@ func registerSettingsTools(srv *mcp.Server, deps ToolDependencies) error {
 				return nil, err
 			}
 			if input.PrimaryOnly {
-				filtered := make([]googleCalendar.Calendar, 0)
+				filtered := make([]calendarApp.Calendar, 0)
 				for _, cal := range calendars {
 					if cal.Primary {
 						filtered = append(filtered, cal)

@@ -450,8 +450,8 @@ func registerScheduleTools(srv *mcp.Server, deps ToolDependencies) error {
 				if title == "" {
 					title = "Imported event"
 				}
-				startTime := event.Start.In(time.Local)
-				endTime := event.End.In(time.Local)
+				startTime := event.StartTime.In(time.Local)
+				endTime := event.EndTime.In(time.Local)
 				if !endTime.After(startTime) {
 					failed++
 					continue

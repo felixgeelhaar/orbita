@@ -18,11 +18,15 @@ import (
 // These are used by the sandbox to create API instances for orbits.
 type APIFactories struct {
 	// Query handlers from the container
-	TaskHandler     *queries.ListTasksHandler
-	HabitHandler    *habitQueries.ListHabitsHandler
-	ScheduleHandler *schedQueries.GetScheduleHandler
-	MeetingHandler  *meetingQueries.ListMeetingsHandler
-	InboxHandler    *inboxQueries.ListInboxItemsHandler
+	ListTaskHandler   *queries.ListTasksHandler
+	GetTaskHandler    *queries.GetTaskHandler
+	ListHabitHandler  *habitQueries.ListHabitsHandler
+	GetHabitHandler   *habitQueries.GetHabitHandler
+	ScheduleHandler   *schedQueries.GetScheduleHandler
+	ListMeetingHandler *meetingQueries.ListMeetingsHandler
+	GetMeetingHandler  *meetingQueries.GetMeetingHandler
+	ListInboxHandler   *inboxQueries.ListInboxItemsHandler
+	GetInboxHandler    *inboxQueries.GetInboxItemHandler
 
 	// Redis client for storage (optional, falls back to in-memory)
 	RedisClient *redis.Client
@@ -31,20 +35,20 @@ type APIFactories struct {
 // TaskAPIFactory creates a factory function for TaskAPI instances.
 func (f *APIFactories) TaskAPIFactory() func(userID uuid.UUID, caps sdk.CapabilitySet) sdk.TaskAPI {
 	return func(userID uuid.UUID, caps sdk.CapabilitySet) sdk.TaskAPI {
-		if f.TaskHandler == nil {
+		if f.ListTaskHandler == nil {
 			return nil
 		}
-		return NewTaskAPI(f.TaskHandler, userID, caps)
+		return NewTaskAPI(f.ListTaskHandler, f.GetTaskHandler, userID, caps)
 	}
 }
 
 // HabitAPIFactory creates a factory function for HabitAPI instances.
 func (f *APIFactories) HabitAPIFactory() func(userID uuid.UUID, caps sdk.CapabilitySet) sdk.HabitAPI {
 	return func(userID uuid.UUID, caps sdk.CapabilitySet) sdk.HabitAPI {
-		if f.HabitHandler == nil {
+		if f.ListHabitHandler == nil {
 			return nil
 		}
-		return NewHabitAPI(f.HabitHandler, userID, caps)
+		return NewHabitAPI(f.ListHabitHandler, f.GetHabitHandler, userID, caps)
 	}
 }
 
@@ -61,20 +65,20 @@ func (f *APIFactories) ScheduleAPIFactory() func(userID uuid.UUID, caps sdk.Capa
 // MeetingAPIFactory creates a factory function for MeetingAPI instances.
 func (f *APIFactories) MeetingAPIFactory() func(userID uuid.UUID, caps sdk.CapabilitySet) sdk.MeetingAPI {
 	return func(userID uuid.UUID, caps sdk.CapabilitySet) sdk.MeetingAPI {
-		if f.MeetingHandler == nil {
+		if f.ListMeetingHandler == nil {
 			return nil
 		}
-		return NewMeetingAPI(f.MeetingHandler, userID, caps)
+		return NewMeetingAPI(f.ListMeetingHandler, f.GetMeetingHandler, userID, caps)
 	}
 }
 
 // InboxAPIFactory creates a factory function for InboxAPI instances.
 func (f *APIFactories) InboxAPIFactory() func(userID uuid.UUID, caps sdk.CapabilitySet) sdk.InboxAPI {
 	return func(userID uuid.UUID, caps sdk.CapabilitySet) sdk.InboxAPI {
-		if f.InboxHandler == nil {
+		if f.ListInboxHandler == nil {
 			return nil
 		}
-		return NewInboxAPI(f.InboxHandler, userID, caps)
+		return NewInboxAPI(f.ListInboxHandler, f.GetInboxHandler, userID, caps)
 	}
 }
 

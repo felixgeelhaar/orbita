@@ -23,8 +23,12 @@ func (q *Queries) DeletePublishedEvents(ctx context.Context) error {
 }
 
 const getFailedEvents = `-- name: GetFailedEvents :many
-SELECT id, aggregate_type, aggregate_id, event_type, routing_key, payload, metadata, created_at, published_at, retry_count, last_error FROM outbox
-WHERE published_at IS NULL AND retry_count > 0 AND retry_count < $1
+SELECT id, aggregate_type, aggregate_id, event_type, routing_key, payload, metadata, created_at, published_at, retry_count, last_error, event_id, next_retry_at, dead_lettered_at, dead_letter_reason FROM outbox
+WHERE published_at IS NULL
+  AND dead_lettered_at IS NULL
+  AND retry_count > 0
+  AND retry_count < $1
+  AND (next_retry_at IS NULL OR next_retry_at <= NOW())
 ORDER BY created_at
 LIMIT $2
 `
@@ -55,6 +59,10 @@ func (q *Queries) GetFailedEvents(ctx context.Context, arg GetFailedEventsParams
 			&i.PublishedAt,
 			&i.RetryCount,
 			&i.LastError,
+			&i.EventID,
+			&i.NextRetryAt,
+			&i.DeadLetteredAt,
+			&i.DeadLetterReason,
 		); err != nil {
 			return nil, err
 		}
@@ -67,8 +75,10 @@ func (q *Queries) GetFailedEvents(ctx context.Context, arg GetFailedEventsParams
 }
 
 const getUnpublishedEvents = `-- name: GetUnpublishedEvents :many
-SELECT id, aggregate_type, aggregate_id, event_type, routing_key, payload, metadata, created_at, published_at, retry_count, last_error FROM outbox
+SELECT id, aggregate_type, aggregate_id, event_type, routing_key, payload, metadata, created_at, published_at, retry_count, last_error, event_id, next_retry_at, dead_lettered_at, dead_letter_reason FROM outbox
 WHERE published_at IS NULL
+  AND dead_lettered_at IS NULL
+  AND (next_retry_at IS NULL OR next_retry_at <= NOW())
 ORDER BY created_at
 LIMIT $1
 `
@@ -94,6 +104,10 @@ func (q *Queries) GetUnpublishedEvents(ctx context.Context, limit int32) ([]Outb
 			&i.PublishedAt,
 			&i.RetryCount,
 			&i.LastError,
+			&i.EventID,
+			&i.NextRetryAt,
+			&i.DeadLetteredAt,
+			&i.DeadLetterReason,
 		); err != nil {
 			return nil, err
 		}
@@ -107,14 +121,15 @@ func (q *Queries) GetUnpublishedEvents(ctx context.Context, limit int32) ([]Outb
 
 const insertOutboxEvent = `-- name: InsertOutboxEvent :one
 INSERT INTO outbox (
-    aggregate_type, aggregate_id, event_type, routing_key,
+    event_id, aggregate_type, aggregate_id, event_type, routing_key,
     payload, metadata, created_at
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, aggregate_type, aggregate_id, event_type, routing_key, payload, metadata, created_at, published_at, retry_count, last_error
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id, aggregate_type, aggregate_id, event_type, routing_key, payload, metadata, created_at, published_at, retry_count, last_error, event_id, next_retry_at, dead_lettered_at, dead_letter_reason
 `
 
 type InsertOutboxEventParams struct {
+	EventID       pgtype.UUID        `json:"event_id"`
 	AggregateType string             `json:"aggregate_type"`
 	AggregateID   pgtype.UUID        `json:"aggregate_id"`
 	EventType     string             `json:"event_type"`
@@ -126,6 +141,7 @@ type InsertOutboxEventParams struct {
 
 func (q *Queries) InsertOutboxEvent(ctx context.Context, arg InsertOutboxEventParams) (Outbox, error) {
 	row := q.db.QueryRow(ctx, insertOutboxEvent,
+		arg.EventID,
 		arg.AggregateType,
 		arg.AggregateID,
 		arg.EventType,
@@ -147,23 +163,28 @@ func (q *Queries) InsertOutboxEvent(ctx context.Context, arg InsertOutboxEventPa
 		&i.PublishedAt,
 		&i.RetryCount,
 		&i.LastError,
+		&i.EventID,
+		&i.NextRetryAt,
+		&i.DeadLetteredAt,
+		&i.DeadLetterReason,
 	)
 	return i, err
 }
 
 const markEventFailed = `-- name: MarkEventFailed :exec
 UPDATE outbox
-SET retry_count = retry_count + 1, last_error = $2
+SET retry_count = retry_count + 1, last_error = $2, next_retry_at = $3
 WHERE id = $1
 `
 
 type MarkEventFailedParams struct {
-	ID        int64       `json:"id"`
-	LastError pgtype.Text `json:"last_error"`
+	ID          int64              `json:"id"`
+	LastError   pgtype.Text        `json:"last_error"`
+	NextRetryAt pgtype.Timestamptz `json:"next_retry_at"`
 }
 
 func (q *Queries) MarkEventFailed(ctx context.Context, arg MarkEventFailedParams) error {
-	_, err := q.db.Exec(ctx, markEventFailed, arg.ID, arg.LastError)
+	_, err := q.db.Exec(ctx, markEventFailed, arg.ID, arg.LastError, arg.NextRetryAt)
 	return err
 }
 

@@ -2,12 +2,15 @@ package registry
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
 	"log/slog"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/felixgeelhaar/orbita/internal/engine/grpc"
 	"github.com/felixgeelhaar/orbita/internal/engine/sdk"
@@ -148,9 +151,48 @@ func (l *Loader) IsLoaded(id string) bool {
 }
 
 // verifyChecksum verifies the SHA256 checksum of a file.
+// Expected format: "sha256:HEXHASH" or just "HEXHASH" (assumes sha256)
 func (l *Loader) verifyChecksum(path, expected string) error {
-	// TODO: Implement checksum verification
-	// This would read the file, compute SHA256, and compare
+	// Parse expected checksum format
+	algorithm := "sha256"
+	hash := expected
+
+	if strings.Contains(expected, ":") {
+		parts := strings.SplitN(expected, ":", 2)
+		algorithm = strings.ToLower(parts[0])
+		hash = parts[1]
+	}
+
+	// Currently only SHA256 is supported
+	if algorithm != "sha256" {
+		return fmt.Errorf("unsupported checksum algorithm: %s (only sha256 is supported)", algorithm)
+	}
+
+	// Open the file
+	file, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	// Compute SHA256 hash
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, file); err != nil {
+		return fmt.Errorf("failed to read file: %w", err)
+	}
+
+	computed := hex.EncodeToString(hasher.Sum(nil))
+
+	// Compare (case-insensitive)
+	if !strings.EqualFold(computed, hash) {
+		return fmt.Errorf("checksum mismatch: expected %s, got %s", hash, computed)
+	}
+
+	l.logger.Debug("checksum verified",
+		"path", path,
+		"algorithm", algorithm,
+	)
+
 	return nil
 }
 

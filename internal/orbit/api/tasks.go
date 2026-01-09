@@ -12,19 +12,22 @@ import (
 
 // TaskAPIImpl implements sdk.TaskAPI with capability checking.
 type TaskAPIImpl struct {
-	handler      *queries.ListTasksHandler
-	userID       uuid.UUID
+	listHandler *queries.ListTasksHandler
+	getHandler  *queries.GetTaskHandler
+	userID      uuid.UUID
 	capabilities sdk.CapabilitySet
 }
 
 // NewTaskAPI creates a new TaskAPI implementation.
 func NewTaskAPI(
-	handler *queries.ListTasksHandler,
+	listHandler *queries.ListTasksHandler,
+	getHandler *queries.GetTaskHandler,
 	userID uuid.UUID,
 	caps sdk.CapabilitySet,
 ) *TaskAPIImpl {
 	return &TaskAPIImpl{
-		handler:      handler,
+		listHandler:  listHandler,
+		getHandler:   getHandler,
 		userID:       userID,
 		capabilities: caps,
 	}
@@ -50,7 +53,7 @@ func (a *TaskAPIImpl) List(ctx context.Context, filters sdk.TaskFilters) ([]sdk.
 		Limit:     filters.Limit,
 	}
 
-	tasks, err := a.handler.Handle(ctx, query)
+	tasks, err := a.listHandler.Handle(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -69,24 +72,19 @@ func (a *TaskAPIImpl) Get(ctx context.Context, id string) (*sdk.TaskDTO, error) 
 		return nil, sdk.ErrResourceNotFound
 	}
 
-	// List all tasks and find the one with matching ID
-	// TODO: Add GetTaskHandler to productivity domain for direct lookup
-	tasks, err := a.handler.Handle(ctx, queries.ListTasksQuery{
-		UserID:     a.userID,
-		IncludeAll: true,
+	task, err := a.getHandler.Handle(ctx, queries.GetTaskQuery{
+		TaskID: taskID,
+		UserID: a.userID,
 	})
 	if err != nil {
+		if err == queries.ErrTaskNotFound {
+			return nil, sdk.ErrResourceNotFound
+		}
 		return nil, err
 	}
 
-	for _, t := range tasks {
-		if t.ID == taskID {
-			dto := toTaskDTO(t)
-			return &dto, nil
-		}
-	}
-
-	return nil, sdk.ErrResourceNotFound
+	dto := toTaskDTO(*task)
+	return &dto, nil
 }
 
 // GetByStatus returns tasks with the given status.
@@ -100,7 +98,7 @@ func (a *TaskAPIImpl) GetOverdue(ctx context.Context) ([]sdk.TaskDTO, error) {
 		return nil, err
 	}
 
-	tasks, err := a.handler.Handle(ctx, queries.ListTasksQuery{
+	tasks, err := a.listHandler.Handle(ctx, queries.ListTasksQuery{
 		UserID:  a.userID,
 		Overdue: true,
 	})
@@ -118,7 +116,7 @@ func (a *TaskAPIImpl) GetDueSoon(ctx context.Context, days int) ([]sdk.TaskDTO, 
 	}
 
 	dueBefore := time.Now().AddDate(0, 0, days)
-	tasks, err := a.handler.Handle(ctx, queries.ListTasksQuery{
+	tasks, err := a.listHandler.Handle(ctx, queries.ListTasksQuery{
 		UserID:    a.userID,
 		DueBefore: &dueBefore,
 		Status:    "pending",

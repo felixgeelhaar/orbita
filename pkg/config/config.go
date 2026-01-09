@@ -61,6 +61,10 @@ type Config struct {
 	// Plugins
 	OrbitSearchPaths  []string
 	EngineSearchPaths []string
+
+	// Marketplace
+	MarketplaceURL       string
+	MarketplaceInstallDir string
 }
 
 // Load loads configuration from environment variables.
@@ -106,6 +110,9 @@ func Load() (*Config, error) {
 
 		OrbitSearchPaths:  getPathListEnv("ORBITA_ORBIT_PATH"),
 		EngineSearchPaths: getPathListEnv("ORBITA_ENGINE_PATH"),
+
+		MarketplaceURL:        getEnv("ORBITA_MARKETPLACE_URL", "https://marketplace.orbita.dev"),
+		MarketplaceInstallDir: getEnv("ORBITA_INSTALL_DIR", getDefaultInstallDir()),
 	}
 
 	return cfg, nil
@@ -168,6 +175,14 @@ func getPathListEnv(key string) []string {
 		}
 	}
 	return paths
+}
+
+func getDefaultInstallDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ".orbita/packages"
+	}
+	return home + "/.orbita/packages"
 }
 
 func splitPaths(s string) []string {

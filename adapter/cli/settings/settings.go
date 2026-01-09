@@ -117,7 +117,7 @@ var calendarListCmd = &cobra.Command{
 			if cal.Primary {
 				primary = " (primary)"
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "%s - %s%s\n", cal.ID, cal.Summary, primary)
+			fmt.Fprintf(cmd.OutOrStdout(), "%s - %s%s\n", cal.ID, cal.Name, primary)
 		}
 		return nil
 	},

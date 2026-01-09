@@ -1,0 +1,62 @@
+# Cost-optimized Dependabot configuration for private repos
+# - Monthly updates to minimize CI runs
+# - Grouped updates to reduce PR count
+# - Limited open PRs
+
+version: 2
+updates:
+  # Go modules - grouped by type
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: monthly
+      day: monday
+      time: "09:00"
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 3
+    groups:
+      # Group all patch updates together
+      go-patch:
+        patterns:
+          - "*"
+        update-types:
+          - patch
+      # Group minor updates by category
+      go-minor-infrastructure:
+        patterns:
+          - "github.com/jackc/*"
+          - "github.com/rabbitmq/*"
+          - "github.com/redis/*"
+        update-types:
+          - minor
+      go-minor-tools:
+        patterns:
+          - "github.com/spf13/*"
+          - "github.com/stretchr/*"
+          - "github.com/google/*"
+        update-types:
+          - minor
+    labels:
+      - "type: chore"
+      - "area: dependencies"
+    commit-message:
+      prefix: "deps"
+
+  # GitHub Actions - very infrequent
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+      day: monday
+      time: "09:00"
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 2
+    groups:
+      actions-all:
+        patterns:
+          - "*"
+    labels:
+      - "type: ci"
+      - "area: dependencies"
+    commit-message:
+      prefix: "ci"

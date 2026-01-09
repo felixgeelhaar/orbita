@@ -1,0 +1,72 @@
+version: 1
+policy:
+  default:
+    min: 70
+  domains:
+    # Entry points - lower coverage acceptable
+    - name: cmd
+      match:
+        - ./cmd/...
+      min: 50
+
+    # Core business domains - high coverage required
+    - name: productivity
+      match:
+        - ./internal/productivity/...
+      min: 80
+    - name: scheduling
+      match:
+        - ./internal/scheduling/...
+      min: 80
+    - name: habits
+      match:
+        - ./internal/habits/...
+      min: 80
+    - name: meetings
+      match:
+        - ./internal/meetings/...
+      min: 80
+    - name: inbox
+      match:
+        - ./internal/inbox/...
+      min: 80
+
+    # Engine SDK - high coverage for public API
+    - name: engine
+      match:
+        - ./internal/engine/...
+      min: 75
+
+    # Supporting domains
+    - name: identity
+      match:
+        - ./internal/identity/...
+      min: 70
+    - name: billing
+      match:
+        - ./internal/billing/...
+      min: 70
+    - name: calendar
+      match:
+        - ./internal/calendar/...
+      min: 70
+
+    # Infrastructure/glue code
+    - name: app
+      match:
+        - ./internal/app/...
+      min: 60
+    - name: mcp
+      match:
+        - ./internal/mcp/...
+      min: 60
+    - name: shared
+      match:
+        - ./internal/shared/...
+      min: 70
+
+    # Public SDK
+    - name: pkg
+      match:
+        - ./pkg/...
+      min: 80

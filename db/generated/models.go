@@ -8,6 +8,68 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AutomationPendingAction struct {
+	ID           pgtype.UUID        `json:"id"`
+	ExecutionID  pgtype.UUID        `json:"execution_id"`
+	RuleID       pgtype.UUID        `json:"rule_id"`
+	UserID       pgtype.UUID        `json:"user_id"`
+	ActionType   string             `json:"action_type"`
+	ActionParams []byte             `json:"action_params"`
+	ScheduledFor pgtype.Timestamptz `json:"scheduled_for"`
+	Status       string             `json:"status"`
+	ExecutedAt   pgtype.Timestamptz `json:"executed_at"`
+	Result       []byte             `json:"result"`
+	ErrorMessage pgtype.Text        `json:"error_message"`
+	RetryCount   int32              `json:"retry_count"`
+	MaxRetries   int32              `json:"max_retries"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
+type AutomationRule struct {
+	ID                   pgtype.UUID        `json:"id"`
+	UserID               pgtype.UUID        `json:"user_id"`
+	Name                 string             `json:"name"`
+	Description          pgtype.Text        `json:"description"`
+	Enabled              bool               `json:"enabled"`
+	Priority             int32              `json:"priority"`
+	TriggerType          string             `json:"trigger_type"`
+	TriggerConfig        []byte             `json:"trigger_config"`
+	Conditions           []byte             `json:"conditions"`
+	ConditionOperator    string             `json:"condition_operator"`
+	Actions              []byte             `json:"actions"`
+	CooldownSeconds      int32              `json:"cooldown_seconds"`
+	MaxExecutionsPerHour pgtype.Int4        `json:"max_executions_per_hour"`
+	Tags                 []string           `json:"tags"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+	LastTriggeredAt      pgtype.Timestamptz `json:"last_triggered_at"`
+}
+
+type AutomationRuleExecution struct {
+	ID                  pgtype.UUID        `json:"id"`
+	RuleID              pgtype.UUID        `json:"rule_id"`
+	UserID              pgtype.UUID        `json:"user_id"`
+	TriggerEventType    pgtype.Text        `json:"trigger_event_type"`
+	TriggerEventPayload []byte             `json:"trigger_event_payload"`
+	Status              string             `json:"status"`
+	ActionsExecuted     []byte             `json:"actions_executed"`
+	ErrorMessage        pgtype.Text        `json:"error_message"`
+	ErrorDetails        []byte             `json:"error_details"`
+	StartedAt           pgtype.Timestamptz `json:"started_at"`
+	CompletedAt         pgtype.Timestamptz `json:"completed_at"`
+	DurationMs          pgtype.Int4        `json:"duration_ms"`
+	SkipReason          pgtype.Text        `json:"skip_reason"`
+}
+
+type Entitlement struct {
+	UserID    pgtype.UUID        `json:"user_id"`
+	Module    string             `json:"module"`
+	Active    bool               `json:"active"`
+	Source    string             `json:"source"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Habit struct {
 	ID              pgtype.UUID        `json:"id"`
 	UserID          pgtype.UUID        `json:"user_id"`
@@ -33,18 +95,214 @@ type HabitCompletion struct {
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
-type Outbox struct {
-	ID            int64              `json:"id"`
-	AggregateType string             `json:"aggregate_type"`
-	AggregateID   pgtype.UUID        `json:"aggregate_id"`
-	EventType     string             `json:"event_type"`
-	RoutingKey    string             `json:"routing_key"`
-	Payload       []byte             `json:"payload"`
-	Metadata      []byte             `json:"metadata"`
+type InboxItem struct {
+	ID             pgtype.UUID        `json:"id"`
+	UserID         pgtype.UUID        `json:"user_id"`
+	Content        string             `json:"content"`
+	Metadata       []byte             `json:"metadata"`
+	Tags           []string           `json:"tags"`
+	Source         pgtype.Text        `json:"source"`
+	Classification pgtype.Text        `json:"classification"`
+	CapturedAt     pgtype.Timestamptz `json:"captured_at"`
+	Promoted       bool               `json:"promoted"`
+	PromotedTo     pgtype.Text        `json:"promoted_to"`
+	PromotedID     pgtype.UUID        `json:"promoted_id"`
+	PromotedAt     pgtype.Timestamptz `json:"promoted_at"`
+}
+
+type InstalledPackage struct {
+	ID          pgtype.UUID        `json:"id"`
+	PackageID   string             `json:"package_id"`
+	Version     string             `json:"version"`
+	Type        string             `json:"type"`
+	InstallPath string             `json:"install_path"`
+	Checksum    pgtype.Text        `json:"checksum"`
+	InstalledAt pgtype.Timestamptz `json:"installed_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Enabled     bool               `json:"enabled"`
+	UserID      pgtype.UUID        `json:"user_id"`
+}
+
+type MarketplaceApiToken struct {
+	ID          pgtype.UUID        `json:"id"`
+	PublisherID pgtype.UUID        `json:"publisher_id"`
+	Name        string             `json:"name"`
+	TokenHash   string             `json:"token_hash"`
+	Scopes      []string           `json:"scopes"`
+	LastUsedAt  pgtype.Timestamptz `json:"last_used_at"`
+	ExpiresAt   pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	RevokedAt   pgtype.Timestamptz `json:"revoked_at"`
+}
+
+type MarketplacePackage struct {
+	ID            pgtype.UUID        `json:"id"`
+	PackageID     string             `json:"package_id"`
+	Type          string             `json:"type"`
+	Name          string             `json:"name"`
+	Description   pgtype.Text        `json:"description"`
+	Author        pgtype.Text        `json:"author"`
+	Homepage      pgtype.Text        `json:"homepage"`
+	License       pgtype.Text        `json:"license"`
+	Tags          []string           `json:"tags"`
+	LatestVersion pgtype.Text        `json:"latest_version"`
+	Downloads     int64              `json:"downloads"`
+	Rating        pgtype.Numeric     `json:"rating"`
+	RatingCount   int32              `json:"rating_count"`
+	Verified      bool               `json:"verified"`
+	Featured      bool               `json:"featured"`
+	PublisherID   pgtype.UUID        `json:"publisher_id"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
-	PublishedAt   pgtype.Timestamptz `json:"published_at"`
-	RetryCount    int32              `json:"retry_count"`
-	LastError     pgtype.Text        `json:"last_error"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+}
+
+type MarketplacePublisher struct {
+	ID             pgtype.UUID        `json:"id"`
+	Name           string             `json:"name"`
+	Slug           string             `json:"slug"`
+	Email          string             `json:"email"`
+	Website        pgtype.Text        `json:"website"`
+	Description    pgtype.Text        `json:"description"`
+	Verified       bool               `json:"verified"`
+	AvatarUrl      pgtype.Text        `json:"avatar_url"`
+	PackageCount   int32              `json:"package_count"`
+	TotalDownloads int64              `json:"total_downloads"`
+	UserID         pgtype.UUID        `json:"user_id"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+type MarketplaceRating struct {
+	ID        pgtype.UUID        `json:"id"`
+	PackageID pgtype.UUID        `json:"package_id"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	Rating    int32              `json:"rating"`
+	Review    pgtype.Text        `json:"review"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type MarketplaceVersion struct {
+	ID                 pgtype.UUID        `json:"id"`
+	PackageID          pgtype.UUID        `json:"package_id"`
+	Version            string             `json:"version"`
+	MinApiVersion      pgtype.Text        `json:"min_api_version"`
+	Changelog          pgtype.Text        `json:"changelog"`
+	Checksum           pgtype.Text        `json:"checksum"`
+	DownloadUrl        pgtype.Text        `json:"download_url"`
+	Size               int64              `json:"size"`
+	Downloads          int64              `json:"downloads"`
+	Prerelease         bool               `json:"prerelease"`
+	Deprecated         bool               `json:"deprecated"`
+	DeprecationMessage pgtype.Text        `json:"deprecation_message"`
+	PublishedAt        pgtype.Timestamptz `json:"published_at"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+}
+
+type Meeting struct {
+	ID                   pgtype.UUID        `json:"id"`
+	UserID               pgtype.UUID        `json:"user_id"`
+	Name                 string             `json:"name"`
+	Cadence              string             `json:"cadence"`
+	CadenceDays          int32              `json:"cadence_days"`
+	DurationMinutes      int32              `json:"duration_minutes"`
+	PreferredTimeMinutes int32              `json:"preferred_time_minutes"`
+	LastHeldAt           pgtype.Timestamptz `json:"last_held_at"`
+	Archived             bool               `json:"archived"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+}
+
+type OauthToken struct {
+	ID           int64              `json:"id"`
+	UserID       pgtype.UUID        `json:"user_id"`
+	Provider     string             `json:"provider"`
+	AccessToken  []byte             `json:"access_token"`
+	RefreshToken []byte             `json:"refresh_token"`
+	TokenType    pgtype.Text        `json:"token_type"`
+	Expiry       pgtype.Timestamptz `json:"expiry"`
+	Scopes       []string           `json:"scopes"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Outbox struct {
+	ID               int64              `json:"id"`
+	AggregateType    string             `json:"aggregate_type"`
+	AggregateID      pgtype.UUID        `json:"aggregate_id"`
+	EventType        string             `json:"event_type"`
+	RoutingKey       string             `json:"routing_key"`
+	Payload          []byte             `json:"payload"`
+	Metadata         []byte             `json:"metadata"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	PublishedAt      pgtype.Timestamptz `json:"published_at"`
+	RetryCount       int32              `json:"retry_count"`
+	LastError        pgtype.Text        `json:"last_error"`
+	EventID          pgtype.UUID        `json:"event_id"`
+	NextRetryAt      pgtype.Timestamptz `json:"next_retry_at"`
+	DeadLetteredAt   pgtype.Timestamptz `json:"dead_lettered_at"`
+	DeadLetterReason pgtype.Text        `json:"dead_letter_reason"`
+}
+
+type ProductivityGoal struct {
+	ID           pgtype.UUID        `json:"id"`
+	UserID       pgtype.UUID        `json:"user_id"`
+	GoalType     string             `json:"goal_type"`
+	TargetValue  int32              `json:"target_value"`
+	CurrentValue int32              `json:"current_value"`
+	PeriodType   string             `json:"period_type"`
+	PeriodStart  pgtype.Date        `json:"period_start"`
+	PeriodEnd    pgtype.Date        `json:"period_end"`
+	Achieved     bool               `json:"achieved"`
+	AchievedAt   pgtype.Timestamptz `json:"achieved_at"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type ProductivitySnapshot struct {
+	ID                     pgtype.UUID        `json:"id"`
+	UserID                 pgtype.UUID        `json:"user_id"`
+	SnapshotDate           pgtype.Date        `json:"snapshot_date"`
+	TasksCreated           int32              `json:"tasks_created"`
+	TasksCompleted         int32              `json:"tasks_completed"`
+	TasksOverdue           int32              `json:"tasks_overdue"`
+	TaskCompletionRate     pgtype.Numeric     `json:"task_completion_rate"`
+	AvgTaskDurationMinutes pgtype.Int4        `json:"avg_task_duration_minutes"`
+	BlocksScheduled        int32              `json:"blocks_scheduled"`
+	BlocksCompleted        int32              `json:"blocks_completed"`
+	BlocksMissed           int32              `json:"blocks_missed"`
+	ScheduledMinutes       int32              `json:"scheduled_minutes"`
+	CompletedMinutes       int32              `json:"completed_minutes"`
+	BlockCompletionRate    pgtype.Numeric     `json:"block_completion_rate"`
+	HabitsDue              int32              `json:"habits_due"`
+	HabitsCompleted        int32              `json:"habits_completed"`
+	HabitCompletionRate    pgtype.Numeric     `json:"habit_completion_rate"`
+	LongestStreak          int32              `json:"longest_streak"`
+	FocusSessions          int32              `json:"focus_sessions"`
+	TotalFocusMinutes      int32              `json:"total_focus_minutes"`
+	AvgFocusSessionMinutes pgtype.Int4        `json:"avg_focus_session_minutes"`
+	ProductivityScore      int32              `json:"productivity_score"`
+	PeakHours              []byte             `json:"peak_hours"`
+	TimeByCategory         []byte             `json:"time_by_category"`
+	ComputedAt             pgtype.Timestamptz `json:"computed_at"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+}
+
+type RescheduleAttempt struct {
+	ID            pgtype.UUID        `json:"id"`
+	UserID        pgtype.UUID        `json:"user_id"`
+	ScheduleID    pgtype.UUID        `json:"schedule_id"`
+	BlockID       pgtype.UUID        `json:"block_id"`
+	AttemptType   string             `json:"attempt_type"`
+	Success       bool               `json:"success"`
+	FailureReason pgtype.Text        `json:"failure_reason"`
+	OldStartTime  pgtype.Timestamptz `json:"old_start_time"`
+	OldEndTime    pgtype.Timestamptz `json:"old_end_time"`
+	NewStartTime  pgtype.Timestamptz `json:"new_start_time"`
+	NewEndTime    pgtype.Timestamptz `json:"new_end_time"`
+	AttemptedAt   pgtype.Timestamptz `json:"attempted_at"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 }
 
 type Schedule struct {
@@ -53,6 +311,18 @@ type Schedule struct {
 	ScheduleDate pgtype.Date        `json:"schedule_date"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Subscription struct {
+	ID                   pgtype.UUID        `json:"id"`
+	UserID               pgtype.UUID        `json:"user_id"`
+	Plan                 string             `json:"plan"`
+	Status               string             `json:"status"`
+	CurrentPeriodEnd     pgtype.Timestamptz `json:"current_period_end"`
+	StripeCustomerID     pgtype.Text        `json:"stripe_customer_id"`
+	StripeSubscriptionID pgtype.Text        `json:"stripe_subscription_id"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Task struct {
@@ -85,10 +355,55 @@ type TimeBlock struct {
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
+type TimeSession struct {
+	ID              pgtype.UUID        `json:"id"`
+	UserID          pgtype.UUID        `json:"user_id"`
+	SessionType     string             `json:"session_type"`
+	ReferenceID     pgtype.UUID        `json:"reference_id"`
+	Title           string             `json:"title"`
+	Category        pgtype.Text        `json:"category"`
+	StartedAt       pgtype.Timestamptz `json:"started_at"`
+	EndedAt         pgtype.Timestamptz `json:"ended_at"`
+	DurationMinutes pgtype.Int4        `json:"duration_minutes"`
+	Status          string             `json:"status"`
+	Interruptions   int32              `json:"interruptions"`
+	Notes           pgtype.Text        `json:"notes"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
 type User struct {
 	ID        pgtype.UUID        `json:"id"`
 	Email     string             `json:"email"`
 	Name      string             `json:"name"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type UserSetting struct {
+	UserID        pgtype.UUID        `json:"user_id"`
+	CalendarID    string             `json:"calendar_id"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	DeleteMissing bool               `json:"delete_missing"`
+}
+
+type WeeklySummary struct {
+	ID                        pgtype.UUID        `json:"id"`
+	UserID                    pgtype.UUID        `json:"user_id"`
+	WeekStart                 pgtype.Date        `json:"week_start"`
+	WeekEnd                   pgtype.Date        `json:"week_end"`
+	TotalTasksCompleted       int32              `json:"total_tasks_completed"`
+	TotalHabitsCompleted      int32              `json:"total_habits_completed"`
+	TotalBlocksCompleted      int32              `json:"total_blocks_completed"`
+	TotalFocusMinutes         int32              `json:"total_focus_minutes"`
+	AvgDailyProductivityScore pgtype.Numeric     `json:"avg_daily_productivity_score"`
+	AvgDailyFocusMinutes      pgtype.Int4        `json:"avg_daily_focus_minutes"`
+	ProductivityTrend         pgtype.Numeric     `json:"productivity_trend"`
+	FocusTrend                pgtype.Numeric     `json:"focus_trend"`
+	MostProductiveDay         pgtype.Date        `json:"most_productive_day"`
+	LeastProductiveDay        pgtype.Date        `json:"least_productive_day"`
+	HabitsWithStreak          int32              `json:"habits_with_streak"`
+	LongestStreak             int32              `json:"longest_streak"`
+	ComputedAt                pgtype.Timestamptz `json:"computed_at"`
+	CreatedAt                 pgtype.Timestamptz `json:"created_at"`
 }

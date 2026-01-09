@@ -9,9 +9,11 @@ import (
 
 	"github.com/felixgeelhaar/orbita/adapter/cli"
 	cliAuth "github.com/felixgeelhaar/orbita/adapter/cli/auth"
+	"github.com/felixgeelhaar/orbita/adapter/cli/automation"
 	cliBilling "github.com/felixgeelhaar/orbita/adapter/cli/billing"
 	"github.com/felixgeelhaar/orbita/adapter/cli/habit"
 	"github.com/felixgeelhaar/orbita/adapter/cli/inbox"
+	"github.com/felixgeelhaar/orbita/adapter/cli/insights"
 	"github.com/felixgeelhaar/orbita/adapter/cli/mcp"
 	"github.com/felixgeelhaar/orbita/adapter/cli/meeting"
 	"github.com/felixgeelhaar/orbita/adapter/cli/schedule"
@@ -136,6 +138,13 @@ func main() {
 		if container.EngineExecutor != nil {
 			cliApp.SetEngineExecutor(container.EngineExecutor)
 		}
+		if container.AutomationService != nil {
+			cliApp.SetAutomationService(container.AutomationService)
+		}
+		if container.InsightsService != nil {
+			insights.SetService(container.InsightsService)
+			cliApp.SetInsightsService(container.InsightsService)
+		}
 	}
 
 	// Set the CLI app
@@ -151,6 +160,8 @@ func main() {
 	cli.AddCommand(cliBilling.Cmd)
 	cli.AddCommand(cliAuth.Cmd)
 	cli.AddCommand(cliSettings.Cmd)
+	cli.AddCommand(automation.Cmd)
+	cli.AddCommand(insights.Cmd)
 
 	// Execute CLI
 	cli.Execute()

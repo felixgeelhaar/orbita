@@ -5,6 +5,11 @@ import (
 	"fmt"
 	"log/slog"
 
+	automationApp "github.com/felixgeelhaar/orbita/internal/automations/application"
+	automationPersistence "github.com/felixgeelhaar/orbita/internal/automations/infrastructure/persistence"
+	db "github.com/felixgeelhaar/orbita/db/generated"
+	insightsApp "github.com/felixgeelhaar/orbita/internal/insights/application"
+	insightsPersistence "github.com/felixgeelhaar/orbita/internal/insights/infrastructure/persistence"
 	billingApp "github.com/felixgeelhaar/orbita/internal/billing/application"
 	billingPersistence "github.com/felixgeelhaar/orbita/internal/billing/infrastructure/persistence"
 	calendarApp "github.com/felixgeelhaar/orbita/internal/calendar/application"
@@ -87,6 +92,7 @@ type Container struct {
 
 	// Task Query Handlers
 	ListTasksHandler *queries.ListTasksHandler
+	GetTaskHandler   *queries.GetTaskHandler
 
 	// Habit Command Handlers
 	CreateHabitHandler          *habitCommands.CreateHabitHandler
@@ -96,6 +102,7 @@ type Container struct {
 
 	// Habit Query Handlers
 	ListHabitsHandler *habitQueries.ListHabitsHandler
+	GetHabitHandler   *habitQueries.GetHabitHandler
 
 	// Meeting Command Handlers
 	CreateMeetingHandler        *meetingCommands.CreateMeetingHandler
@@ -106,6 +113,7 @@ type Container struct {
 
 	// Meeting Query Handlers
 	ListMeetingsHandler          *meetingQueries.ListMeetingsHandler
+	GetMeetingHandler            *meetingQueries.GetMeetingHandler
 	ListMeetingCandidatesHandler *meetingQueries.ListMeetingCandidatesHandler
 
 	// Schedule Command Handlers
@@ -138,6 +146,7 @@ type Container struct {
 	CaptureInboxItemHandler *inboxCommands.CaptureInboxItemHandler
 	PromoteInboxItemHandler *inboxCommands.PromoteInboxItemHandler
 	ListInboxItemsHandler   *inboxQueries.ListInboxItemsHandler
+	GetInboxItemHandler     *inboxQueries.GetInboxItemHandler
 
 	// Outbox Processor
 	OutboxProcessor *outbox.Processor
@@ -159,6 +168,12 @@ type Container struct {
 	SearchMarketplacePackages *marketplaceQueries.SearchPackagesHandler
 	GetMarketplacePackage    *marketplaceQueries.GetPackageHandler
 	GetMarketplaceFeatured   *marketplaceQueries.GetFeaturedHandler
+
+	// Automations
+	AutomationService *automationApp.Service
+
+	// Insights
+	InsightsService *insightsApp.Service
 }
 
 // NewContainer creates and wires all dependencies.
@@ -244,6 +259,7 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 
 	// Create task query handlers
 	c.ListTasksHandler = queries.NewListTasksHandler(c.TaskRepo)
+	c.GetTaskHandler = queries.NewGetTaskHandler(c.TaskRepo)
 
 	// Create habit command handlers
 	c.CreateHabitHandler = habitCommands.NewCreateHabitHandler(c.HabitRepo, c.OutboxRepo, c.UnitOfWork)
@@ -253,6 +269,7 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 
 	// Create habit query handlers
 	c.ListHabitsHandler = habitQueries.NewListHabitsHandler(c.HabitRepo)
+	c.GetHabitHandler = habitQueries.NewGetHabitHandler(c.HabitRepo)
 
 	// Create meeting command handlers
 	c.CreateMeetingHandler = meetingCommands.NewCreateMeetingHandler(c.MeetingRepo, c.OutboxRepo, c.UnitOfWork)
@@ -263,11 +280,13 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 
 	// Create meeting query handlers
 	c.ListMeetingsHandler = meetingQueries.NewListMeetingsHandler(c.MeetingRepo)
+	c.GetMeetingHandler = meetingQueries.NewGetMeetingHandler(c.MeetingRepo)
 	c.ListMeetingCandidatesHandler = meetingQueries.NewListMeetingCandidatesHandler(c.MeetingRepo)
 
 	// Create inbox handlers
 	c.CaptureInboxItemHandler = inboxCommands.NewCaptureInboxItemHandler(c.InboxRepo, c.InboxClassifier, c.UnitOfWork)
 	c.ListInboxItemsHandler = inboxQueries.NewListInboxItemsHandler(c.InboxRepo)
+	c.GetInboxItemHandler = inboxQueries.NewGetInboxItemHandler(c.InboxRepo)
 	c.PromoteInboxItemHandler = inboxCommands.NewPromoteInboxItemHandler(
 		c.InboxRepo,
 		c.CreateTaskHandler,
@@ -305,6 +324,22 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 	c.SearchMarketplacePackages = marketplaceQueries.NewSearchPackagesHandler(c.MarketplacePackageRepo)
 	c.GetMarketplacePackage = marketplaceQueries.NewGetPackageHandler(c.MarketplacePackageRepo, c.MarketplaceVersionRepo, c.MarketplacePublisherRepo)
 	c.GetMarketplaceFeatured = marketplaceQueries.NewGetFeaturedHandler(c.MarketplacePackageRepo)
+
+	// Create automation repositories and service
+	automationQueries := db.New(pool)
+	automationRuleRepo := automationPersistence.NewRuleRepository(automationQueries)
+	automationExecRepo := automationPersistence.NewExecutionRepository(automationQueries)
+	automationPendingRepo := automationPersistence.NewPendingActionRepository(automationQueries)
+	c.AutomationService = automationApp.NewService(automationRuleRepo, automationExecRepo, automationPendingRepo)
+
+	// Create insights repositories and service
+	insightsQueries := db.New(pool)
+	snapshotRepo := insightsPersistence.NewSnapshotRepository(insightsQueries)
+	sessionRepo := insightsPersistence.NewSessionRepository(insightsQueries)
+	summaryRepo := insightsPersistence.NewSummaryRepository(insightsQueries)
+	goalRepo := insightsPersistence.NewGoalRepository(insightsQueries)
+	analyticsDataSource := insightsPersistence.NewAnalyticsDataSource(insightsQueries)
+	c.InsightsService = insightsApp.NewService(snapshotRepo, sessionRepo, summaryRepo, goalRepo, analyticsDataSource)
 
 	// Create auth service if configured
 	scopes := identityOAuth.ScopesFromEnv(cfg.OAuthScopes)
@@ -441,12 +476,16 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 
 	// Create API factories for orbit sandbox
 	apiFactories := &orbitAPI.APIFactories{
-		TaskHandler:     c.ListTasksHandler,
-		HabitHandler:    c.ListHabitsHandler,
-		ScheduleHandler: c.GetScheduleHandler,
-		MeetingHandler:  c.ListMeetingsHandler,
-		InboxHandler:    c.ListInboxItemsHandler,
-		RedisClient:     c.RedisClient, // nil in development mode (uses in-memory storage)
+		ListTaskHandler:    c.ListTasksHandler,
+		GetTaskHandler:     c.GetTaskHandler,
+		ListHabitHandler:   c.ListHabitsHandler,
+		GetHabitHandler:    c.GetHabitHandler,
+		ScheduleHandler:    c.GetScheduleHandler,
+		ListMeetingHandler: c.ListMeetingsHandler,
+		GetMeetingHandler:  c.GetMeetingHandler,
+		ListInboxHandler:   c.ListInboxItemsHandler,
+		GetInboxHandler:    c.GetInboxItemHandler,
+		RedisClient:        c.RedisClient, // nil in development mode (uses in-memory storage)
 	}
 
 	// Create orbit sandbox with full API factory integration

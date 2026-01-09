@@ -11,46 +11,117 @@ import (
 )
 
 type Querier interface {
+	CancelAutomationPendingActionsByRuleID(ctx context.Context, ruleID pgtype.UUID) error
+	CountAutomationPendingActions(ctx context.Context, arg CountAutomationPendingActionsParams) (int64, error)
+	CountAutomationRuleExecutions(ctx context.Context, arg CountAutomationRuleExecutionsParams) (int64, error)
+	CountAutomationRuleExecutionsSince(ctx context.Context, arg CountAutomationRuleExecutionsSinceParams) (int64, error)
+	CountAutomationRules(ctx context.Context, arg CountAutomationRulesParams) (int64, error)
+	CountAutomationRulesByUserID(ctx context.Context, userID pgtype.UUID) (int64, error)
 	CountTasksByStatus(ctx context.Context, userID pgtype.UUID) ([]CountTasksByStatusRow, error)
+	CreateAutomationPendingAction(ctx context.Context, arg CreateAutomationPendingActionParams) error
+	CreateAutomationRule(ctx context.Context, arg CreateAutomationRuleParams) error
+	CreateAutomationRuleExecution(ctx context.Context, arg CreateAutomationRuleExecutionParams) error
 	CreateHabit(ctx context.Context, arg CreateHabitParams) error
 	CreateHabitCompletion(ctx context.Context, arg CreateHabitCompletionParams) error
+	// Productivity Goals
+	CreateProductivityGoal(ctx context.Context, arg CreateProductivityGoalParams) error
+	CreateProductivitySnapshot(ctx context.Context, arg CreateProductivitySnapshotParams) error
 	CreateSchedule(ctx context.Context, arg CreateScheduleParams) error
 	CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error)
 	CreateTimeBlock(ctx context.Context, arg CreateTimeBlockParams) error
+	// Time Sessions
+	CreateTimeSession(ctx context.Context, arg CreateTimeSessionParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	// Weekly Summaries
+	CreateWeeklySummary(ctx context.Context, arg CreateWeeklySummaryParams) error
+	DeleteAutomationRule(ctx context.Context, id pgtype.UUID) error
+	DeleteAutomationRuleExecutionsOlderThan(ctx context.Context, completedAt pgtype.Timestamptz) (int64, error)
+	DeleteExecutedAutomationPendingActions(ctx context.Context, executedAt pgtype.Timestamptz) (int64, error)
 	DeleteHabit(ctx context.Context, id pgtype.UUID) error
 	DeleteHabitCompletionsByHabitID(ctx context.Context, habitID pgtype.UUID) error
+	DeleteProductivityGoal(ctx context.Context, id pgtype.UUID) error
 	DeletePublishedEvents(ctx context.Context) error
 	DeleteSchedule(ctx context.Context, id pgtype.UUID) error
 	DeleteTask(ctx context.Context, id pgtype.UUID) error
 	DeleteTimeBlock(ctx context.Context, id pgtype.UUID) error
 	DeleteTimeBlocksByScheduleID(ctx context.Context, scheduleID pgtype.UUID) error
+	DeleteTimeSession(ctx context.Context, id pgtype.UUID) error
 	DeleteUser(ctx context.Context, id pgtype.UUID) error
+	GetAchievedProductivityGoals(ctx context.Context, arg GetAchievedProductivityGoalsParams) ([]ProductivityGoal, error)
 	GetActiveHabitsByUserID(ctx context.Context, userID pgtype.UUID) ([]Habit, error)
+	GetActiveProductivityGoals(ctx context.Context, userID pgtype.UUID) ([]ProductivityGoal, error)
+	GetActiveTimeSession(ctx context.Context, userID pgtype.UUID) (TimeSession, error)
+	// Automation Pending Actions
+	GetAutomationPendingActionByID(ctx context.Context, id pgtype.UUID) (AutomationPendingAction, error)
+	GetAutomationPendingActionsByExecutionID(ctx context.Context, executionID pgtype.UUID) ([]AutomationPendingAction, error)
+	GetAutomationPendingActionsByRuleID(ctx context.Context, ruleID pgtype.UUID) ([]AutomationPendingAction, error)
+	// Automation Rules
+	GetAutomationRuleByID(ctx context.Context, id pgtype.UUID) (AutomationRule, error)
+	// Automation Rule Executions
+	GetAutomationRuleExecutionByID(ctx context.Context, id pgtype.UUID) (AutomationRuleExecution, error)
+	GetAutomationRuleExecutionsByRuleID(ctx context.Context, arg GetAutomationRuleExecutionsByRuleIDParams) ([]AutomationRuleExecution, error)
+	GetAutomationRulesByUserID(ctx context.Context, userID pgtype.UUID) ([]AutomationRule, error)
+	GetAverageProductivityScore(ctx context.Context, arg GetAverageProductivityScoreParams) (int32, error)
+	GetDueAutomationPendingActions(ctx context.Context, limit int32) ([]AutomationPendingAction, error)
+	GetEnabledAutomationRulesByTriggerType(ctx context.Context, arg GetEnabledAutomationRulesByTriggerTypeParams) ([]AutomationRule, error)
+	GetEnabledAutomationRulesByUserID(ctx context.Context, userID pgtype.UUID) ([]AutomationRule, error)
 	GetFailedEvents(ctx context.Context, arg GetFailedEventsParams) ([]Outbox, error)
 	GetHabitByID(ctx context.Context, id pgtype.UUID) (Habit, error)
+	GetHabitCompletionsByDateRange(ctx context.Context, arg GetHabitCompletionsByDateRangeParams) (int64, error)
 	GetHabitCompletionsByHabitID(ctx context.Context, habitID pgtype.UUID) ([]HabitCompletion, error)
 	GetHabitCompletionsByHabitIDSince(ctx context.Context, arg GetHabitCompletionsByHabitIDSinceParams) ([]HabitCompletion, error)
 	GetHabitsByUserID(ctx context.Context, userID pgtype.UUID) ([]Habit, error)
+	GetHabitsDueCount(ctx context.Context, userID pgtype.UUID) (int64, error)
+	GetLatestAutomationRuleExecution(ctx context.Context, ruleID pgtype.UUID) (AutomationRuleExecution, error)
+	GetLatestProductivitySnapshot(ctx context.Context, userID pgtype.UUID) (ProductivitySnapshot, error)
+	GetLatestWeeklySummary(ctx context.Context, userID pgtype.UUID) (WeeklySummary, error)
+	GetLongestActiveStreak(ctx context.Context, userID pgtype.UUID) (int32, error)
+	GetPeakProductivityHours(ctx context.Context, arg GetPeakProductivityHoursParams) ([]GetPeakProductivityHoursRow, error)
 	GetPendingTasksByUserID(ctx context.Context, userID pgtype.UUID) ([]Task, error)
+	GetProductivityGoal(ctx context.Context, id pgtype.UUID) (ProductivityGoal, error)
+	GetProductivityGoalsByPeriod(ctx context.Context, arg GetProductivityGoalsByPeriodParams) ([]ProductivityGoal, error)
+	GetProductivityGoalsByType(ctx context.Context, arg GetProductivityGoalsByTypeParams) ([]ProductivityGoal, error)
+	GetProductivitySnapshot(ctx context.Context, arg GetProductivitySnapshotParams) (ProductivitySnapshot, error)
+	GetProductivitySnapshotRange(ctx context.Context, arg GetProductivitySnapshotRangeParams) ([]ProductivitySnapshot, error)
+	GetProductivitySnapshots(ctx context.Context, arg GetProductivitySnapshotsParams) ([]ProductivitySnapshot, error)
 	GetScheduleByID(ctx context.Context, id pgtype.UUID) (Schedule, error)
 	GetScheduleByUserAndDate(ctx context.Context, arg GetScheduleByUserAndDateParams) (Schedule, error)
 	GetSchedulesByUserDateRange(ctx context.Context, arg GetSchedulesByUserDateRangeParams) ([]Schedule, error)
 	GetTaskByID(ctx context.Context, id pgtype.UUID) (Task, error)
+	// Analytics queries using existing tables
+	GetTaskCompletionsByDateRange(ctx context.Context, arg GetTaskCompletionsByDateRangeParams) (GetTaskCompletionsByDateRangeRow, error)
 	GetTasksByUserID(ctx context.Context, userID pgtype.UUID) ([]Task, error)
 	GetTimeBlockByID(ctx context.Context, id pgtype.UUID) (TimeBlock, error)
+	GetTimeBlockStatsByDateRange(ctx context.Context, arg GetTimeBlockStatsByDateRangeParams) (GetTimeBlockStatsByDateRangeRow, error)
 	GetTimeBlocksByScheduleID(ctx context.Context, scheduleID pgtype.UUID) ([]TimeBlock, error)
+	GetTimeByBlockType(ctx context.Context, arg GetTimeByBlockTypeParams) ([]GetTimeByBlockTypeRow, error)
+	GetTimeSession(ctx context.Context, id pgtype.UUID) (TimeSession, error)
+	GetTimeSessionsByDateRange(ctx context.Context, arg GetTimeSessionsByDateRangeParams) ([]TimeSession, error)
+	GetTimeSessionsByType(ctx context.Context, arg GetTimeSessionsByTypeParams) ([]TimeSession, error)
+	GetTotalFocusMinutesByDateRange(ctx context.Context, arg GetTotalFocusMinutesByDateRangeParams) (int32, error)
 	GetUnpublishedEvents(ctx context.Context, limit int32) ([]Outbox, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
+	GetWeeklySummaries(ctx context.Context, arg GetWeeklySummariesParams) ([]WeeklySummary, error)
+	GetWeeklySummary(ctx context.Context, arg GetWeeklySummaryParams) (WeeklySummary, error)
 	InsertOutboxEvent(ctx context.Context, arg InsertOutboxEventParams) (Outbox, error)
+	ListAutomationPendingActions(ctx context.Context, arg ListAutomationPendingActionsParams) ([]AutomationPendingAction, error)
+	ListAutomationRuleExecutions(ctx context.Context, arg ListAutomationRuleExecutionsParams) ([]AutomationRuleExecution, error)
+	ListAutomationRules(ctx context.Context, arg ListAutomationRulesParams) ([]AutomationRule, error)
 	MarkEventFailed(ctx context.Context, arg MarkEventFailedParams) error
 	MarkEventPublished(ctx context.Context, id int64) error
+	UpdateAutomationPendingAction(ctx context.Context, arg UpdateAutomationPendingActionParams) error
+	UpdateAutomationRule(ctx context.Context, arg UpdateAutomationRuleParams) error
+	UpdateAutomationRuleExecution(ctx context.Context, arg UpdateAutomationRuleExecutionParams) error
 	UpdateHabit(ctx context.Context, arg UpdateHabitParams) error
+	UpdateProductivityGoal(ctx context.Context, arg UpdateProductivityGoalParams) error
 	UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) error
 	UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error)
 	UpdateTimeBlock(ctx context.Context, arg UpdateTimeBlockParams) error
+	UpdateTimeSession(ctx context.Context, arg UpdateTimeSessionParams) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
+	UpsertProductivitySnapshot(ctx context.Context, arg UpsertProductivitySnapshotParams) error
+	UpsertWeeklySummary(ctx context.Context, arg UpsertWeeklySummaryParams) error
 }
 
 var _ Querier = (*Queries)(nil)

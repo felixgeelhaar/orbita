@@ -28,7 +28,7 @@ Examples:
   orbita stats           # Overview stats
   orbita stats --period week    # This week's stats
   orbita stats --period month   # This month's stats`,
-	Aliases: []string{"insights", "analytics"},
+	Aliases: []string{"analytics"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := GetApp()
 		if app == nil {

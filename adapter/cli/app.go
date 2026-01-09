@@ -1,6 +1,7 @@
 package cli
 
 import (
+	automationApp "github.com/felixgeelhaar/orbita/internal/automations/application"
 	billingApp "github.com/felixgeelhaar/orbita/internal/billing/application"
 	calendarApp "github.com/felixgeelhaar/orbita/internal/calendar/application"
 	"github.com/felixgeelhaar/orbita/internal/engine/registry"
@@ -10,6 +11,8 @@ import (
 	identitySettings "github.com/felixgeelhaar/orbita/internal/identity/application/settings"
 	inboxCommands "github.com/felixgeelhaar/orbita/internal/inbox/application/commands"
 	inboxQueries "github.com/felixgeelhaar/orbita/internal/inbox/application/queries"
+	insightsApp "github.com/felixgeelhaar/orbita/internal/insights/application"
+	marketplaceCommands "github.com/felixgeelhaar/orbita/internal/marketplace/application/commands"
 	marketplaceQueries "github.com/felixgeelhaar/orbita/internal/marketplace/application/queries"
 	meetingCommands "github.com/felixgeelhaar/orbita/internal/meetings/application/commands"
 	meetingQueries "github.com/felixgeelhaar/orbita/internal/meetings/application/queries"
@@ -88,11 +91,27 @@ type App struct {
 	OrbitSandbox  *orbitRuntime.Sandbox
 	OrbitExecutor *orbitRuntime.Executor
 
-	// Marketplace
+	// Marketplace Query Handlers
 	ListMarketplacePackages   *marketplaceQueries.ListPackagesHandler
 	SearchMarketplacePackages *marketplaceQueries.SearchPackagesHandler
 	GetMarketplacePackage     *marketplaceQueries.GetPackageHandler
 	GetMarketplaceFeatured    *marketplaceQueries.GetFeaturedHandler
+	ListInstalledHandler      *marketplaceQueries.ListInstalledHandler
+
+	// Marketplace Command Handlers
+	InstallPackageHandler   *marketplaceCommands.InstallPackageHandler
+	UninstallPackageHandler *marketplaceCommands.UninstallPackageHandler
+	UpdatePackageHandler    *marketplaceCommands.UpdatePackageHandler
+	LoginHandler            *marketplaceCommands.LoginHandler
+	LogoutHandler           *marketplaceCommands.LogoutHandler
+	WhoAmIHandler           *marketplaceCommands.WhoAmIHandler
+	PublishHandler          *marketplaceCommands.PublishPackageHandler
+
+	// Automation Service
+	AutomationService *automationApp.Service
+
+	// Insights Service
+	InsightsService *insightsApp.Service
 
 	// Current user (configured per environment)
 	CurrentUserID uuid.UUID
@@ -220,6 +239,16 @@ func (a *App) SetMarketplaceHandlers(
 	a.SearchMarketplacePackages = search
 	a.GetMarketplacePackage = get
 	a.GetMarketplaceFeatured = featured
+}
+
+// SetAutomationService updates the automation service.
+func (a *App) SetAutomationService(service *automationApp.Service) {
+	a.AutomationService = service
+}
+
+// SetInsightsService updates the insights service.
+func (a *App) SetInsightsService(service *insightsApp.Service) {
+	a.InsightsService = service
 }
 
 // app is the global CLI application instance

@@ -12,6 +12,10 @@ import (
 	"github.com/felixgeelhaar/orbita/internal/engine/builtin"
 	"github.com/felixgeelhaar/orbita/internal/engine/registry"
 	"github.com/felixgeelhaar/orbita/internal/engine/runtime"
+	orbitRegistry "github.com/felixgeelhaar/orbita/internal/orbit/registry"
+	orbitRuntime "github.com/felixgeelhaar/orbita/internal/orbit/runtime"
+	"github.com/felixgeelhaar/orbita/internal/orbit/builtin/idealweek"
+	"github.com/felixgeelhaar/orbita/internal/orbit/builtin/wellness"
 	habitCommands "github.com/felixgeelhaar/orbita/internal/habits/application/commands"
 	habitQueries "github.com/felixgeelhaar/orbita/internal/habits/application/queries"
 	habitPersistence "github.com/felixgeelhaar/orbita/internal/habits/infrastructure/persistence"
@@ -132,6 +136,11 @@ type Container struct {
 	// Engine SDK
 	EngineRegistry *registry.Registry
 	EngineExecutor *runtime.Executor
+
+	// Orbit SDK
+	OrbitRegistry *orbitRegistry.Registry
+	OrbitSandbox  *orbitRuntime.Sandbox
+	OrbitExecutor *orbitRuntime.Executor
 }
 
 // NewContainer creates and wires all dependencies.
@@ -314,11 +323,52 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 
 	logger.Info("registered engines", "count", c.EngineRegistry.Count())
 
+	// Create orbit registry and register built-in orbits
+	c.OrbitRegistry = orbitRegistry.NewRegistry(logger, c.BillingService)
+
+	// Register built-in orbits
+	wellnessOrbit := wellness.New()
+	if err := c.OrbitRegistry.RegisterBuiltin(wellnessOrbit); err != nil {
+		logger.Warn("failed to register wellness orbit", "error", err)
+	}
+
+	idealweekOrbit := idealweek.New()
+	if err := c.OrbitRegistry.RegisterBuiltin(idealweekOrbit); err != nil {
+		logger.Warn("failed to register ideal week orbit", "error", err)
+	}
+
+	// Create orbit sandbox (API factories would be wired here in full integration)
+	c.OrbitSandbox = orbitRuntime.NewSandbox(orbitRuntime.SandboxConfig{
+		Logger:   logger,
+		Registry: c.OrbitRegistry,
+		// Note: API factories will be added when full integration is completed
+	})
+
+	// Create orbit executor
+	c.OrbitExecutor = orbitRuntime.NewExecutor(orbitRuntime.ExecutorConfig{
+		Sandbox:  c.OrbitSandbox,
+		Registry: c.OrbitRegistry,
+		Logger:   logger,
+	})
+
+	logger.Info("registered orbits",
+		"wellness", wellness.OrbitID,
+		"idealweek", idealweek.OrbitID,
+	)
+
 	return c, nil
 }
 
 // Close cleans up all resources.
 func (c *Container) Close() {
+	// Shutdown all orbits via registry
+	if c.OrbitRegistry != nil {
+		ctx := context.Background()
+		if err := c.OrbitRegistry.Shutdown(ctx); err != nil {
+			c.Logger.Warn("error shutting down orbits", "error", err)
+		}
+	}
+
 	// Shutdown all engines via registry
 	if c.EngineRegistry != nil {
 		ctx := context.Background()

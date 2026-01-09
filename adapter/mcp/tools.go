@@ -77,6 +77,9 @@ func RegisterCLITools(srv *mcp.Server, deps ToolDependencies) error {
 	if err := registerWellnessTools(srv, deps); err != nil {
 		return err
 	}
+	if err := registerCalendarTools(srv, deps); err != nil {
+		return err
+	}
 
 	// Register orbit tools if orbit system is configured
 	if deps.OrbitRegistry != nil {

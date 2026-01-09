@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/felixgeelhaar/orbita/internal/marketplace/application/queries"
+	marketplaceCommands "github.com/felixgeelhaar/orbita/internal/marketplace/application/commands"
+	marketplaceQueries "github.com/felixgeelhaar/orbita/internal/marketplace/application/queries"
 	"github.com/felixgeelhaar/orbita/internal/marketplace/domain"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +32,7 @@ var marketplaceSearchCmd = &cobra.Command{
 		pkgType, _ := cmd.Flags().GetString("type")
 		limit, _ := cmd.Flags().GetInt("limit")
 
-		searchQuery := queries.SearchPackagesQuery{
+		searchQuery := marketplaceQueries.SearchPackagesQuery{
 			Query:  query,
 			Offset: 0,
 			Limit:  limit,
@@ -83,7 +84,7 @@ var marketplaceListCmd = &cobra.Command{
 		limit, _ := cmd.Flags().GetInt("limit")
 		offset, _ := cmd.Flags().GetInt("offset")
 
-		listQuery := queries.ListPackagesQuery{
+		listQuery := marketplaceQueries.ListPackagesQuery{
 			Offset:   offset,
 			Limit:    limit,
 			SortBy:   domain.SortByDownloads,
@@ -147,7 +148,7 @@ var marketplaceFeaturedCmd = &cobra.Command{
 		limit, _ := cmd.Flags().GetInt("limit")
 
 		ctx := context.Background()
-		result, err := app.GetMarketplaceFeatured.Handle(ctx, queries.GetFeaturedQuery{
+		result, err := app.GetMarketplaceFeatured.Handle(ctx, marketplaceQueries.GetFeaturedQuery{
 			Limit: limit,
 		})
 		if err != nil {
@@ -183,11 +184,11 @@ var marketplaceInfoCmd = &cobra.Command{
 		packageID := args[0]
 
 		ctx := context.Background()
-		result, err := app.GetMarketplacePackage.Handle(ctx, queries.GetPackageQuery{
+		result, err := app.GetMarketplacePackage.Handle(ctx, marketplaceQueries.GetPackageQuery{
 			PackageID: &packageID,
 		})
 		if err != nil {
-			if err == queries.ErrPackageNotFound {
+			if err == marketplaceQueries.ErrPackageNotFound {
 				return fmt.Errorf("package not found: %s", packageID)
 			}
 			return fmt.Errorf("failed to get package: %w", err)
@@ -282,11 +283,11 @@ var marketplaceVersionsCmd = &cobra.Command{
 		packageID := args[0]
 
 		ctx := context.Background()
-		result, err := app.GetMarketplacePackage.Handle(ctx, queries.GetPackageQuery{
+		result, err := app.GetMarketplacePackage.Handle(ctx, marketplaceQueries.GetPackageQuery{
 			PackageID: &packageID,
 		})
 		if err != nil {
-			if err == queries.ErrPackageNotFound {
+			if err == marketplaceQueries.ErrPackageNotFound {
 				return fmt.Errorf("package not found: %s", packageID)
 			}
 			return fmt.Errorf("failed to get package: %w", err)
@@ -327,7 +328,7 @@ var marketplaceVersionsCmd = &cobra.Command{
 	},
 }
 
-func printPackageSummary(pkg *queries.PackageDTO) {
+func printPackageSummary(pkg *marketplaceQueries.PackageDTO) {
 	badges := ""
 	if pkg.Verified {
 		badges += " [verified]"
@@ -375,6 +376,359 @@ func formatBytes(b int64) string {
 	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "KMGTPE"[exp])
 }
 
+var marketplaceInstallCmd = &cobra.Command{
+	Use:   "install <package-id>[@version]",
+	Short: "Install a package from the marketplace",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		app := GetApp()
+		if app == nil || app.InstallPackageHandler == nil {
+			return fmt.Errorf("marketplace not available")
+		}
+
+		packageSpec := args[0]
+		packageID, version := parsePackageSpec(packageSpec)
+
+		ctx := context.Background()
+		result, err := app.InstallPackageHandler.Handle(ctx, marketplaceCommands.InstallPackageCommand{
+			PackageID: packageID,
+			Version:   version,
+			UserID:    app.CurrentUserID,
+		})
+		if err != nil {
+			if err == marketplaceCommands.ErrPackageAlreadyInstalled {
+				fmt.Printf("Package %s is already installed\n", packageID)
+				return nil
+			}
+			return fmt.Errorf("installation failed: %w", err)
+		}
+
+		fmt.Println(result.Message)
+		fmt.Printf("Installed to: %s\n", result.InstalledPackage.InstallPath)
+		return nil
+	},
+}
+
+var marketplaceUninstallCmd = &cobra.Command{
+	Use:   "uninstall <package-id>",
+	Short: "Uninstall an installed package",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		app := GetApp()
+		if app == nil || app.UninstallPackageHandler == nil {
+			return fmt.Errorf("marketplace not available")
+		}
+
+		packageID := args[0]
+
+		ctx := context.Background()
+		result, err := app.UninstallPackageHandler.Handle(ctx, marketplaceCommands.UninstallPackageCommand{
+			PackageID: packageID,
+			UserID:    app.CurrentUserID,
+		})
+		if err != nil {
+			if err == marketplaceCommands.ErrPackageNotInstalled {
+				fmt.Printf("Package %s is not installed\n", packageID)
+				return nil
+			}
+			return fmt.Errorf("uninstallation failed: %w", err)
+		}
+
+		fmt.Println(result.Message)
+		return nil
+	},
+}
+
+var marketplaceUpdateCmd = &cobra.Command{
+	Use:   "update [package-id[@version]]",
+	Short: "Update installed packages",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		app := GetApp()
+		if app == nil || app.UpdatePackageHandler == nil {
+			return fmt.Errorf("marketplace not available")
+		}
+
+		ctx := context.Background()
+
+		if len(args) == 0 {
+			// Update all packages
+			all, _ := cmd.Flags().GetBool("all")
+			if !all {
+				fmt.Println("Specify a package to update or use --all to update all packages")
+				return nil
+			}
+
+			if app.ListInstalledHandler == nil {
+				return fmt.Errorf("cannot list installed packages")
+			}
+
+			result, err := app.ListInstalledHandler.Handle(ctx, marketplaceQueries.ListInstalledQuery{
+				UserID: app.CurrentUserID,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to list installed packages: %w", err)
+			}
+
+			if len(result.Packages) == 0 {
+				fmt.Println("No packages installed")
+				return nil
+			}
+
+			for _, pkg := range result.Packages {
+				updateResult, err := app.UpdatePackageHandler.Handle(ctx, marketplaceCommands.UpdatePackageCommand{
+					PackageID: pkg.PackageID,
+					UserID:    app.CurrentUserID,
+				})
+				if err != nil {
+					fmt.Printf("Failed to update %s: %v\n", pkg.PackageID, err)
+					continue
+				}
+				fmt.Println(updateResult.Message)
+			}
+			return nil
+		}
+
+		// Update specific package
+		packageSpec := args[0]
+		packageID, version := parsePackageSpec(packageSpec)
+
+		result, err := app.UpdatePackageHandler.Handle(ctx, marketplaceCommands.UpdatePackageCommand{
+			PackageID: packageID,
+			Version:   version,
+			UserID:    app.CurrentUserID,
+		})
+		if err != nil {
+			return fmt.Errorf("update failed: %w", err)
+		}
+
+		fmt.Println(result.Message)
+		return nil
+	},
+}
+
+var marketplaceInstalledCmd = &cobra.Command{
+	Use:   "installed",
+	Short: "List installed packages",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		app := GetApp()
+		if app == nil || app.ListInstalledHandler == nil {
+			return fmt.Errorf("marketplace not available")
+		}
+
+		pkgType, _ := cmd.Flags().GetString("type")
+
+		query := marketplaceQueries.ListInstalledQuery{
+			UserID: app.CurrentUserID,
+		}
+
+		if pkgType != "" {
+			t := domain.PackageType(pkgType)
+			query.Type = &t
+		}
+
+		ctx := context.Background()
+		result, err := app.ListInstalledHandler.Handle(ctx, query)
+		if err != nil {
+			return fmt.Errorf("failed to list installed packages: %w", err)
+		}
+
+		if len(result.Packages) == 0 {
+			fmt.Println("No packages installed")
+			return nil
+		}
+
+		fmt.Printf("\nInstalled Packages (%d):\n", result.Total)
+		fmt.Println(strings.Repeat("-", 60))
+
+		for _, pkg := range result.Packages {
+			status := "enabled"
+			if !pkg.Enabled {
+				status = "disabled"
+			}
+			fmt.Printf("\n  %s@%s [%s]\n", pkg.PackageID, pkg.Version, status)
+			fmt.Printf("    Type: %s\n", pkg.Type)
+			fmt.Printf("    Path: %s\n", pkg.InstallPath)
+			fmt.Printf("    Installed: %s\n", pkg.InstalledAt)
+		}
+
+		return nil
+	},
+}
+
+func parsePackageSpec(spec string) (packageID, version string) {
+	parts := strings.SplitN(spec, "@", 2)
+	packageID = parts[0]
+	if len(parts) > 1 {
+		version = parts[1]
+	}
+	return
+}
+
+var marketplaceLoginCmd = &cobra.Command{
+	Use:   "login",
+	Short: "Authenticate with the Orbita marketplace",
+	Long: `Authenticate with the Orbita marketplace using an API token.
+
+To get an API token:
+1. Visit https://marketplace.orbita.dev/settings/tokens
+2. Create a new token with publish permissions
+3. Copy the token and use it with this command`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		app := GetApp()
+		if app == nil || app.LoginHandler == nil {
+			return fmt.Errorf("marketplace not available")
+		}
+
+		token, _ := cmd.Flags().GetString("token")
+		if token == "" {
+			fmt.Print("Enter your API token: ")
+			var input string
+			fmt.Scanln(&input)
+			token = strings.TrimSpace(input)
+		}
+
+		if token == "" {
+			return fmt.Errorf("token is required")
+		}
+
+		ctx := context.Background()
+		result, err := app.LoginHandler.Handle(ctx, marketplaceCommands.LoginCommand{
+			Token: token,
+		})
+		if err != nil {
+			if err == marketplaceCommands.ErrInvalidCredentials {
+				return fmt.Errorf("invalid or expired token")
+			}
+			return fmt.Errorf("login failed: %w", err)
+		}
+
+		fmt.Println(result.Message)
+		if len(result.Scopes) > 0 {
+			fmt.Printf("Scopes: %s\n", strings.Join(result.Scopes, ", "))
+		}
+		return nil
+	},
+}
+
+var marketplaceLogoutCmd = &cobra.Command{
+	Use:   "logout",
+	Short: "Log out from the Orbita marketplace",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		app := GetApp()
+		if app == nil || app.LogoutHandler == nil {
+			return fmt.Errorf("marketplace not available")
+		}
+
+		ctx := context.Background()
+		result, err := app.LogoutHandler.Handle(ctx, marketplaceCommands.LogoutCommand{})
+		if err != nil {
+			return fmt.Errorf("logout failed: %w", err)
+		}
+
+		fmt.Println(result.Message)
+		return nil
+	},
+}
+
+var marketplaceWhoAmICmd = &cobra.Command{
+	Use:   "whoami",
+	Short: "Show current marketplace authentication status",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		app := GetApp()
+		if app == nil || app.WhoAmIHandler == nil {
+			return fmt.Errorf("marketplace not available")
+		}
+
+		ctx := context.Background()
+		result, err := app.WhoAmIHandler.Handle(ctx, marketplaceCommands.WhoAmICommand{})
+		if err != nil {
+			return fmt.Errorf("failed to get auth status: %w", err)
+		}
+
+		if !result.Authenticated {
+			fmt.Println("Not logged in. Use 'orbita marketplace login' to authenticate.")
+			return nil
+		}
+
+		fmt.Printf("Logged in as: %s\n", result.PublisherName)
+		fmt.Printf("Publisher ID: %s\n", result.PublisherID)
+		if result.LoggedInAt != "" {
+			fmt.Printf("Logged in at: %s\n", result.LoggedInAt)
+		}
+		return nil
+	},
+}
+
+var marketplacePublishCmd = &cobra.Command{
+	Use:   "publish [path]",
+	Short: "Publish a package to the marketplace",
+	Long: `Publish an orbit or engine package to the Orbita marketplace.
+
+The package directory must contain either orbit.json (for orbits) or
+engine.json (for engines) with the package manifest.
+
+Example manifest (orbit.json):
+{
+  "id": "com.example.my-orbit",
+  "name": "My Orbit",
+  "version": "1.0.0",
+  "type": "orbit",
+  "author": "Your Name",
+  "description": "Description of your orbit"
+}`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		app := GetApp()
+		if app == nil || app.PublishHandler == nil {
+			return fmt.Errorf("marketplace not available")
+		}
+
+		// Get package path (default to current directory)
+		packagePath := "."
+		if len(args) > 0 {
+			packagePath = args[0]
+		}
+
+		dryRun, _ := cmd.Flags().GetBool("dry-run")
+
+		// Check if logged in
+		if app.WhoAmIHandler != nil {
+			ctx := context.Background()
+			whoami, err := app.WhoAmIHandler.Handle(ctx, marketplaceCommands.WhoAmICommand{})
+			if err != nil || !whoami.Authenticated {
+				return fmt.Errorf("not logged in. Use 'orbita marketplace login' first")
+			}
+		}
+
+		ctx := context.Background()
+		result, err := app.PublishHandler.Handle(ctx, marketplaceCommands.PublishPackageCommand{
+			PackagePath: packagePath,
+			PublisherID: app.CurrentUserID,
+			DryRun:      dryRun,
+		})
+		if err != nil {
+			switch err {
+			case marketplaceCommands.ErrManifestNotFound:
+				return fmt.Errorf("no manifest found - create orbit.json or engine.json")
+			case marketplaceCommands.ErrInvalidManifest:
+				return fmt.Errorf("invalid manifest: %w", err)
+			case marketplaceCommands.ErrPackageExists:
+				return fmt.Errorf("this version already exists")
+			case marketplaceCommands.ErrUnauthorized:
+				return fmt.Errorf("unauthorized to publish this package")
+			default:
+				return fmt.Errorf("publish failed: %w", err)
+			}
+		}
+
+		fmt.Println(result.Message)
+		if result.Checksum != "" {
+			fmt.Printf("Checksum: sha256:%s\n", result.Checksum)
+		}
+		return nil
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(marketplaceCmd)
 
@@ -400,4 +754,32 @@ func init() {
 
 	// Versions command
 	marketplaceCmd.AddCommand(marketplaceVersionsCmd)
+
+	// Install command
+	marketplaceCmd.AddCommand(marketplaceInstallCmd)
+
+	// Uninstall command
+	marketplaceCmd.AddCommand(marketplaceUninstallCmd)
+
+	// Update command
+	marketplaceUpdateCmd.Flags().Bool("all", false, "Update all installed packages")
+	marketplaceCmd.AddCommand(marketplaceUpdateCmd)
+
+	// Installed command
+	marketplaceInstalledCmd.Flags().StringP("type", "t", "", "Filter by type (orbit, engine)")
+	marketplaceCmd.AddCommand(marketplaceInstalledCmd)
+
+	// Login command
+	marketplaceLoginCmd.Flags().StringP("token", "t", "", "API token (will prompt if not provided)")
+	marketplaceCmd.AddCommand(marketplaceLoginCmd)
+
+	// Logout command
+	marketplaceCmd.AddCommand(marketplaceLogoutCmd)
+
+	// WhoAmI command
+	marketplaceCmd.AddCommand(marketplaceWhoAmICmd)
+
+	// Publish command
+	marketplacePublishCmd.Flags().Bool("dry-run", false, "Validate but don't publish")
+	marketplaceCmd.AddCommand(marketplacePublishCmd)
 }

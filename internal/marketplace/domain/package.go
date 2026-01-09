@@ -155,3 +155,9 @@ func (p *Package) SetFeatured(featured bool) {
 	p.Featured = featured
 	p.UpdatedAt = time.Now().UTC()
 }
+
+// SetDescription sets the package description.
+func (p *Package) SetDescription(description string) {
+	p.Description = description
+	p.UpdatedAt = time.Now().UTC()
+}

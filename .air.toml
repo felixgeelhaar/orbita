@@ -1,0 +1,58 @@
+# Air - Live reload for Go apps
+# https://github.com/air-verse/air
+
+root = "."
+tmp_dir = "tmp"
+
+[build]
+# Main binary to build
+cmd = "go build -o ./tmp/main ./cmd/orbita"
+# Binary file yields from `cmd`.
+bin = "tmp/main"
+# Watch these extensions
+include_ext = ["go", "tpl", "tmpl", "html", "yml", "yaml"]
+# Exclude directories
+exclude_dir = ["assets", "tmp", "vendor", "testdata", "node_modules", "examples", "docs", "bin"]
+# Exclude files
+exclude_file = []
+# Exclude unchanged files
+exclude_unchanged = false
+# Follow symlink for directories
+follow_symlink = false
+# This log file places in your tmp_dir
+log = "build-errors.log"
+# Poll files for changes instead of using fsnotify
+poll = false
+# Poll interval (ms) for poll mode
+poll_interval = 0
+# Delay before rebuilding (ms)
+delay = 1000
+# Stop running old binary when build errors occur
+stop_on_error = true
+# Send Interrupt signal before killing process (windows does not support this feature)
+send_interrupt = true
+# Delay after sending Interrupt signal
+kill_delay = "500ms"
+# Add additional arguments when running binary
+args_bin = ["serve", "--dev"]
+
+[log]
+# Show log time
+time = false
+# Only show main log (silence watcher, build, runner)
+main_only = false
+
+[color]
+# Customize each part's color.
+main = "magenta"
+watcher = "cyan"
+build = "yellow"
+runner = "green"
+
+[misc]
+# Delete tmp directory on exit
+clean_on_exit = true
+
+[screen]
+# Keep scroll position when stdout changes
+keep_scroll = true

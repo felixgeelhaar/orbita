@@ -354,7 +354,7 @@ func (o *Orbit) handleTaskCompleted(ctx context.Context, event sdk.DomainEvent) 
 				"task_id", taskID,
 			)
 			// The user completed the task, so we mark the session as done
-			o.handleStopPomodoro(ctx, nil)
+			_, _ = o.handleStopPomodoro(ctx, nil) // Best-effort auto-stop
 		}
 	}
 	return nil

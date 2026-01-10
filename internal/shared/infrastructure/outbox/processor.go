@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/felixgeelhaar/orbita/internal/shared/domain"
+	"github.com/felixgeelhaar/orbita/internal/shared/infrastructure/convert"
 	"github.com/felixgeelhaar/orbita/internal/shared/infrastructure/eventbus"
 )
 
@@ -206,7 +207,7 @@ func (p *Processor) retryBackoff(nextRetryCount int) time.Duration {
 		nextRetryCount = 1
 	}
 
-	backoff := base * time.Duration(1<<uint(nextRetryCount-1))
+	backoff := base * time.Duration(1<<convert.IntToUintSafe(nextRetryCount-1))
 	if backoff > max {
 		return max
 	}

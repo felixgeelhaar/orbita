@@ -7,6 +7,7 @@ import (
 
 	"github.com/felixgeelhaar/orbita/db/generated"
 	"github.com/felixgeelhaar/orbita/internal/automations/domain"
+	"github.com/felixgeelhaar/orbita/internal/shared/infrastructure/convert"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -42,8 +43,8 @@ func (r *PendingActionRepository) Create(ctx context.Context, action *domain.Pen
 		ScheduledFor: toPgTimestamp(action.ScheduledFor),
 		Status:       string(action.Status),
 		ErrorMessage: toPgText(action.ErrorMessage),
-		RetryCount:   int32(action.RetryCount),
-		MaxRetries:   int32(action.MaxRetries),
+		RetryCount:   convert.IntToInt32Safe(action.RetryCount),
+		MaxRetries:   convert.IntToInt32Safe(action.MaxRetries),
 		CreatedAt:    toPgTimestamp(action.CreatedAt),
 		Result:       result,
 	}
@@ -66,7 +67,7 @@ func (r *PendingActionRepository) Update(ctx context.Context, action *domain.Pen
 		ID:           toPgUUID(action.ID),
 		Status:       string(action.Status),
 		ErrorMessage: toPgText(action.ErrorMessage),
-		RetryCount:   int32(action.RetryCount),
+		RetryCount:   convert.IntToInt32Safe(action.RetryCount),
 		Result:       result,
 	}
 
@@ -91,7 +92,7 @@ func (r *PendingActionRepository) GetByID(ctx context.Context, id uuid.UUID) (*d
 
 // GetDue retrieves pending actions that are due for execution.
 func (r *PendingActionRepository) GetDue(ctx context.Context, limit int) ([]*domain.PendingAction, error) {
-	rows, err := r.queries.GetDueAutomationPendingActions(ctx, int32(limit))
+	rows, err := r.queries.GetDueAutomationPendingActions(ctx, convert.IntToInt32Safe(limit))
 	if err != nil {
 		return nil, err
 	}
@@ -120,8 +121,8 @@ func (r *PendingActionRepository) GetByExecutionID(ctx context.Context, executio
 func (r *PendingActionRepository) List(ctx context.Context, filter domain.PendingActionFilter) ([]*domain.PendingAction, int64, error) {
 	params := db.ListAutomationPendingActionsParams{
 		UserID: toPgUUID(filter.UserID),
-		Limit:  int32(filter.Limit),
-		Offset: int32(filter.Offset),
+		Limit:  convert.IntToInt32Safe(filter.Limit),
+		Offset: convert.IntToInt32Safe(filter.Offset),
 	}
 
 	if filter.RuleID != nil {

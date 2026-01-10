@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 
+	"github.com/felixgeelhaar/orbita/internal/shared/infrastructure/security"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +23,7 @@ Examples:
 			return errors.New("event path is required")
 		}
 
-		payload, err := os.ReadFile(webhookEventPath)
+		payload, err := security.SafeReadFile(webhookEventPath)
 		if err != nil {
 			return err
 		}

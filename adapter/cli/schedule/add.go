@@ -135,7 +135,7 @@ func init() {
 	addCmd.Flags().StringVar(&addEndTime, "end", "", "end time (HH:MM, required)")
 	addCmd.Flags().StringVar(&addReferenceID, "ref", "", "reference ID for task/habit/meeting")
 
-	addCmd.MarkFlagRequired("title")
-	addCmd.MarkFlagRequired("start")
-	addCmd.MarkFlagRequired("end")
+	_ = addCmd.MarkFlagRequired("title") // Safe to ignore - panics during testing if wrong
+	_ = addCmd.MarkFlagRequired("start") // Safe to ignore - panics during testing if wrong
+	_ = addCmd.MarkFlagRequired("end")   // Safe to ignore - panics during testing if wrong
 }

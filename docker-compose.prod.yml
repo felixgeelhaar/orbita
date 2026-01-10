@@ -1,0 +1,207 @@
+# =============================================================================
+# Orbita Production Docker Compose
+# Deploy with: docker-compose -f docker-compose.prod.yml up -d
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------
+  # Orbita API/MCP Server
+  # ---------------------------------------------------------------------------
+  orbita:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+      args:
+        VERSION: ${VERSION:-latest}
+        COMMIT: ${COMMIT:-unknown}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
+    image: orbita:${VERSION:-latest}
+    container_name: orbita-server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://orbita:${DB_PASSWORD:-orbita}@postgres:5432/orbita?sslmode=disable
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://orbita:${RABBITMQ_PASSWORD:-orbita}@rabbitmq:5672
+      - ORBITA_ENV=production
+      - ORBITA_LOG_LEVEL=info
+      - ORBITA_LOG_FORMAT=json
+      - ORBITA_MCP_ENABLED=true
+      - ORBITA_MCP_PORT=8080
+    ports:
+      - "${MCP_PORT:-8080}:8080"
+    volumes:
+      - orbita-data:/app/data
+      - orbita-plugins:/app/plugins
+      - orbita-config:/app/config
+    networks:
+      - orbita-network
+    healthcheck:
+      test: ["CMD", "orbita", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+  # ---------------------------------------------------------------------------
+  # Orbita Background Worker
+  # ---------------------------------------------------------------------------
+  orbita-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+      args:
+        VERSION: ${VERSION:-latest}
+        COMMIT: ${COMMIT:-unknown}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
+    image: orbita-worker:${VERSION:-latest}
+    container_name: orbita-worker
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://orbita:${DB_PASSWORD:-orbita}@postgres:5432/orbita?sslmode=disable
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://orbita:${RABBITMQ_PASSWORD:-orbita}@rabbitmq:5672
+      - ORBITA_ENV=production
+      - ORBITA_LOG_LEVEL=info
+      - ORBITA_LOG_FORMAT=json
+    networks:
+      - orbita-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: orbita-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=orbita
+      - POSTGRES_USER=orbita
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-orbita}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - orbita-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orbita -d orbita"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  # ---------------------------------------------------------------------------
+  # Redis Cache
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: orbita-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks:
+      - orbita-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 192M
+
+  # ---------------------------------------------------------------------------
+  # RabbitMQ Message Broker
+  # ---------------------------------------------------------------------------
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: orbita-rabbitmq
+    restart: unless-stopped
+    environment:
+      - RABBITMQ_DEFAULT_USER=orbita
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-orbita}
+      - RABBITMQ_DEFAULT_VHOST=/
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - orbita-network
+    # Management UI only exposed internally by default
+    # ports:
+    #   - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  orbita-network:
+    driver: bridge
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  rabbitmq-data:
+    driver: local
+  orbita-data:
+    driver: local
+  orbita-plugins:
+    driver: local
+  orbita-config:
+    driver: local

@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"os"
 
 	"github.com/felixgeelhaar/mcp-go"
+	"github.com/felixgeelhaar/orbita/internal/shared/infrastructure/security"
 )
 
 type billingGrantInput struct {
@@ -91,5 +91,5 @@ func loadWebhookPayload(path string, payload string) ([]byte, error) {
 	if path == "" {
 		return nil, errors.New("event_path or event_json is required")
 	}
-	return os.ReadFile(path)
+	return security.SafeReadFile(path)
 }

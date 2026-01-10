@@ -7,6 +7,7 @@ import (
 
 	db "github.com/felixgeelhaar/orbita/db/generated"
 	"github.com/felixgeelhaar/orbita/internal/insights/domain"
+	"github.com/felixgeelhaar/orbita/internal/shared/infrastructure/convert"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -33,8 +34,8 @@ func (r *GoalRepository) Create(ctx context.Context, goal *domain.ProductivityGo
 		ID:           toPgUUID(goal.ID),
 		UserID:       toPgUUID(goal.UserID),
 		GoalType:     string(goal.GoalType),
-		TargetValue:  int32(goal.TargetValue),
-		CurrentValue: int32(goal.CurrentValue),
+		TargetValue:  convert.IntToInt32Safe(goal.TargetValue),
+		CurrentValue: convert.IntToInt32Safe(goal.CurrentValue),
 		PeriodType:   string(goal.PeriodType),
 		PeriodStart:  toPgDate(goal.PeriodStart),
 		PeriodEnd:    toPgDate(goal.PeriodEnd),
@@ -54,7 +55,7 @@ func (r *GoalRepository) Update(ctx context.Context, goal *domain.ProductivityGo
 
 	params := db.UpdateProductivityGoalParams{
 		ID:           toPgUUID(goal.ID),
-		CurrentValue: int32(goal.CurrentValue),
+		CurrentValue: convert.IntToInt32Safe(goal.CurrentValue),
 		Achieved:     goal.Achieved,
 		AchievedAt:   achievedAt,
 	}
@@ -92,7 +93,7 @@ func (r *GoalRepository) GetActive(ctx context.Context, userID uuid.UUID) ([]*do
 func (r *GoalRepository) GetAchieved(ctx context.Context, userID uuid.UUID, limit int) ([]*domain.ProductivityGoal, error) {
 	rows, err := r.queries.GetAchievedProductivityGoals(ctx, db.GetAchievedProductivityGoalsParams{
 		UserID: toPgUUID(userID),
-		Limit:  int32(limit),
+		Limit:  convert.IntToInt32Safe(limit),
 	})
 	if err != nil {
 		return nil, err

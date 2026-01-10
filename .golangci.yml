@@ -1,0 +1,130 @@
+# golangci-lint configuration
+# https://golangci-lint.run/usage/configuration/
+
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+  skip-dirs:
+    - vendor
+    - tmp
+    - bin
+
+linters:
+  enable:
+    # Default linters
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    # Additional linters
+    - bodyclose
+    - contextcheck
+    - durationcheck
+    - errorlint
+    - exhaustive
+    - exportloopref
+    - gofmt
+    - goimports
+    - gocritic
+    - gosec
+    - misspell
+    - nilerr
+    - noctx
+    - prealloc
+    - predeclared
+    - revive
+    - unconvert
+    - unparam
+    - whitespace
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: false
+
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment  # Too strict for general use
+
+  gofmt:
+    simplify: true
+
+  goimports:
+    local-prefixes: github.com/felixgeelhaar/orbita
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+    disabled-checks:
+      - whyNoLint
+      - hugeParam  # Can be too strict
+
+  gosec:
+    excludes:
+      - G104  # Unhandled errors (covered by errcheck)
+      - G304  # File path from variable (intentional in many cases)
+
+  exhaustive:
+    default-signifies-exhaustive: true
+
+  revive:
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+        disabled: true  # Not required for all packages
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+        disabled: true  # Sometimes parameters are for interface compliance
+      - name: unreachable-code
+      - name: redefines-builtin-id
+
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gosec
+        - errcheck
+        - gocritic
+        - unparam
+
+    # Exclude known issues in generated files
+    - path: db/sqlc/
+      linters:
+        - gocritic
+        - revive
+
+    # Exclude protobuf generated files
+    - path: \.pb\.go$
+      linters:
+        - govet
+        - revive
+        - stylecheck
+
+  max-issues-per-linter: 50
+  max-same-issues: 3
+  new: false

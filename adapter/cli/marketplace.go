@@ -2,7 +2,9 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	marketplaceCommands "github.com/felixgeelhaar/orbita/internal/marketplace/application/commands"
@@ -376,6 +378,12 @@ func formatBytes(b int64) string {
 	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "KMGTPE"[exp])
 }
 
+func printJSON(v any) error {
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	return enc.Encode(v)
+}
+
 var marketplaceInstallCmd = &cobra.Command{
 	Use:   "install <package-id>[@version]",
 	Short: "Install a package from the marketplace",
@@ -516,6 +524,7 @@ var marketplaceInstalledCmd = &cobra.Command{
 		}
 
 		pkgType, _ := cmd.Flags().GetString("type")
+		jsonOutput, _ := cmd.Flags().GetBool("json")
 
 		query := marketplaceQueries.ListInstalledQuery{
 			UserID: app.CurrentUserID,
@@ -530,6 +539,10 @@ var marketplaceInstalledCmd = &cobra.Command{
 		result, err := app.ListInstalledHandler.Handle(ctx, query)
 		if err != nil {
 			return fmt.Errorf("failed to list installed packages: %w", err)
+		}
+
+		if jsonOutput {
+			return printJSON(result)
 		}
 
 		if len(result.Packages) == 0 {
@@ -551,6 +564,143 @@ var marketplaceInstalledCmd = &cobra.Command{
 			fmt.Printf("    Installed: %s\n", pkg.InstalledAt)
 		}
 
+		return nil
+	},
+}
+
+var marketplaceCheckUpdatesCmd = &cobra.Command{
+	Use:   "check-updates",
+	Short: "Check for available updates",
+	Long:  "Check all installed packages for available updates without installing them.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		app := GetApp()
+		if app == nil || app.ListInstalledHandler == nil || app.GetMarketplacePackage == nil {
+			return fmt.Errorf("marketplace not available")
+		}
+
+		ctx := context.Background()
+
+		// Get installed packages
+		installed, err := app.ListInstalledHandler.Handle(ctx, marketplaceQueries.ListInstalledQuery{
+			UserID: app.CurrentUserID,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to list installed packages: %w", err)
+		}
+
+		if len(installed.Packages) == 0 {
+			fmt.Println("No packages installed")
+			return nil
+		}
+
+		fmt.Printf("\nChecking %d installed packages for updates...\n", len(installed.Packages))
+		fmt.Println(strings.Repeat("-", 60))
+
+		hasUpdates := false
+		for _, pkg := range installed.Packages {
+			// Get latest version from marketplace
+			pkgID := pkg.PackageID
+			latest, err := app.GetMarketplacePackage.Handle(ctx, marketplaceQueries.GetPackageQuery{
+				PackageID: &pkgID,
+			})
+			if err != nil {
+				continue // Skip packages not in marketplace
+			}
+
+			if latest.LatestVersion != pkg.Version {
+				hasUpdates = true
+				fmt.Printf("\n  %s\n", pkg.PackageID)
+				fmt.Printf("    Installed: %s\n", pkg.Version)
+				fmt.Printf("    Available: %s\n", latest.LatestVersion)
+			}
+		}
+
+		if !hasUpdates {
+			fmt.Println("\nAll packages are up to date!")
+		} else {
+			fmt.Println()
+			fmt.Println("Run 'orbita marketplace update <package>' to update a specific package")
+			fmt.Println("Run 'orbita marketplace update --all' to update all packages")
+		}
+
+		return nil
+	},
+}
+
+var marketplaceEnableCmd = &cobra.Command{
+	Use:   "enable <package-id>",
+	Short: "Enable an installed package",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		app := GetApp()
+		if app == nil || app.EnablePackageHandler == nil {
+			return fmt.Errorf("marketplace not available")
+		}
+
+		packageID := args[0]
+
+		ctx := context.Background()
+		result, err := app.EnablePackageHandler.Handle(ctx, marketplaceCommands.EnablePackageCommand{
+			PackageID: packageID,
+			UserID:    app.CurrentUserID,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to enable package: %w", err)
+		}
+
+		fmt.Println(result.Message)
+		return nil
+	},
+}
+
+var marketplaceDisableCmd = &cobra.Command{
+	Use:   "disable <package-id>",
+	Short: "Disable an installed package without uninstalling",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		app := GetApp()
+		if app == nil || app.DisablePackageHandler == nil {
+			return fmt.Errorf("marketplace not available")
+		}
+
+		packageID := args[0]
+
+		ctx := context.Background()
+		result, err := app.DisablePackageHandler.Handle(ctx, marketplaceCommands.DisablePackageCommand{
+			PackageID: packageID,
+			UserID:    app.CurrentUserID,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to disable package: %w", err)
+		}
+
+		fmt.Println(result.Message)
+		return nil
+	},
+}
+
+var marketplaceCategoriesCmd = &cobra.Command{
+	Use:   "categories",
+	Short: "List package categories",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Static categories for now
+		fmt.Println("\nPackage Categories:")
+		fmt.Println(strings.Repeat("-", 40))
+		fmt.Println()
+		fmt.Println("  Orbits (Feature Modules):")
+		fmt.Println("    productivity    - Task and workflow enhancements")
+		fmt.Println("    wellness        - Health and wellness tracking")
+		fmt.Println("    focus           - Focus and concentration tools")
+		fmt.Println("    integrations    - Third-party service connections")
+		fmt.Println()
+		fmt.Println("  Engines (Algorithm Plugins):")
+		fmt.Println("    priority        - Priority calculation engines")
+		fmt.Println("    scheduler       - Scheduling algorithm engines")
+		fmt.Println("    classifier      - Task classification engines")
+		fmt.Println("    automation      - Automation rule engines")
+		fmt.Println()
+		fmt.Println("Use 'orbita marketplace search --type orbit' to find orbits")
+		fmt.Println("Use 'orbita marketplace search --type engine' to find engines")
 		return nil
 	},
 }
@@ -583,7 +733,7 @@ To get an API token:
 		if token == "" {
 			fmt.Print("Enter your API token: ")
 			var input string
-			fmt.Scanln(&input)
+			_, _ = fmt.Scanln(&input) // Input errors handled by empty check
 			token = strings.TrimSpace(input)
 		}
 
@@ -767,7 +917,18 @@ func init() {
 
 	// Installed command
 	marketplaceInstalledCmd.Flags().StringP("type", "t", "", "Filter by type (orbit, engine)")
+	marketplaceInstalledCmd.Flags().Bool("json", false, "Output in JSON format")
 	marketplaceCmd.AddCommand(marketplaceInstalledCmd)
+
+	// Check updates command
+	marketplaceCmd.AddCommand(marketplaceCheckUpdatesCmd)
+
+	// Enable/Disable commands
+	marketplaceCmd.AddCommand(marketplaceEnableCmd)
+	marketplaceCmd.AddCommand(marketplaceDisableCmd)
+
+	// Categories command
+	marketplaceCmd.AddCommand(marketplaceCategoriesCmd)
 
 	// Login command
 	marketplaceLoginCmd.Flags().StringP("token", "t", "", "API token (will prompt if not provided)")

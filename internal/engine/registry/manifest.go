@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/felixgeelhaar/orbita/internal/engine/sdk"
+	"github.com/felixgeelhaar/orbita/internal/shared/infrastructure/security"
 )
 
 // Manifest describes a plugin engine and its requirements.
@@ -66,7 +67,7 @@ type Manifest struct {
 
 // LoadManifest loads a manifest from a file.
 func LoadManifest(path string) (*Manifest, error) {
-	data, err := os.ReadFile(path)
+	data, err := security.SafeReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read manifest: %w", err)
 	}
@@ -164,7 +165,7 @@ func SaveManifest(path string, manifest *Manifest) error {
 		return fmt.Errorf("failed to marshal manifest: %w", err)
 	}
 
-	if err := os.WriteFile(path, data, 0644); err != nil {
+	if err := os.WriteFile(path, data, 0600); err != nil {
 		return fmt.Errorf("failed to write manifest: %w", err)
 	}
 

@@ -194,6 +194,7 @@ func NewWhoAmIHandler(configDir string) *WhoAmIHandler {
 func (h *WhoAmIHandler) Handle(ctx context.Context, cmd WhoAmICommand) (*WhoAmIResult, error) {
 	configPath := filepath.Join(h.configDir, "marketplace.json")
 
+	// #nosec G304 - configPath is internally constructed from application configDir + fixed filename
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -224,6 +225,7 @@ func (h *WhoAmIHandler) Handle(ctx context.Context, cmd WhoAmICommand) (*WhoAmIR
 func GetStoredToken(configDir string) (string, error) {
 	configPath := filepath.Join(configDir, "marketplace.json")
 
+	// #nosec G304 - configPath is internally constructed from application configDir + fixed filename
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {

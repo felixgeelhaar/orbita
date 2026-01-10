@@ -3,6 +3,7 @@ package persistence
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/felixgeelhaar/orbita/internal/productivity/domain/task"
@@ -247,29 +248,49 @@ func (r *PostgresTaskRepository) rowToTask(row taskRow) (*task.Task, error) {
 
 	// Set additional fields
 	if row.Description != nil {
-		t.SetDescription(*row.Description)
+		if err := t.SetDescription(*row.Description); err != nil {
+			return nil, fmt.Errorf("failed to set description: %w", err)
+		}
 	}
 
-	priority, _ := value_objects.ParsePriority(row.Priority)
-	t.SetPriority(priority)
+	priority, err := value_objects.ParsePriority(row.Priority)
+	if err != nil {
+		return nil, fmt.Errorf("invalid priority in database: %w", err)
+	}
+	if err := t.SetPriority(priority); err != nil {
+		return nil, fmt.Errorf("failed to set priority: %w", err)
+	}
 
 	if row.DurationMinutes != nil {
-		duration, _ := value_objects.NewDuration(time.Duration(*row.DurationMinutes) * time.Minute)
-		t.SetDuration(duration)
+		duration, err := value_objects.NewDuration(time.Duration(*row.DurationMinutes) * time.Minute)
+		if err != nil {
+			return nil, fmt.Errorf("invalid duration in database: %w", err)
+		}
+		if err := t.SetDuration(duration); err != nil {
+			return nil, fmt.Errorf("failed to set duration: %w", err)
+		}
 	}
 
 	if row.DueDate != nil {
-		t.SetDueDate(row.DueDate)
+		if err := t.SetDueDate(row.DueDate); err != nil {
+			return nil, fmt.Errorf("failed to set due date: %w", err)
+		}
 	}
 
-	// Handle status transitions
+	// Handle status transitions - errors indicate data corruption
 	switch row.Status {
 	case "in_progress":
-		t.Start()
+		if err := t.Start(); err != nil {
+			return nil, fmt.Errorf("failed to restore in_progress status: %w", err)
+		}
 	case "completed":
-		t.Complete()
+		if err := t.Complete(); err != nil {
+			return nil, fmt.Errorf("failed to restore completed status: %w", err)
+		}
 	case "archived":
-		t.Archive()
+		if err := t.Archive(); err != nil {
+			return nil, fmt.Errorf("failed to restore archived status: %w", err)
+		}
 	}
 
 	// Clear events since we're rehydrating from storage

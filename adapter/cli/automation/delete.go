@@ -48,7 +48,7 @@ Example:
 		if !deleteForce {
 			fmt.Printf("Are you sure you want to delete rule '%s'? [y/N]: ", rule.Name)
 			var response string
-			fmt.Scanln(&response)
+			_, _ = fmt.Scanln(&response) // Input errors handled by empty check
 			if response != "y" && response != "Y" {
 				fmt.Println("Cancelled.")
 				return nil

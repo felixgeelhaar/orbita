@@ -29,6 +29,15 @@ var (
 	ErrChecksumMismatch = errors.New("checksum mismatch")
 	// ErrDownloadFailed is returned when package download fails.
 	ErrDownloadFailed = errors.New("download failed")
+	// ErrFileTooLarge is returned when an extracted file exceeds the size limit.
+	ErrFileTooLarge = errors.New("extracted file exceeds size limit")
+)
+
+const (
+	// maxExtractedFileSize is the maximum size of a single extracted file (100MB).
+	maxExtractedFileSize = 100 * 1024 * 1024
+	// maxTotalExtractedSize is the maximum total size of all extracted files (1GB).
+	maxTotalExtractedSize = 1024 * 1024 * 1024
 )
 
 // InstallPackageCommand represents a command to install a marketplace package.
@@ -97,40 +106,40 @@ func (h *InstallPackageHandler) Handle(ctx context.Context, cmd InstallPackageCo
 
 	// Create installation directory
 	installPath := filepath.Join(h.installDir, string(pkg.Type)+"s", cmd.PackageID, versionStr)
-	if err := os.MkdirAll(installPath, 0755); err != nil {
+	if err := os.MkdirAll(installPath, 0750); err != nil {
 		return nil, fmt.Errorf("failed to create install directory: %w", err)
 	}
 
 	// Download package
 	archivePath := filepath.Join(installPath, "package.tar.gz")
 	if err := h.downloadPackage(ctx, version.DownloadURL, archivePath); err != nil {
-		os.RemoveAll(installPath)
+		_ = os.RemoveAll(installPath) // Best-effort cleanup
 		return nil, fmt.Errorf("failed to download package: %w", err)
 	}
 
 	// Verify checksum
 	if version.Checksum != "" {
 		if err := h.verifyChecksum(archivePath, version.Checksum); err != nil {
-			os.RemoveAll(installPath)
+			_ = os.RemoveAll(installPath) // Best-effort cleanup
 			return nil, err
 		}
 	}
 
 	// Extract package
 	if err := h.extractPackage(archivePath, installPath); err != nil {
-		os.RemoveAll(installPath)
+		_ = os.RemoveAll(installPath) // Best-effort cleanup
 		return nil, fmt.Errorf("failed to extract package: %w", err)
 	}
 
 	// Remove archive after extraction
-	os.Remove(archivePath)
+	_ = os.Remove(archivePath) // Best-effort cleanup
 
 	// Create installed package record
 	installed := domain.NewInstalledPackage(cmd.PackageID, versionStr, pkg.Type, installPath, cmd.UserID)
 	installed.SetChecksum(version.Checksum)
 
 	if err := h.installedRepo.Create(ctx, installed); err != nil {
-		os.RemoveAll(installPath)
+		_ = os.RemoveAll(installPath) // Best-effort cleanup
 		return nil, fmt.Errorf("failed to save installation record: %w", err)
 	}
 
@@ -164,6 +173,7 @@ func (h *InstallPackageHandler) downloadPackage(ctx context.Context, url, destPa
 		return fmt.Errorf("%w: status %d", ErrDownloadFailed, resp.StatusCode)
 	}
 
+	// #nosec G304 - destPath is internally constructed from installPath + "package.tar.gz"
 	file, err := os.Create(destPath)
 	if err != nil {
 		return err
@@ -175,6 +185,7 @@ func (h *InstallPackageHandler) downloadPackage(ctx context.Context, url, destPa
 }
 
 func (h *InstallPackageHandler) verifyChecksum(filePath, expectedChecksum string) error {
+	// #nosec G304 - filePath is internally constructed from installPath + "package.tar.gz"
 	file, err := os.Open(filePath)
 	if err != nil {
 		return err
@@ -198,6 +209,7 @@ func (h *InstallPackageHandler) verifyChecksum(filePath, expectedChecksum string
 }
 
 func (h *InstallPackageHandler) extractPackage(archivePath, destDir string) error {
+	// #nosec G304 - archivePath is internally constructed from installPath + "package.tar.gz"
 	file, err := os.Open(archivePath)
 	if err != nil {
 		return err
@@ -212,6 +224,8 @@ func (h *InstallPackageHandler) extractPackage(archivePath, destDir string) erro
 
 	tr := tar.NewReader(gzr)
 
+	var totalExtracted int64
+
 	for {
 		header, err := tr.Next()
 		if err == io.EOF {
@@ -221,7 +235,19 @@ func (h *InstallPackageHandler) extractPackage(archivePath, destDir string) erro
 			return err
 		}
 
+		// Check for decompression bomb - individual file size
+		if header.Size > maxExtractedFileSize {
+			return fmt.Errorf("%w: %s is %d bytes (max %d)", ErrFileTooLarge, header.Name, header.Size, maxExtractedFileSize)
+		}
+
+		// Check for decompression bomb - total extracted size
+		totalExtracted += header.Size
+		if totalExtracted > maxTotalExtractedSize {
+			return fmt.Errorf("%w: total extracted size exceeds %d bytes", ErrFileTooLarge, maxTotalExtractedSize)
+		}
+
 		// Sanitize path to prevent directory traversal
+		// #nosec G305 - path traversal is checked below before any file operations
 		target := filepath.Join(destDir, header.Name)
 		if !strings.HasPrefix(target, filepath.Clean(destDir)+string(os.PathSeparator)) {
 			return fmt.Errorf("invalid file path: %s", header.Name)
@@ -229,26 +255,35 @@ func (h *InstallPackageHandler) extractPackage(archivePath, destDir string) erro
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := os.MkdirAll(target, 0755); err != nil {
+			if err := os.MkdirAll(target, 0750); err != nil {
 				return err
 			}
 		case tar.TypeReg:
-			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(target), 0750); err != nil {
 				return err
 			}
+			// #nosec G304 - target path is validated above against directory traversal
 			outFile, err := os.Create(target)
 			if err != nil {
 				return err
 			}
-			if _, err := io.Copy(outFile, tr); err != nil {
-				outFile.Close()
+			// Use io.LimitReader to prevent decompression bombs
+			// #nosec G110 - size is checked above and limited via LimitReader
+			written, err := io.Copy(outFile, io.LimitReader(tr, maxExtractedFileSize))
+			_ = outFile.Close() // Best-effort; file was successfully written
+			if err != nil {
 				return err
 			}
-			outFile.Close()
+			if written >= maxExtractedFileSize {
+				return fmt.Errorf("%w: %s exceeded size limit during extraction", ErrFileTooLarge, header.Name)
+			}
 
 			// Set executable permission for binaries
 			if header.Mode&0111 != 0 {
-				os.Chmod(target, 0755)
+				// #nosec G302 - 0750 required for executable binaries
+				if err := os.Chmod(target, 0750); err != nil {
+					return fmt.Errorf("failed to set permissions: %w", err)
+				}
 			}
 		}
 	}

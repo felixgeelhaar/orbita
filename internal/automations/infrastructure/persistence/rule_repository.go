@@ -9,6 +9,7 @@ import (
 	"github.com/felixgeelhaar/orbita/db/generated"
 	"github.com/felixgeelhaar/orbita/internal/automations/domain"
 	"github.com/felixgeelhaar/orbita/internal/engine/types"
+	"github.com/felixgeelhaar/orbita/internal/shared/infrastructure/convert"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -45,20 +46,20 @@ func (r *RuleRepository) Create(ctx context.Context, rule *domain.AutomationRule
 		Name:              rule.Name,
 		Description:       toPgText(rule.Description),
 		Enabled:           rule.Enabled,
-		Priority:          int32(rule.Priority),
+		Priority:          convert.IntToInt32Safe(rule.Priority),
 		TriggerType:       string(rule.TriggerType),
 		TriggerConfig:     triggerConfig,
 		Conditions:        conditions,
 		ConditionOperator: string(rule.ConditionOperator),
 		Actions:           actions,
-		CooldownSeconds:   int32(rule.CooldownSeconds),
+		CooldownSeconds:   convert.IntToInt32Safe(rule.CooldownSeconds),
 		Tags:              rule.Tags,
 		CreatedAt:         toPgTimestamp(rule.CreatedAt),
 		UpdatedAt:         toPgTimestamp(rule.UpdatedAt),
 	}
 
 	if rule.MaxExecutionsPerHour != nil {
-		params.MaxExecutionsPerHour = pgtype.Int4{Int32: int32(*rule.MaxExecutionsPerHour), Valid: true}
+		params.MaxExecutionsPerHour = pgtype.Int4{Int32: convert.IntToInt32Safe(*rule.MaxExecutionsPerHour), Valid: true}
 	}
 	if rule.LastTriggeredAt != nil {
 		params.LastTriggeredAt = toPgTimestamp(*rule.LastTriggeredAt)
@@ -87,19 +88,19 @@ func (r *RuleRepository) Update(ctx context.Context, rule *domain.AutomationRule
 		Name:              rule.Name,
 		Description:       toPgText(rule.Description),
 		Enabled:           rule.Enabled,
-		Priority:          int32(rule.Priority),
+		Priority:          convert.IntToInt32Safe(rule.Priority),
 		TriggerType:       string(rule.TriggerType),
 		TriggerConfig:     triggerConfig,
 		Conditions:        conditions,
 		ConditionOperator: string(rule.ConditionOperator),
 		Actions:           actions,
-		CooldownSeconds:   int32(rule.CooldownSeconds),
+		CooldownSeconds:   convert.IntToInt32Safe(rule.CooldownSeconds),
 		Tags:              rule.Tags,
 		UpdatedAt:         toPgTimestamp(rule.UpdatedAt),
 	}
 
 	if rule.MaxExecutionsPerHour != nil {
-		params.MaxExecutionsPerHour = pgtype.Int4{Int32: int32(*rule.MaxExecutionsPerHour), Valid: true}
+		params.MaxExecutionsPerHour = pgtype.Int4{Int32: convert.IntToInt32Safe(*rule.MaxExecutionsPerHour), Valid: true}
 	}
 	if rule.LastTriggeredAt != nil {
 		params.LastTriggeredAt = toPgTimestamp(*rule.LastTriggeredAt)
@@ -138,8 +139,8 @@ func (r *RuleRepository) GetByUserID(ctx context.Context, userID uuid.UUID) ([]*
 func (r *RuleRepository) List(ctx context.Context, filter domain.RuleFilter) ([]*domain.AutomationRule, int64, error) {
 	params := db.ListAutomationRulesParams{
 		UserID: toPgUUID(filter.UserID),
-		Limit:  int32(filter.Limit),
-		Offset: int32(filter.Offset),
+		Limit:  convert.IntToInt32Safe(filter.Limit),
+		Offset: convert.IntToInt32Safe(filter.Offset),
 	}
 
 	if filter.Enabled != nil {

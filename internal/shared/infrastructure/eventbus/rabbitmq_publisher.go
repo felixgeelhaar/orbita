@@ -37,7 +37,7 @@ func NewRabbitMQPublisher(url string, logger *slog.Logger) (*RabbitMQPublisher, 
 
 	ch, err := conn.Channel()
 	if err != nil {
-		conn.Close()
+		_ = conn.Close() // Best-effort cleanup
 		return nil, fmt.Errorf("failed to open channel: %w", err)
 	}
 
@@ -52,8 +52,8 @@ func NewRabbitMQPublisher(url string, logger *slog.Logger) (*RabbitMQPublisher, 
 		nil,          // arguments
 	)
 	if err != nil {
-		ch.Close()
-		conn.Close()
+		_ = ch.Close()   // Best-effort cleanup
+		_ = conn.Close() // Best-effort cleanup
 		return nil, fmt.Errorf("failed to declare exchange: %w", err)
 	}
 

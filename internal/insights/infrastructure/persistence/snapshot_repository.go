@@ -9,6 +9,7 @@ import (
 
 	db "github.com/felixgeelhaar/orbita/db/generated"
 	"github.com/felixgeelhaar/orbita/internal/insights/domain"
+	"github.com/felixgeelhaar/orbita/internal/shared/infrastructure/convert"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -39,25 +40,25 @@ func (r *SnapshotRepository) Save(ctx context.Context, snapshot *domain.Producti
 		ID:                     toPgUUID(snapshot.ID),
 		UserID:                 toPgUUID(snapshot.UserID),
 		SnapshotDate:           toPgDate(snapshot.SnapshotDate),
-		TasksCreated:           int32(snapshot.TasksCreated),
-		TasksCompleted:         int32(snapshot.TasksCompleted),
-		TasksOverdue:           int32(snapshot.TasksOverdue),
+		TasksCreated:           convert.IntToInt32Safe(snapshot.TasksCreated),
+		TasksCompleted:         convert.IntToInt32Safe(snapshot.TasksCompleted),
+		TasksOverdue:           convert.IntToInt32Safe(snapshot.TasksOverdue),
 		TaskCompletionRate:     toPgNumeric(snapshot.TaskCompletionRate),
 		AvgTaskDurationMinutes: toPgInt4(snapshot.AvgTaskDurationMinutes),
-		BlocksScheduled:        int32(snapshot.BlocksScheduled),
-		BlocksCompleted:        int32(snapshot.BlocksCompleted),
-		BlocksMissed:           int32(snapshot.BlocksMissed),
-		ScheduledMinutes:       int32(snapshot.ScheduledMinutes),
-		CompletedMinutes:       int32(snapshot.CompletedMinutes),
+		BlocksScheduled:        convert.IntToInt32Safe(snapshot.BlocksScheduled),
+		BlocksCompleted:        convert.IntToInt32Safe(snapshot.BlocksCompleted),
+		BlocksMissed:           convert.IntToInt32Safe(snapshot.BlocksMissed),
+		ScheduledMinutes:       convert.IntToInt32Safe(snapshot.ScheduledMinutes),
+		CompletedMinutes:       convert.IntToInt32Safe(snapshot.CompletedMinutes),
 		BlockCompletionRate:    toPgNumeric(snapshot.BlockCompletionRate),
-		HabitsDue:              int32(snapshot.HabitsDue),
-		HabitsCompleted:        int32(snapshot.HabitsCompleted),
+		HabitsDue:              convert.IntToInt32Safe(snapshot.HabitsDue),
+		HabitsCompleted:        convert.IntToInt32Safe(snapshot.HabitsCompleted),
 		HabitCompletionRate:    toPgNumeric(snapshot.HabitCompletionRate),
-		LongestStreak:          int32(snapshot.LongestStreak),
-		FocusSessions:          int32(snapshot.FocusSessions),
-		TotalFocusMinutes:      int32(snapshot.TotalFocusMinutes),
+		LongestStreak:          convert.IntToInt32Safe(snapshot.LongestStreak),
+		FocusSessions:          convert.IntToInt32Safe(snapshot.FocusSessions),
+		TotalFocusMinutes:      convert.IntToInt32Safe(snapshot.TotalFocusMinutes),
 		AvgFocusSessionMinutes: toPgInt4(snapshot.AvgFocusSessionMinutes),
-		ProductivityScore:      int32(snapshot.ProductivityScore),
+		ProductivityScore:      convert.IntToInt32Safe(snapshot.ProductivityScore),
 		PeakHours:              peakHoursJSON,
 		TimeByCategory:         timeByCatJSON,
 		ComputedAt:             toPgTimestamptz(snapshot.ComputedAt),
@@ -115,7 +116,7 @@ func (r *SnapshotRepository) GetLatest(ctx context.Context, userID uuid.UUID) (*
 func (r *SnapshotRepository) GetRecent(ctx context.Context, userID uuid.UUID, limit int) ([]*domain.ProductivitySnapshot, error) {
 	rows, err := r.queries.GetProductivitySnapshots(ctx, db.GetProductivitySnapshotsParams{
 		UserID: toPgUUID(userID),
-		Limit:  int32(limit),
+		Limit:  convert.IntToInt32Safe(limit),
 	})
 	if err != nil {
 		return nil, err
@@ -230,7 +231,7 @@ func fromPgNumeric(n pgtype.Numeric) float64 {
 }
 
 func toPgInt4(i int) pgtype.Int4 {
-	return pgtype.Int4{Int32: int32(i), Valid: true}
+	return pgtype.Int4{Int32: convert.IntToInt32Safe(i), Valid: true}
 }
 
 func fromPgInt4(i pgtype.Int4) int {

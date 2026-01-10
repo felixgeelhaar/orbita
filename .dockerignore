@@ -1,0 +1,64 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Build artifacts
+bin/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test files
+*_test.go
+*.test
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Development files
+.air.toml
+.env
+.env.*
+!.env.example
+
+# Coverage
+coverage/
+*.out
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.circleci/
+
+# Docker
+Dockerfile*
+docker-compose*
+!Dockerfile
+!docker-compose.yml
+!docker-compose.prod.yml
+
+# Examples (optional - remove if you want examples in image)
+# examples/
+
+# Logs
+*.log
+logs/

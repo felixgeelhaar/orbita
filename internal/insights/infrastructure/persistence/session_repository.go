@@ -7,6 +7,7 @@ import (
 
 	db "github.com/felixgeelhaar/orbita/db/generated"
 	"github.com/felixgeelhaar/orbita/internal/insights/domain"
+	"github.com/felixgeelhaar/orbita/internal/shared/infrastructure/convert"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -50,7 +51,7 @@ func (r *SessionRepository) Create(ctx context.Context, session *domain.TimeSess
 		EndedAt:         endedAt,
 		DurationMinutes: durationMins,
 		Status:          string(session.Status),
-		Interruptions:   int32(session.Interruptions),
+		Interruptions:   convert.IntToInt32Safe(session.Interruptions),
 		Notes:           toPgText(session.Notes),
 	}
 
@@ -74,7 +75,7 @@ func (r *SessionRepository) Update(ctx context.Context, session *domain.TimeSess
 		EndedAt:         endedAt,
 		DurationMinutes: durationMins,
 		Status:          string(session.Status),
-		Interruptions:   int32(session.Interruptions),
+		Interruptions:   convert.IntToInt32Safe(session.Interruptions),
 		Notes:           toPgText(session.Notes),
 	}
 
@@ -128,7 +129,7 @@ func (r *SessionRepository) GetByType(ctx context.Context, userID uuid.UUID, ses
 	rows, err := r.queries.GetTimeSessionsByType(ctx, db.GetTimeSessionsByTypeParams{
 		UserID:      toPgUUID(userID),
 		SessionType: string(sessionType),
-		Limit:       int32(limit),
+		Limit:       convert.IntToInt32Safe(limit),
 	})
 	if err != nil {
 		return nil, err

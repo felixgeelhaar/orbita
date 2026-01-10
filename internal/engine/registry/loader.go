@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/felixgeelhaar/orbita/internal/engine/grpc"
@@ -56,28 +57,41 @@ func (l *Loader) Load(ctx context.Context, opts LoadOptions) (sdk.Engine, error)
 	manifest := opts.Manifest
 	binaryPath := manifest.BinaryAbsPath()
 
-	// Verify binary exists
-	if _, err := os.Stat(binaryPath); err != nil {
-		return nil, sdk.NewLoadError(binaryPath, "binary not found", err)
+	// Security: Validate and sanitize the binary path before execution
+	sanitizedPath, err := l.validateBinaryPath(binaryPath)
+	if err != nil {
+		return nil, sdk.NewLoadError(binaryPath, "binary path validation failed", err)
+	}
+
+	// Verify binary exists and is executable
+	info, err := os.Stat(sanitizedPath)
+	if err != nil {
+		return nil, sdk.NewLoadError(sanitizedPath, "binary not found", err)
+	}
+
+	// Security: Ensure it's a regular file, not a directory or symlink
+	if !info.Mode().IsRegular() {
+		return nil, sdk.NewLoadError(sanitizedPath, "binary path is not a regular file", nil)
 	}
 
 	// Verify checksum if provided
 	if opts.SecureMode && manifest.Checksum != "" {
-		if err := l.verifyChecksum(binaryPath, manifest.Checksum); err != nil {
-			return nil, sdk.NewLoadError(binaryPath, "checksum verification failed", err)
+		if err := l.verifyChecksum(sanitizedPath, manifest.Checksum); err != nil {
+			return nil, sdk.NewLoadError(sanitizedPath, "checksum verification failed", err)
 		}
 	}
 
 	l.logger.Info("loading plugin",
 		"engine_id", manifest.ID,
-		"binary", binaryPath,
+		"binary", sanitizedPath,
 	)
 
 	// Configure the plugin client
+	// #nosec G204 -- binary path is validated by validateBinaryPath
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig: grpc.HandshakeConfig,
 		Plugins:         grpc.PluginMapForEngine(manifest.EngineType()),
-		Cmd:             exec.Command(binaryPath),
+		Cmd:             exec.Command(sanitizedPath),
 		Logger:          newHclogAdapter(l.logger),
 		AllowedProtocols: []plugin.Protocol{
 			plugin.ProtocolGRPC,
@@ -150,6 +164,51 @@ func (l *Loader) IsLoaded(id string) bool {
 	return exists
 }
 
+// validateBinaryPath validates and sanitizes a binary path to prevent command injection.
+// It ensures the path is absolute, contains no shell metacharacters, and resolves
+// to a safe location without path traversal.
+func (l *Loader) validateBinaryPath(path string) (string, error) {
+	if path == "" {
+		return "", fmt.Errorf("binary path cannot be empty")
+	}
+
+	// Clean the path to resolve any ".." or "." components
+	cleanPath := filepath.Clean(path)
+
+	// Ensure the path is absolute
+	if !filepath.IsAbs(cleanPath) {
+		return "", fmt.Errorf("binary path must be absolute: %s", path)
+	}
+
+	// Security: Check for shell metacharacters that could enable command injection
+	// These characters have special meaning in shells and could be exploited
+	dangerousChars := []string{";", "&", "|", "$", "`", "(", ")", "{", "}", "<", ">", "!", "\n", "\r", "\\", "'", "\""}
+	for _, char := range dangerousChars {
+		if strings.Contains(cleanPath, char) {
+			return "", fmt.Errorf("binary path contains forbidden character %q: %s", char, path)
+		}
+	}
+
+	// Security: Ensure the cleaned path doesn't escape via symlink by evaluating it
+	// This resolves symlinks to their actual targets
+	resolvedPath, err := filepath.EvalSymlinks(cleanPath)
+	if err != nil {
+		// If the file doesn't exist yet, filepath.EvalSymlinks will fail
+		// In that case, we return the cleaned path and let the caller handle existence check
+		if os.IsNotExist(err) {
+			return cleanPath, nil
+		}
+		return "", fmt.Errorf("failed to resolve binary path: %w", err)
+	}
+
+	l.logger.Debug("binary path validated",
+		"original", path,
+		"resolved", resolvedPath,
+	)
+
+	return resolvedPath, nil
+}
+
 // verifyChecksum verifies the SHA256 checksum of a file.
 // Expected format: "sha256:HEXHASH" or just "HEXHASH" (assumes sha256)
 func (l *Loader) verifyChecksum(path, expected string) error {
@@ -169,6 +228,7 @@ func (l *Loader) verifyChecksum(path, expected string) error {
 	}
 
 	// Open the file
+	// #nosec G304 - path is validated by validateBinaryPath before calling verifyChecksum
 	file, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)

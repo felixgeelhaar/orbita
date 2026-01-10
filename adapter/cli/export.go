@@ -75,7 +75,7 @@ func exportICS(cmd *cobra.Command, app *App) error {
 
 	// Output
 	if exportOutput != "" {
-		if err := os.WriteFile(exportOutput, []byte(ics), 0644); err != nil {
+		if err := os.WriteFile(exportOutput, []byte(ics), 0600); err != nil {
 			return fmt.Errorf("failed to write file: %w", err)
 		}
 		fmt.Fprintf(os.Stderr, "Exported %d blocks to %s\n", len(allBlocks), exportOutput)

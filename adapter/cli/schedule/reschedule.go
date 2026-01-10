@@ -99,6 +99,6 @@ func init() {
 	rescheduleCmd.Flags().StringVar(&rescheduleStart, "start", "", "new start time (HH:MM, required)")
 	rescheduleCmd.Flags().StringVar(&rescheduleEnd, "end", "", "new end time (HH:MM, required)")
 
-	rescheduleCmd.MarkFlagRequired("start")
-	rescheduleCmd.MarkFlagRequired("end")
+	_ = rescheduleCmd.MarkFlagRequired("start") // Safe to ignore - panics during testing if wrong
+	_ = rescheduleCmd.MarkFlagRequired("end")   // Safe to ignore - panics during testing if wrong
 }

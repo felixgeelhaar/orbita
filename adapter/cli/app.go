@@ -102,6 +102,8 @@ type App struct {
 	InstallPackageHandler   *marketplaceCommands.InstallPackageHandler
 	UninstallPackageHandler *marketplaceCommands.UninstallPackageHandler
 	UpdatePackageHandler    *marketplaceCommands.UpdatePackageHandler
+	EnablePackageHandler    *marketplaceCommands.EnablePackageHandler
+	DisablePackageHandler   *marketplaceCommands.DisablePackageHandler
 	LoginHandler            *marketplaceCommands.LoginHandler
 	LogoutHandler           *marketplaceCommands.LogoutHandler
 	WhoAmIHandler           *marketplaceCommands.WhoAmIHandler

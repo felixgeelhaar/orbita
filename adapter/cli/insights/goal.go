@@ -236,7 +236,7 @@ func init() {
 	goalCreateCmd.Flags().StringVarP(&goalType, "type", "t", "daily_tasks", "goal type")
 	goalCreateCmd.Flags().IntVarP(&goalTarget, "target", "T", 0, "target value (required)")
 	goalCreateCmd.Flags().StringVarP(&goalPeriod, "period", "p", "daily", "period type (daily, weekly, monthly)")
-	goalCreateCmd.MarkFlagRequired("target")
+	_ = goalCreateCmd.MarkFlagRequired("target") // Safe to ignore - panics during testing if wrong
 
 	goalListCmd.Flags().BoolVarP(&goalShowAll, "all", "a", false, "show all goals including expired")
 

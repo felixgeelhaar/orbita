@@ -317,7 +317,7 @@ func deleteMissingEvents(ctx context.Context, client *http.Client, baseURL, cale
 		if err != nil {
 			return deleted, err
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close() // Best-effort cleanup
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 			deleted++
 		} else {

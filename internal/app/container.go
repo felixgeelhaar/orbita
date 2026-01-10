@@ -540,7 +540,9 @@ func (c *Container) Close() {
 	}
 
 	if c.EventPublisher != nil {
-		c.EventPublisher.Close()
+		if err := c.EventPublisher.Close(); err != nil {
+			c.Logger.Warn("error closing event publisher", "error", err)
+		}
 	}
 
 	if c.RedisClient != nil {

@@ -1,0 +1,8 @@
+{
+  "global": {
+    "exclude-dir": [
+      "internal/engine/grpc/proto"
+    ],
+    "nosec": true
+  }
+}

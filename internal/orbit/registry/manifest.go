@@ -3,10 +3,10 @@ package registry
 
 import (
 	"encoding/json"
-	"os"
 	"path/filepath"
 
 	"github.com/felixgeelhaar/orbita/internal/orbit/sdk"
+	"github.com/felixgeelhaar/orbita/internal/shared/infrastructure/security"
 )
 
 // Manifest represents the orbit.json manifest file.
@@ -114,7 +114,7 @@ func (m *Manifest) ToMetadata() sdk.Metadata {
 
 // LoadManifest loads an orbit manifest from a file.
 func LoadManifest(path string) (*Manifest, error) {
-	data, err := os.ReadFile(path)
+	data, err := security.SafeReadFile(path)
 	if err != nil {
 		return nil, sdk.ErrManifestNotFound
 	}

@@ -101,7 +101,10 @@ func main() {
 		"max_retries", processorConfig.MaxRetries,
 	)
 
-	processor.Start(ctx)
+	if err := processor.Start(ctx); err != nil {
+		logger.Error("failed to start outbox processor", "error", err)
+		os.Exit(1)
+	}
 
 	cleanupTicker := time.NewTicker(cfg.OutboxCleanupInterval)
 	defer cleanupTicker.Stop()

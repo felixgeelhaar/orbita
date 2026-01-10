@@ -91,33 +91,33 @@ func (h *UpdatePackageHandler) Handle(ctx context.Context, cmd UpdatePackageComm
 
 	// Create new installation directory
 	newInstallPath := filepath.Join(filepath.Dir(filepath.Dir(oldInstallPath)), targetVersion)
-	if err := os.MkdirAll(newInstallPath, 0755); err != nil {
+	if err := os.MkdirAll(newInstallPath, 0750); err != nil {
 		return nil, fmt.Errorf("failed to create install directory: %w", err)
 	}
 
 	// Download new version
 	archivePath := filepath.Join(newInstallPath, "package.tar.gz")
 	if err := h.installHandler.downloadPackage(ctx, version.DownloadURL, archivePath); err != nil {
-		os.RemoveAll(newInstallPath)
+		_ = os.RemoveAll(newInstallPath) // Best-effort cleanup
 		return nil, fmt.Errorf("failed to download package: %w", err)
 	}
 
 	// Verify checksum
 	if version.Checksum != "" {
 		if err := h.installHandler.verifyChecksum(archivePath, version.Checksum); err != nil {
-			os.RemoveAll(newInstallPath)
+			_ = os.RemoveAll(newInstallPath) // Best-effort cleanup
 			return nil, err
 		}
 	}
 
 	// Extract package
 	if err := h.installHandler.extractPackage(archivePath, newInstallPath); err != nil {
-		os.RemoveAll(newInstallPath)
+		_ = os.RemoveAll(newInstallPath) // Best-effort cleanup
 		return nil, fmt.Errorf("failed to extract package: %w", err)
 	}
 
 	// Remove archive
-	os.Remove(archivePath)
+	_ = os.Remove(archivePath) // Best-effort cleanup
 
 	// Update installation record
 	installed.UpdateVersion(targetVersion)
@@ -125,13 +125,13 @@ func (h *UpdatePackageHandler) Handle(ctx context.Context, cmd UpdatePackageComm
 	installed.SetChecksum(version.Checksum)
 
 	if err := h.installedRepo.Update(ctx, installed); err != nil {
-		os.RemoveAll(newInstallPath)
+		_ = os.RemoveAll(newInstallPath) // Best-effort cleanup
 		return nil, fmt.Errorf("failed to update installation record: %w", err)
 	}
 
 	// Remove old installation
 	if oldInstallPath != newInstallPath {
-		os.RemoveAll(oldInstallPath)
+		_ = os.RemoveAll(oldInstallPath) // Best-effort cleanup
 	}
 
 	// Increment download count

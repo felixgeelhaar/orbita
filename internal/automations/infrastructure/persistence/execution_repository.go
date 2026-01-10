@@ -7,6 +7,7 @@ import (
 
 	"github.com/felixgeelhaar/orbita/db/generated"
 	"github.com/felixgeelhaar/orbita/internal/automations/domain"
+	"github.com/felixgeelhaar/orbita/internal/shared/infrastructure/convert"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -55,7 +56,7 @@ func (r *ExecutionRepository) Create(ctx context.Context, execution *domain.Rule
 		params.CompletedAt = toPgTimestamp(*execution.CompletedAt)
 	}
 	if execution.DurationMs != nil {
-		params.DurationMs = pgtype.Int4{Int32: int32(*execution.DurationMs), Valid: true}
+		params.DurationMs = pgtype.Int4{Int32: convert.IntToInt32Safe(*execution.DurationMs), Valid: true}
 	}
 
 	return r.queries.CreateAutomationRuleExecution(ctx, params)
@@ -85,7 +86,7 @@ func (r *ExecutionRepository) Update(ctx context.Context, execution *domain.Rule
 		params.CompletedAt = toPgTimestamp(*execution.CompletedAt)
 	}
 	if execution.DurationMs != nil {
-		params.DurationMs = pgtype.Int4{Int32: int32(*execution.DurationMs), Valid: true}
+		params.DurationMs = pgtype.Int4{Int32: convert.IntToInt32Safe(*execution.DurationMs), Valid: true}
 	}
 
 	return r.queries.UpdateAutomationRuleExecution(ctx, params)
@@ -107,7 +108,7 @@ func (r *ExecutionRepository) GetByID(ctx context.Context, id uuid.UUID) (*domai
 func (r *ExecutionRepository) GetByRuleID(ctx context.Context, ruleID uuid.UUID, limit int) ([]*domain.RuleExecution, error) {
 	params := db.GetAutomationRuleExecutionsByRuleIDParams{
 		RuleID: toPgUUID(ruleID),
-		Limit:  int32(limit),
+		Limit:  convert.IntToInt32Safe(limit),
 	}
 	rows, err := r.queries.GetAutomationRuleExecutionsByRuleID(ctx, params)
 	if err != nil {
@@ -120,8 +121,8 @@ func (r *ExecutionRepository) GetByRuleID(ctx context.Context, ruleID uuid.UUID,
 func (r *ExecutionRepository) List(ctx context.Context, filter domain.ExecutionFilter) ([]*domain.RuleExecution, int64, error) {
 	params := db.ListAutomationRuleExecutionsParams{
 		UserID: toPgUUID(filter.UserID),
-		Limit:  int32(filter.Limit),
-		Offset: int32(filter.Offset),
+		Limit:  convert.IntToInt32Safe(filter.Limit),
+		Offset: convert.IntToInt32Safe(filter.Offset),
 	}
 
 	if filter.RuleID != nil {

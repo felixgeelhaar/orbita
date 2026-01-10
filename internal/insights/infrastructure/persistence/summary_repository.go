@@ -7,6 +7,7 @@ import (
 
 	db "github.com/felixgeelhaar/orbita/db/generated"
 	"github.com/felixgeelhaar/orbita/internal/insights/domain"
+	"github.com/felixgeelhaar/orbita/internal/shared/infrastructure/convert"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -37,18 +38,18 @@ func (r *SummaryRepository) Save(ctx context.Context, summary *domain.WeeklySumm
 		UserID:                    toPgUUID(summary.UserID),
 		WeekStart:                 toPgDate(summary.WeekStart),
 		WeekEnd:                   toPgDate(summary.WeekEnd),
-		TotalTasksCompleted:       int32(summary.TotalTasksCompleted),
-		TotalHabitsCompleted:      int32(summary.TotalHabitsCompleted),
-		TotalBlocksCompleted:      int32(summary.TotalBlocksCompleted),
-		TotalFocusMinutes:         int32(summary.TotalFocusMinutes),
+		TotalTasksCompleted:       convert.IntToInt32Safe(summary.TotalTasksCompleted),
+		TotalHabitsCompleted:      convert.IntToInt32Safe(summary.TotalHabitsCompleted),
+		TotalBlocksCompleted:      convert.IntToInt32Safe(summary.TotalBlocksCompleted),
+		TotalFocusMinutes:         convert.IntToInt32Safe(summary.TotalFocusMinutes),
 		AvgDailyProductivityScore: toPgNumeric(summary.AvgDailyProductivityScore),
 		AvgDailyFocusMinutes:      toPgInt4(summary.AvgDailyFocusMinutes),
 		ProductivityTrend:         toPgNumeric(summary.ProductivityTrend),
 		FocusTrend:                toPgNumeric(summary.FocusTrend),
 		MostProductiveDay:         mostProductiveDay,
 		LeastProductiveDay:        leastProductiveDay,
-		HabitsWithStreak:          int32(summary.HabitsWithStreak),
-		LongestStreak:             int32(summary.LongestStreak),
+		HabitsWithStreak:          convert.IntToInt32Safe(summary.HabitsWithStreak),
+		LongestStreak:             convert.IntToInt32Safe(summary.LongestStreak),
 		ComputedAt:                toPgTimestamptz(summary.ComputedAt),
 	}
 
@@ -74,7 +75,7 @@ func (r *SummaryRepository) GetByWeek(ctx context.Context, userID uuid.UUID, wee
 func (r *SummaryRepository) GetRecent(ctx context.Context, userID uuid.UUID, limit int) ([]*domain.WeeklySummary, error) {
 	rows, err := r.queries.GetWeeklySummaries(ctx, db.GetWeeklySummariesParams{
 		UserID: toPgUUID(userID),
-		Limit:  int32(limit),
+		Limit:  convert.IntToInt32Safe(limit),
 	})
 	if err != nil {
 		return nil, err

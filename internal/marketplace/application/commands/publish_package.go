@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/felixgeelhaar/orbita/internal/marketplace/domain"
+	"github.com/felixgeelhaar/orbita/internal/shared/infrastructure/security"
 	"github.com/google/uuid"
 )
 
@@ -186,17 +187,24 @@ func (h *PublishPackageHandler) Handle(ctx context.Context, cmd PublishPackageCo
 }
 
 func (h *PublishPackageHandler) readManifest(packagePath string) (*PackageManifest, error) {
+	// Validate the package path first
+	cleanPackagePath, err := security.ValidateFilePath(packagePath)
+	if err != nil {
+		return nil, fmt.Errorf("invalid package path: %w", err)
+	}
+
 	// Try orbit.json first, then engine.json
 	manifestPaths := []string{
-		filepath.Join(packagePath, "orbit.json"),
-		filepath.Join(packagePath, "engine.json"),
+		filepath.Join(cleanPackagePath, "orbit.json"),
+		filepath.Join(cleanPackagePath, "engine.json"),
 	}
 
 	var manifest PackageManifest
 	var found bool
 
 	for _, path := range manifestPaths {
-		data, err := os.ReadFile(path)
+		// Path is already validated since it's under cleanPackagePath
+		data, err := security.SafeReadFileInDir(path, cleanPackagePath)
 		if err != nil {
 			continue
 		}
@@ -281,6 +289,7 @@ func (h *PublishPackageHandler) createArchive(packagePath string, manifest *Pack
 
 		// Write file content
 		if !info.IsDir() {
+			// #nosec G304 - path comes from filepath.Walk which is bounded by packagePath
 			file, err := os.Open(path)
 			if err != nil {
 				return err
@@ -296,20 +305,20 @@ func (h *PublishPackageHandler) createArchive(packagePath string, manifest *Pack
 	})
 
 	if err != nil {
-		tmpFile.Close()
-		os.Remove(archivePath)
+		_ = tmpFile.Close()       // Best-effort cleanup
+		_ = os.Remove(archivePath) // Best-effort cleanup
 		return "", "", err
 	}
 
 	// Close writers to flush data
-	tw.Close()
-	gzw.Close()
-	tmpFile.Close()
+	_ = tw.Close()      // Best-effort cleanup
+	_ = gzw.Close()     // Best-effort cleanup
+	_ = tmpFile.Close() // Best-effort cleanup
 
 	// Calculate checksum
 	checksum, err := calculateChecksum(archivePath)
 	if err != nil {
-		os.Remove(archivePath)
+		_ = os.Remove(archivePath) // Best-effort cleanup
 		return "", "", err
 	}
 
@@ -317,6 +326,7 @@ func (h *PublishPackageHandler) createArchive(packagePath string, manifest *Pack
 }
 
 func calculateChecksum(filePath string) (string, error) {
+	// #nosec G304 - filePath is from os.CreateTemp (internal path)
 	file, err := os.Open(filePath)
 	if err != nil {
 		return "", err

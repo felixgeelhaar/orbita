@@ -4,7 +4,7 @@
 
 Orbita is a CLI-first adaptive productivity operating system that orchestrates tasks, calendars, habits, and meetings. Built with Domain-Driven Design as a modular monolith, ready for service extraction.
 
-**Current Version:** v0.2.0
+**Current Version:** v0.2.0 (v0.3.0 features complete)
 **Architecture:** DDD Modular Monolith
 **Primary Interface:** CLI + MCP (AI Integration)
 
@@ -215,33 +215,45 @@ Orbita is a CLI-first adaptive productivity operating system that orchestrates t
 
 ## Roadmap: What's Next
 
-### Near Term (v0.3.0)
+### v0.3.0 ✅ COMPLETE
 
 #### Focus Mode Pro
-- [ ] Pomodoro timer integration
-- [ ] Distraction blocking hooks
-- [ ] Focus session analytics
-- [ ] Deep work scheduling
+- [x] Pomodoro timer integration
+- [x] Focus session with break scheduling
+- [x] Task-linked focus sessions
+- [x] CLI aliases (focus, pomodoro, timer)
 
-#### Wellness Sync Enhancement
-- [ ] Mood tracking with trends
-- [ ] Energy correlation analysis
-- [ ] Sleep quality integration
-- [ ] Peak performance time detection
+#### Wellness Sync
+- [x] Mood tracking (1-10 scale)
+- [x] Energy level tracking
+- [x] Sleep quality logging
+- [x] Stress and exercise tracking
+- [x] Hydration and nutrition logging
+- [x] Trend analysis (improving/declining/stable)
+- [x] Correlation analysis between factors
+- [x] Wellness goals with progress tracking
+- [x] AI-generated insights
 
 #### Priority Engine Pro
-- [ ] Eisenhower matrix algorithm
-- [ ] Weighted scoring engine
-- [ ] Deadline-aware prioritization
-- [ ] Goal-aligned scoring
+- [x] Weighted scoring algorithm
+- [x] Deadline-aware prioritization (14-day decay)
+- [x] Effort-based scoring (duration factor)
+- [x] Streak risk integration
+- [x] Meeting cadence factor
+- [x] Configurable weights
+- [x] Human-readable score explanations
 
-### Medium Term (v0.4.0)
+### Medium Term (v0.4.0) 🔄 PARTIAL
 
-#### Ideal Week Designer
-- [ ] Visual week template builder
-- [ ] Recurring block patterns
-- [ ] Template versioning
-- [ ] Schedule optimization against template
+#### Ideal Week Designer ✅
+- [x] Week template creation and management
+- [x] Block types (focus, meeting, admin, break, personal)
+- [x] Per-day scheduling (Sunday-Saturday)
+- [x] Recurring block patterns
+- [x] Template activation/deactivation
+- [x] Actual vs ideal comparison
+- [x] Adherence scoring by day and type
+- [x] AI-generated recommendations
 
 #### Project AI Assistant
 - [ ] Project creation and breakdown

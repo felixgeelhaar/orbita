@@ -1,0 +1,127 @@
+{
+  "id": "run-0dbaf389c8e14ccf",
+  "plan_hash": "e507ce9b79103925dea33301846fb80e367b56f675a77fa131e964df350ed925",
+  "repo_id": ".",
+  "repo_root": ".",
+  "base_ref": "v0.2.0",
+  "head_sha": "feb4a75c755d10efbe7e59d3d23c4552c50f519d",
+  "commits": [
+    "feb4a75c755d10efbe7e59d3d23c4552c50f519d",
+    "c0d5498600efd248a85ad555c830034ea0107b74",
+    "d51bfdaa8d1002a91a1e795f96a29e2a6cf34ff1",
+    "ae4fb468a1b65ed8582f21b5d10fccad6c2ee740"
+  ],
+  "config_hash": "",
+  "plugin_plan_hash": "",
+  "version_current": "0.2.0",
+  "version_next": "0.3.0",
+  "bump_kind": "minor",
+  "confidence": 0,
+  "risk_score": 0,
+  "reasons": null,
+  "actor_type": "agent",
+  "actor_id": "mcp-agent",
+  "thresholds": {
+    "auto_approve_risk_threshold": 0,
+    "require_approval_above": 0,
+    "block_release_above": 0
+  },
+  "tag_name": "v0.3.0",
+  "notes": {
+    "text": "Release 0.3.0",
+    "audience_preset": "",
+    "tone_preset": "",
+    "provider": "basic",
+    "model": "",
+    "generated_at": "2026-01-10T17:51:01.26075+01:00"
+  },
+  "approval": {
+    "approved_by": "mcp-agent",
+    "approved_at": "2026-01-10T17:51:13.725284+01:00",
+    "auto_approved": true,
+    "plan_hash": "e507ce9b79103925dea33301846fb80e367b56f675a77fa131e964df350ed925",
+    "risk_score": 0,
+    "approver_type": "agent"
+  },
+  "steps": [
+    {
+      "name": "create-tag",
+      "type": "tag",
+      "config_hash": "",
+      "idempotency_key": ""
+    }
+  ],
+  "step_status": {
+    "create-tag": {
+      "state": "done",
+      "attempts": 1,
+      "started_at": "2026-01-10T17:51:17.730893+01:00",
+      "completed_at": "2026-01-10T17:51:19.989476+01:00",
+      "output": "Created and pushed tag v0.3.0"
+    }
+  },
+  "state": "published",
+  "history": [
+    {
+      "at": "2026-01-10T17:50:52.282896+01:00",
+      "from": "draft",
+      "to": "planned",
+      "event": "PLAN",
+      "actor": "mcp-agent",
+      "reason": "Release planned"
+    },
+    {
+      "at": "2026-01-10T17:50:56.65747+01:00",
+      "from": "planned",
+      "to": "versioned",
+      "event": "BUMP",
+      "actor": "mcp-agent",
+      "reason": "Version applied",
+      "metadata": {
+        "tag_name": "v0.3.0",
+        "version": "0.3.0"
+      }
+    },
+    {
+      "at": "2026-01-10T17:51:01.260778+01:00",
+      "from": "versioned",
+      "to": "notes_ready",
+      "event": "GENERATE_NOTES",
+      "actor": "mcp-agent",
+      "reason": "Notes generated"
+    },
+    {
+      "at": "2026-01-10T17:51:13.72531+01:00",
+      "from": "notes_ready",
+      "to": "approved",
+      "event": "APPROVE",
+      "actor": "mcp-agent",
+      "reason": "Release approved",
+      "metadata": {
+        "auto_approved": "true",
+        "plan_hash": "e507ce9b79103925dea33301846fb80e367b56f675a77fa131e964df350ed925",
+        "risk_score": "0.00"
+      }
+    },
+    {
+      "at": "2026-01-10T17:51:17.729287+01:00",
+      "from": "approved",
+      "to": "publishing",
+      "event": "START_PUBLISH",
+      "actor": "mcp-agent",
+      "reason": "Publishing started"
+    },
+    {
+      "at": "2026-01-10T17:51:20.00414+01:00",
+      "from": "publishing",
+      "to": "published",
+      "event": "PUBLISH_COMPLETE",
+      "actor": "mcp-agent",
+      "reason": "Release published"
+    }
+  ],
+  "changeset_id": "cs-1768063851734248000",
+  "created_at": "2026-01-10T17:50:52.282805+01:00",
+  "updated_at": "2026-01-10T17:51:20.004144+01:00",
+  "published_at": "2026-01-10T17:51:20.004118+01:00"
+}

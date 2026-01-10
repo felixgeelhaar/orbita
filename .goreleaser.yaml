@@ -1,0 +1,94 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+version: 2
+
+project_name: orbita
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: orbita
+    main: ./cmd/orbita
+    binary: orbita-{{ .Os }}-{{ .Arch }}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/felixgeelhaar/orbita/adapter/cli.Version={{.Version}}
+      - -X github.com/felixgeelhaar/orbita/adapter/cli.Commit={{.ShortCommit}}
+      - -X github.com/felixgeelhaar/orbita/adapter/cli.BuildDate={{.Date}}
+
+  - id: orbita-mcp
+    main: ./cmd/mcp
+    binary: orbita-mcp-{{ .Os }}-{{ .Arch }}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/felixgeelhaar/orbita/adapter/cli.Version={{.Version}}
+      - -X github.com/felixgeelhaar/orbita/adapter/cli.Commit={{.ShortCommit}}
+      - -X github.com/felixgeelhaar/orbita/adapter/cli.BuildDate={{.Date}}
+
+  - id: orbita-worker
+    main: ./cmd/worker
+    binary: orbita-worker-{{ .Os }}-{{ .Arch }}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/felixgeelhaar/orbita/adapter/cli.Version={{.Version}}
+      - -X github.com/felixgeelhaar/orbita/adapter/cli.Commit={{.ShortCommit}}
+      - -X github.com/felixgeelhaar/orbita/adapter/cli.BuildDate={{.Date}}
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: "{{ .Binary }}"
+
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - Merge pull request
+      - Merge branch
+
+release:
+  github:
+    owner: felixgeelhaar
+    name: orbita
+  draft: false
+  prerelease: auto
+  name_template: "Release {{.Tag}}"

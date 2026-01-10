@@ -29,15 +29,32 @@ func Serve(ctx context.Context, cfg *config.Config, cliApp *cli.App, authService
 		Name:    "orbita-mcp",
 		Version: "1.0.0",
 		Capabilities: mcpgo.Capabilities{
-			Tools: true,
+			Tools:     true,
+			Resources: true,
+			Prompts:   true,
 		},
 	})
 
-	if err := mcplocal.RegisterCLITools(srv, mcplocal.ToolDependencies{
+	deps := mcplocal.ToolDependencies{
 		App:         cliApp,
 		AuthService: authService,
-	}); err != nil {
+	}
+
+	// Register CLI tools
+	if err := mcplocal.RegisterCLITools(srv, deps); err != nil {
 		return err
+	}
+
+	// Register MCP resources
+	if err := mcplocal.RegisterResources(srv, deps); err != nil {
+		logger.Warn("failed to register MCP resources", "error", err)
+		// Continue - resources are optional enhancements
+	}
+
+	// Register MCP prompts
+	if err := mcplocal.RegisterPrompts(srv, deps); err != nil {
+		logger.Warn("failed to register MCP prompts", "error", err)
+		// Continue - prompts are optional enhancements
 	}
 
 	adapter := mcpLogger{logger: logger}

@@ -80,6 +80,9 @@ func RegisterCLITools(srv *mcp.Server, deps ToolDependencies) error {
 	if err := registerCalendarTools(srv, deps); err != nil {
 		return err
 	}
+	if err := registerDashboardTools(srv, deps); err != nil {
+		return err
+	}
 
 	// Register orbit tools if orbit system is configured
 	if deps.OrbitRegistry != nil {

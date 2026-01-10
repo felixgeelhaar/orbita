@@ -62,13 +62,33 @@ builds:
       - -X github.com/felixgeelhaar/orbita/adapter/cli.BuildDate={{.Date}}
 
 archives:
-  - id: default
+  - id: orbita
+    builds:
+      - orbita
     formats:
       - tar.gz
     format_overrides:
       - goos: windows
         formats:
           - zip
+    name_template: "{{ .Binary }}"
+
+  - id: orbita-mcp
+    builds:
+      - orbita-mcp
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: "{{ .Binary }}"
+
+  - id: orbita-worker
+    builds:
+      - orbita-worker
+    formats:
+      - tar.gz
     name_template: "{{ .Binary }}"
 
 checksum:

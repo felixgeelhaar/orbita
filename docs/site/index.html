@@ -22,6 +22,7 @@
                 <a href="#demo">Demo</a>
                 <a href="#orbits">Orbits</a>
                 <a href="#developers">Developers</a>
+                <a href="./docs/" class="nav-docs">Docs</a>
                 <a href="#installation">Install</a>
                 <a href="https://github.com/felixgeelhaar/orbita" target="_blank" class="btn btn-outline">GitHub</a>
             </div>
@@ -30,12 +31,17 @@
 
     <header class="hero">
         <div class="container">
-            <div class="hero-badge">CLI-First Productivity</div>
+            <div class="hero-badge">CLI-First Productivity &bull; Zero Config</div>
             <h1>Your productivity <span class="gradient-text">operating system</span></h1>
-            <p class="hero-subtitle">Orbita orchestrates tasks, calendars, habits, and meetings from your terminal. Built for developers who live in the command line.</p>
+            <p class="hero-subtitle">Orbita orchestrates tasks, calendars, habits, and meetings from your terminal. Works offline with SQLite, syncs with Google Calendar, adapts to your workflow.</p>
             <div class="hero-cta">
-                <a href="#installation" class="btn btn-primary">Get Started</a>
+                <a href="#installation" class="btn btn-primary">Get Started Free</a>
                 <a href="#demo" class="btn btn-secondary">See Demo</a>
+            </div>
+            <div class="hero-highlights">
+                <span class="hero-highlight"><span class="highlight-icon">&#10003;</span> Zero config - works instantly</span>
+                <span class="hero-highlight"><span class="highlight-icon">&#10003;</span> Bi-directional calendar sync</span>
+                <span class="hero-highlight"><span class="highlight-icon">&#10003;</span> AI-native with MCP</span>
             </div>
             <div class="hero-terminal">
                 <div class="terminal-window">
@@ -76,6 +82,33 @@
         </div>
     </header>
 
+    <section class="why-orbita">
+        <div class="container">
+            <div class="why-grid">
+                <div class="why-card">
+                    <div class="why-icon">&#9889;</div>
+                    <h3>Zero Configuration</h3>
+                    <p>Install and run immediately. Orbita works out of the box with SQLite - no database setup, no external services. Just <code>brew install</code> and go.</p>
+                </div>
+                <div class="why-card">
+                    <div class="why-icon">&#128274;</div>
+                    <h3>Your Data, Your Machine</h3>
+                    <p>Everything runs locally. Your tasks, habits, and schedules stay on your computer. Optional cloud sync when you need it.</p>
+                </div>
+                <div class="why-card">
+                    <div class="why-icon">&#128640;</div>
+                    <h3>Scales With You</h3>
+                    <p>Start simple with local mode. Upgrade to PostgreSQL for team features, or enable Pro orbits for advanced AI and automation.</p>
+                </div>
+                <div class="why-card">
+                    <div class="why-icon">&#129302;</div>
+                    <h3>AI That Helps, Not Decides</h3>
+                    <p>AI assists with classification and suggestions. But scheduling logic is deterministic and predictable - you stay in control.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section class="features" id="features">
         <div class="container">
             <h2>Everything you need to <span class="gradient-text">stay productive</span></h2>
@@ -96,11 +129,11 @@
                     <code class="feature-code">orbita schedule auto --optimize</code>
                 </div>
 
-                <div class="feature-card">
+                <div class="feature-card featured">
                     <div class="feature-icon">&#128198;</div>
-                    <h3>Calendar Sync</h3>
-                    <p>Two-way sync with Google Calendar. Import events, export time blocks, and keep everything in sync automatically.</p>
-                    <code class="feature-code">orbita calendar sync --provider google</code>
+                    <h3>Bi-Directional Calendar Sync</h3>
+                    <p>Real-time sync with Google Calendar. Automatic conflict resolution when external events clash with your schedule. Four resolution strategies: Orbita wins, External wins, Time-first, or Manual review.</p>
+                    <code class="feature-code">orbita sync --auto-resolve</code>
                 </div>
 
                 <div class="feature-card">

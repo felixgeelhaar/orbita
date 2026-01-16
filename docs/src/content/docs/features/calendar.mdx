@@ -1,0 +1,382 @@
+---
+title: Calendar Sync
+description: Bi-directional calendar synchronization with Google Calendar.
+---
+
+import { Steps, Aside, Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
+
+# Calendar Sync
+
+Orbita provides **bi-directional calendar synchronization**, keeping your external calendars and Orbita schedule in perfect alignment.
+
+<Aside type="tip" title="New Feature">
+  Bi-directional calendar sync is a new feature in Orbita 0.4.0. It automatically detects changes in both directions.
+</Aside>
+
+## How It Works
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    BI-DIRECTIONAL SYNC                       │
+└─────────────────────────────────────────────────────────────┘
+
+          Orbita                           Google Calendar
+    ┌─────────────────┐               ┌─────────────────┐
+    │                 │   Push        │                 │
+    │  Task Created   │──────────────►│  Event Created  │
+    │  Block Added    │               │                 │
+    │                 │               │                 │
+    │                 │   Pull        │                 │
+    │  Block Updated  │◄──────────────│  Event Changed  │
+    │  Conflict Found │               │                 │
+    └─────────────────┘               └─────────────────┘
+```
+
+### Push Sync (Orbita → Calendar)
+
+When you create tasks, habits, or meetings in Orbita:
+1. Orbita automatically schedules them
+2. Scheduled blocks push to your external calendar
+3. Calendar events include Orbita metadata for tracking
+
+### Pull Sync (Calendar → Orbita)
+
+When external events are added or modified:
+1. Orbita detects changes via periodic polling
+2. External events appear as blocked time
+3. Conflicts are detected and resolved automatically
+
+## Setting Up Calendar Sync
+
+<Steps>
+1. **Connect your calendar**
+   ```bash
+   orbita calendar connect google
+   ```
+   This opens your browser for OAuth authentication.
+
+2. **Verify connection**
+   ```bash
+   orbita calendar list
+   ```
+   You should see your connected calendars.
+
+3. **Enable automatic sync**
+   ```bash
+   orbita settings set calendar.sync_enabled true
+   ```
+
+4. **Test the sync**
+   ```bash
+   orbita sync
+   ```
+</Steps>
+
+## Configuration
+
+### Sync Settings
+
+```yaml
+# ~/.orbita/config.yaml
+calendar:
+  sync_enabled: true
+  sync_interval: "5m"        # Check every 5 minutes
+  look_ahead_days: 14        # Sync 2 weeks ahead
+
+  # What to auto-schedule
+  auto_schedule:
+    tasks: true
+    habits: true
+    meetings: true
+```
+
+### Conflict Resolution
+
+When Orbita blocks conflict with external events:
+
+```yaml
+calendar:
+  conflict_strategy: time_first  # Default
+
+  # Options:
+  # - orbita_wins: Keep Orbita blocks, reschedule if needed
+  # - external_wins: External events take priority
+  # - time_first: Earlier scheduled item wins
+  # - manual: Mark for review, no auto-resolution
+```
+
+<Tabs>
+  <TabItem label="orbita_wins">
+    Orbita blocks take priority. If an external event conflicts:
+    - Orbita block stays at its time
+    - External event is marked as conflict
+    - You're notified to handle manually
+  </TabItem>
+  <TabItem label="external_wins">
+    External events take priority. If conflict occurs:
+    - Orbita block is automatically rescheduled
+    - New optimal slot is found
+    - You're notified of the change
+  </TabItem>
+  <TabItem label="time_first">
+    First-scheduled wins:
+    - If Orbita block was scheduled first, it stays
+    - If external event was first, Orbita reschedules
+    - Fair resolution for both systems
+  </TabItem>
+  <TabItem label="manual">
+    No automatic resolution:
+    - Conflicts are flagged for review
+    - Use `orbita conflicts show` to see them
+    - Resolve manually with `orbita conflicts resolve`
+  </TabItem>
+</Tabs>
+
+## Using Calendar Sync
+
+### Viewing Synced Events
+
+```bash
+# Show schedule with external events
+orbita schedule show --include-external
+
+# View only external events
+orbita schedule show --external-only
+```
+
+Output:
+```
+Schedule for Monday, January 20, 2025
+
+09:00 - 10:00  Prepare presentation [task]
+10:30 - 11:00  Client Call [external] ← From Google Calendar
+12:00 - 13:00  Lunch [break]
+14:00 - 14:30  Daily standup [meeting]
+15:00 - 16:00  Team Planning [external] ← From Google Calendar
+```
+
+### Manual Sync
+
+```bash
+# Force sync now
+orbita sync
+
+# Sync and show status
+orbita sync --status
+
+# Import external changes only
+orbita sync --import
+```
+
+### Sync Status
+
+```bash
+orbita sync --status
+```
+
+Output:
+```
+Calendar Sync Status
+═══════════════════════
+Connected Calendars: 1
+Last Sync: 2 minutes ago
+Sync Interval: 5 minutes
+Next Sync: 3 minutes
+
+Statistics (Last 24h):
+  Events Pushed: 8
+  Events Pulled: 3
+  Conflicts Resolved: 1
+  Pending Conflicts: 0
+```
+
+## Conflict Management
+
+### Viewing Conflicts
+
+```bash
+orbita conflicts show
+```
+
+Output:
+```
+Pending Conflicts (1)
+═════════════════════
+
+#1 OVERLAP
+  Orbita Block: "Deep work session" (10:00 - 12:00)
+  External Event: "Urgent team meeting" (11:00 - 12:00)
+  Detected: 5 minutes ago
+
+  Resolution Options:
+  [R] Reschedule Orbita block
+  [K] Keep both (overlap allowed)
+  [D] Delete external event
+  [I] Ignore (mark as resolved)
+```
+
+### Resolving Conflicts
+
+```bash
+# Resolve interactively
+orbita conflicts resolve
+
+# Auto-resolve all
+orbita conflicts resolve --auto
+
+# Resolve specific conflict
+orbita conflicts resolve 1 --action reschedule
+```
+
+## Event Properties
+
+### Orbita Events in Calendar
+
+When Orbita syncs to your calendar, events include:
+
+- **Title**: Task/habit/meeting name
+- **Description**: Notes and metadata
+- **Color**: Based on type (task, habit, meeting)
+- **Extended Properties**: Orbita IDs for tracking
+
+<Aside>
+  Don't modify Orbita-created events directly in Google Calendar. Changes may be overwritten on next sync.
+</Aside>
+
+### External Events in Orbita
+
+External events appear as blocked time:
+
+```bash
+orbita schedule show
+```
+
+```
+09:00 - 10:00  Prepare presentation [task]
+10:30 - 11:00  Client Call [external]
+               └─ Source: Google Calendar (Work)
+               └─ Attendees: john@company.com, sarah@company.com
+```
+
+## Multiple Calendars
+
+### Adding Calendars
+
+```bash
+# Connect additional calendar
+orbita calendar connect google --calendar "Personal"
+
+# List all calendars
+orbita calendar list
+```
+
+### Calendar Selection
+
+```bash
+# Sync to specific calendar
+orbita settings set calendar.default_calendar "Work"
+
+# Per-item calendar selection
+orbita task create "Team event" --calendar "Work"
+orbita habit create "Evening run" --calendar "Personal"
+```
+
+## Troubleshooting
+
+### Connection Issues
+
+```bash
+# Check connection status
+orbita calendar status
+
+# Re-authenticate
+orbita calendar connect google --force
+
+# View sync logs
+orbita logs --component calendar
+```
+
+### Sync Not Working
+
+<Steps>
+1. Verify calendar is connected
+   ```bash
+   orbita calendar list
+   ```
+
+2. Check sync is enabled
+   ```bash
+   orbita config show calendar
+   ```
+
+3. Force a manual sync
+   ```bash
+   orbita sync --verbose
+   ```
+
+4. Check for errors
+   ```bash
+   orbita logs --level error
+   ```
+</Steps>
+
+### Duplicate Events
+
+If you see duplicate events:
+
+```bash
+# Clean up duplicates
+orbita calendar cleanup --duplicates
+
+# Reset sync state
+orbita calendar reset
+```
+
+<Aside type="caution">
+  `calendar reset` removes all sync state. Events will be re-synced on next sync cycle.
+</Aside>
+
+## Privacy & Security
+
+### Data Handling
+
+- OAuth tokens stored locally in `~/.orbita/tokens/`
+- Calendar data cached temporarily during sync
+- No data sent to third-party servers
+
+### Permissions Required
+
+Orbita requests these Google Calendar permissions:
+- Read calendar events
+- Create/modify events
+- Delete events created by Orbita
+
+### Revoking Access
+
+```bash
+# Disconnect calendar
+orbita calendar disconnect google
+
+# Or revoke from Google Account settings
+# https://myaccount.google.com/permissions
+```
+
+## Best Practices
+
+1. **Start with one calendar** - Add more once basic sync works
+2. **Use time_first strategy** - Fair resolution for mixed workflows
+3. **Review conflicts weekly** - Don't let pending conflicts pile up
+4. **Keep buffer time** - External events may not have buffers
+
+## Coming Soon
+
+- Apple Calendar (iCloud) support
+- Outlook/Microsoft 365 support
+- CalDAV support for self-hosted calendars
+- Real-time webhook-based sync
+
+## Next Steps
+
+- [Smart Scheduling](/orbita/docs/features/scheduling) - How scheduling works
+- [Conflict Resolution Guide](/orbita/docs/guides/conflict-resolution) - Advanced conflict handling
+- [Configuration](/orbita/docs/getting-started/configuration) - Full config options

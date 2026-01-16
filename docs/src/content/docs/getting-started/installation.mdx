@@ -1,0 +1,145 @@
+---
+title: Installation
+description: Install Orbita on macOS, Linux, or Windows.
+---
+
+import { Tabs, TabItem, Steps, Aside } from '@astrojs/starlight/components';
+
+# Installation
+
+Orbita can be installed on macOS, Linux, and Windows using various methods.
+
+## Recommended: Homebrew (macOS/Linux)
+
+The easiest way to install Orbita is via Homebrew:
+
+```bash
+# Add the Orbita tap
+brew tap felixgeelhaar/tap
+
+# Install Orbita
+brew install orbita
+```
+
+## Download Binary
+
+Download pre-built binaries from the [GitHub Releases](https://github.com/felixgeelhaar/orbita/releases) page.
+
+<Tabs>
+  <TabItem label="macOS">
+    ```bash
+    # Apple Silicon (M1/M2/M3)
+    curl -L https://github.com/felixgeelhaar/orbita/releases/latest/download/orbita_darwin_arm64.tar.gz | tar xz
+    sudo mv orbita /usr/local/bin/
+
+    # Intel Mac
+    curl -L https://github.com/felixgeelhaar/orbita/releases/latest/download/orbita_darwin_amd64.tar.gz | tar xz
+    sudo mv orbita /usr/local/bin/
+    ```
+  </TabItem>
+  <TabItem label="Linux">
+    ```bash
+    # x86_64
+    curl -L https://github.com/felixgeelhaar/orbita/releases/latest/download/orbita_linux_amd64.tar.gz | tar xz
+    sudo mv orbita /usr/local/bin/
+
+    # ARM64
+    curl -L https://github.com/felixgeelhaar/orbita/releases/latest/download/orbita_linux_arm64.tar.gz | tar xz
+    sudo mv orbita /usr/local/bin/
+    ```
+  </TabItem>
+  <TabItem label="Windows">
+    ```powershell
+    # Download and extract
+    Invoke-WebRequest -Uri "https://github.com/felixgeelhaar/orbita/releases/latest/download/orbita_windows_amd64.zip" -OutFile "orbita.zip"
+    Expand-Archive -Path "orbita.zip" -DestinationPath "C:\Program Files\orbita"
+
+    # Add to PATH (run as Administrator)
+    $env:Path += ";C:\Program Files\orbita"
+    [Environment]::SetEnvironmentVariable("Path", $env:Path, [EnvironmentVariableTarget]::Machine)
+    ```
+  </TabItem>
+</Tabs>
+
+## Build from Source
+
+<Steps>
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/felixgeelhaar/orbita.git
+   cd orbita
+   ```
+
+2. **Build the binary**
+   ```bash
+   make build
+   ```
+
+3. **Install to PATH**
+   ```bash
+   sudo cp bin/orbita /usr/local/bin/
+   ```
+</Steps>
+
+### Requirements for Building
+
+- Go 1.21 or later
+- Make
+- Git
+
+## Verify Installation
+
+After installation, verify Orbita is working:
+
+```bash
+orbita --version
+```
+
+You should see output like:
+
+```
+orbita version 0.4.0
+```
+
+## Shell Completions
+
+Enable command completions for your shell:
+
+<Tabs>
+  <TabItem label="Bash">
+    ```bash
+    # Add to ~/.bashrc
+    eval "$(orbita completion bash)"
+    ```
+  </TabItem>
+  <TabItem label="Zsh">
+    ```bash
+    # Add to ~/.zshrc
+    eval "$(orbita completion zsh)"
+    ```
+  </TabItem>
+  <TabItem label="Fish">
+    ```fish
+    # Add to ~/.config/fish/config.fish
+    orbita completion fish | source
+    ```
+  </TabItem>
+</Tabs>
+
+## Data Storage
+
+By default, Orbita stores data in:
+
+| Platform | Location |
+|----------|----------|
+| macOS    | `~/.orbita/` |
+| Linux    | `~/.orbita/` |
+| Windows  | `%USERPROFILE%\.orbita\` |
+
+<Aside type="tip">
+  You can change the data directory by setting the `ORBITA_HOME` environment variable.
+</Aside>
+
+## Next Steps
+
+Once installed, follow the [Quick Start](/orbita/docs/getting-started/quickstart) guide to create your first task and explore Orbita's features.

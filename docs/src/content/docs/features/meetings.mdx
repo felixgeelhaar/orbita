@@ -1,0 +1,84 @@
+---
+title: 1:1 Meetings
+description: Smart scheduling for recurring meetings with talking points and preparation.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+# 1:1 Meetings
+
+Orbita helps you manage recurring 1:1 meetings with participants, talking points, and automatic preparation reminders.
+
+## Creating Meetings
+
+```bash
+# Add a recurring 1:1
+orbita meeting add "Weekly sync with Sarah" \
+  --participant sarah@company.com \
+  --frequency weekly \
+  --duration 30
+
+# Bi-weekly meeting
+orbita meeting add "Manager 1:1" \
+  --participant manager@company.com \
+  --frequency biweekly \
+  --day friday \
+  --time "14:00"
+```
+
+## Managing Talking Points
+
+```bash
+# Add a topic
+orbita meeting topic "Discuss Q1 goals" --meeting "Sarah"
+
+# Add with priority
+orbita meeting topic "Project timeline concerns" --meeting "Sarah" --priority high
+
+# View topics
+orbita meeting topics "Sarah"
+```
+
+## Preparing for Meetings
+
+```bash
+# See upcoming meeting with topics
+orbita meeting prepare "Sarah"
+
+# View all upcoming meetings
+orbita meeting list --upcoming
+```
+
+Output:
+```
+Upcoming: Weekly sync with Sarah
+══════════════════════════════════
+
+When: Tomorrow, 10:00 AM (in 18 hours)
+Duration: 30 minutes
+Participant: sarah@company.com
+
+Talking Points:
+  1. [HIGH] Project timeline concerns
+  2. Discuss Q1 goals
+  3. Review last sprint
+
+Notes from last meeting:
+  • Agreed to review architecture doc by Friday
+  • Sarah will send updated requirements
+```
+
+## Meeting Analytics
+
+```bash
+orbita insights meetings
+```
+
+<Aside>
+  Meeting tracking helps you maintain consistent 1:1 cadence and follow up on action items.
+</Aside>
+
+## Next Steps
+
+- [Calendar Sync](/orbita/docs/features/calendar) - Sync meetings to your calendar
+- [CLI Reference](/orbita/docs/cli/meeting) - Full meeting commands

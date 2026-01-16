@@ -1,0 +1,67 @@
+---
+title: Automations
+description: Create custom automation rules to streamline your productivity workflow.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+# Automations
+
+Build custom automation rules that trigger actions based on events in Orbita.
+
+<Aside type="caution">
+  Automations Pro is a premium feature.
+</Aside>
+
+## Creating Rules
+
+```bash
+# When task completed, log time
+orbita automation create \
+  --trigger "task.completed" \
+  --action "insights.log-time"
+
+# Auto-archive completed tasks after 7 days
+orbita automation create \
+  --trigger "task.completed" \
+  --condition "age > 7d" \
+  --action "task.archive"
+```
+
+## Trigger Types
+
+| Trigger | Description |
+|---------|-------------|
+| `task.created` | New task created |
+| `task.completed` | Task marked complete |
+| `habit.completed` | Habit logged |
+| `habit.streak_broken` | Streak was broken |
+| `meeting.upcoming` | Meeting in N minutes |
+| `schedule.conflict` | Schedule conflict detected |
+
+## Actions
+
+| Action | Description |
+|--------|-------------|
+| `task.create` | Create a new task |
+| `task.archive` | Archive a task |
+| `notification.send` | Send notification |
+| `webhook.call` | Call external webhook |
+
+## Managing Automations
+
+```bash
+# List rules
+orbita automation list
+
+# Disable a rule
+orbita automation disable <id>
+
+# View rule history
+orbita automation history <id>
+```
+
+## Next Steps
+
+- [Events Reference](/orbita/docs/developers/events) - All available events
+- [Webhook Integration](/orbita/docs/guides/webhooks) - Connect external services

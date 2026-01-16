@@ -1,0 +1,107 @@
+---
+title: orbita task
+description: Task management commands reference.
+---
+
+# orbita task
+
+Manage tasks in Orbita.
+
+## Commands
+
+### create
+
+Create a new task.
+
+```bash
+orbita task create <title> [flags]
+```
+
+**Flags:**
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--priority` | `-p` | Priority: high, medium, low |
+| `--duration` | `-d` | Duration in minutes |
+| `--due` | | Due date (YYYY-MM-DD or relative) |
+| `--tags` | `-t` | Comma-separated tags |
+| `--notes` | `-n` | Additional notes |
+| `--project` | | Project name |
+
+**Examples:**
+```bash
+orbita task create "Review PR" -p high -d 30
+orbita task create "Write docs" --due tomorrow --tags work,docs
+```
+
+### list
+
+List tasks.
+
+```bash
+orbita task list [flags]
+```
+
+**Flags:**
+| Flag | Description |
+|------|-------------|
+| `--status` | Filter by status |
+| `--priority` | Filter by priority |
+| `--tag` | Filter by tag |
+| `--project` | Filter by project |
+| `--format` | Output format |
+
+### show
+
+Show task details.
+
+```bash
+orbita task show <id>
+```
+
+### update
+
+Update a task.
+
+```bash
+orbita task update <id> [flags]
+```
+
+### complete
+
+Mark task as complete.
+
+```bash
+orbita task complete <id> [id...]
+```
+
+### archive
+
+Archive a task.
+
+```bash
+orbita task archive <id>
+```
+
+### start
+
+Start working on a task.
+
+```bash
+orbita task start <id>
+```
+
+### schedule
+
+Schedule a task at specific time.
+
+```bash
+orbita task schedule <id> --time "2025-01-25 10:00"
+```
+
+### reschedule
+
+Reschedule a task.
+
+```bash
+orbita task reschedule <id> --time "tomorrow 14:00"
+```

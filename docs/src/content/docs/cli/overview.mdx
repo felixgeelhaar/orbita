@@ -1,0 +1,299 @@
+---
+title: CLI Overview
+description: Complete reference for Orbita's command-line interface.
+---
+
+import { Aside, Card, CardGrid } from '@astrojs/starlight/components';
+
+# CLI Overview
+
+Orbita's command-line interface is designed to be intuitive, fast, and powerful. Every feature is accessible from the terminal.
+
+## Command Structure
+
+```
+orbita <command> <subcommand> [arguments] [flags]
+```
+
+## Global Flags
+
+These flags work with any command:
+
+| Flag | Description |
+|------|-------------|
+| `--help`, `-h` | Show help for command |
+| `--version`, `-v` | Show version |
+| `--config`, `-c` | Config file path |
+| `--format`, `-f` | Output format (text/json/table) |
+| `--no-color` | Disable colored output |
+| `--debug` | Enable debug logging |
+
+## Command Groups
+
+<CardGrid>
+  <Card title="orbita task" icon="pencil">
+    Create, manage, and track tasks
+    [View reference](/orbita/docs/cli/task)
+  </Card>
+  <Card title="orbita schedule" icon="seti:clock">
+    View and manage your schedule
+    [View reference](/orbita/docs/cli/schedule)
+  </Card>
+  <Card title="orbita habit" icon="heart">
+    Track habits and streaks
+    [View reference](/orbita/docs/cli/habit)
+  </Card>
+  <Card title="orbita meeting" icon="group">
+    Manage 1:1 meetings
+    [View reference](/orbita/docs/cli/meeting)
+  </Card>
+  <Card title="orbita calendar" icon="seti:notebook">
+    Calendar sync commands
+    [View reference](/orbita/docs/cli/calendar)
+  </Card>
+  <Card title="orbita inbox" icon="email">
+    AI-powered inbox
+    [View reference](/orbita/docs/cli/inbox)
+  </Card>
+</CardGrid>
+
+## Quick Reference
+
+### Task Commands
+
+```bash
+# Create a task
+orbita task create "Title" [flags]
+  -p, --priority string   Priority (high/medium/low)
+  -d, --duration int      Duration in minutes
+  --due string            Due date (YYYY-MM-DD or "tomorrow")
+  --tags strings          Comma-separated tags
+
+# List tasks
+orbita task list [flags]
+  --status string    Filter by status
+  --priority string  Filter by priority
+  --tag string       Filter by tag
+
+# Update a task
+orbita task update <id> [flags]
+
+# Complete a task
+orbita task complete <id>
+
+# Archive a task
+orbita task archive <id>
+
+# Start working on a task
+orbita task start <id>
+```
+
+### Schedule Commands
+
+```bash
+# Show today's schedule
+orbita schedule show
+orbita schedule today
+
+# Show this week's schedule
+orbita schedule week
+
+# Optimize schedule
+orbita schedule optimize
+
+# Add a manual block
+orbita schedule block "Focus time" --start 09:00 --end 11:00
+```
+
+### Habit Commands
+
+```bash
+# Create a habit
+orbita habit create "Name" [flags]
+  --frequency string   daily/weekly/custom
+  --duration int       Duration in minutes
+  --time string        Preferred time (HH:MM)
+
+# Log habit completion
+orbita habit log <name>
+
+# View habits and streaks
+orbita habit list
+
+# View habit history
+orbita habit history <name>
+```
+
+### Meeting Commands
+
+```bash
+# Add a recurring 1:1
+orbita meeting add "Title" [flags]
+  --participant string   Participant email
+  --frequency string     weekly/biweekly/monthly
+  --duration int         Duration in minutes
+
+# Add a talking point
+orbita meeting topic "Topic text" --meeting <name>
+
+# View meetings
+orbita meeting list
+
+# Prepare for a meeting
+orbita meeting prepare <name>
+```
+
+### Calendar Commands
+
+```bash
+# Connect a calendar
+orbita calendar connect google
+
+# List connected calendars
+orbita calendar list
+
+# Sync now
+orbita sync
+
+# View sync status
+orbita sync --status
+
+# Import external events
+orbita sync --import
+```
+
+### Utility Commands
+
+```bash
+# View configuration
+orbita config show
+
+# Update settings
+orbita settings set <key> <value>
+
+# View insights
+orbita insights [day|week|month]
+
+# Export data
+orbita export --output backup.json
+
+# Import data
+orbita import --input backup.json
+
+# Start MCP server
+orbita mcp serve
+```
+
+## Output Formats
+
+### Text (Default)
+
+Human-readable output:
+
+```bash
+orbita task list
+```
+```
+ID        TITLE                  PRIORITY  DUE         STATUS
+abc123    Review PR              High      Today       pending
+def456    Write documentation    Medium    Tomorrow    pending
+```
+
+### JSON
+
+Machine-readable output:
+
+```bash
+orbita task list --format json
+```
+```json
+{
+  "tasks": [
+    {
+      "id": "abc123",
+      "title": "Review PR",
+      "priority": "high",
+      "due": "2025-01-20",
+      "status": "pending"
+    }
+  ]
+}
+```
+
+### Table
+
+Structured table output:
+
+```bash
+orbita task list --format table
+```
+
+## Shell Completion
+
+Enable tab completion for commands:
+
+```bash
+# Bash
+eval "$(orbita completion bash)"
+
+# Zsh
+eval "$(orbita completion zsh)"
+
+# Fish
+orbita completion fish | source
+```
+
+<Aside type="tip">
+  Add the completion command to your shell's RC file for persistent completion support.
+</Aside>
+
+## Interactive Mode
+
+Some commands support interactive selection:
+
+```bash
+# Interactive task selection
+orbita task complete --interactive
+
+# Interactive meeting preparation
+orbita meeting prepare
+```
+
+## Piping and Scripting
+
+Orbita commands work well with Unix pipes:
+
+```bash
+# Count pending tasks
+orbita task list --format json | jq '.tasks | length'
+
+# Export high priority tasks
+orbita task list --priority high --format json > high-priority.json
+
+# Daily report script
+#!/bin/bash
+echo "=== Daily Report ==="
+echo "Tasks completed today:"
+orbita insights day --completed
+```
+
+## Environment Variables
+
+Control CLI behavior with environment variables:
+
+```bash
+# Set output format
+export ORBITA_FORMAT=json
+
+# Disable colors
+export ORBITA_NO_COLOR=1
+
+# Enable debug mode
+export ORBITA_DEBUG=1
+```
+
+## Next Steps
+
+- [orbita task](/orbita/docs/cli/task) - Detailed task command reference
+- [orbita schedule](/orbita/docs/cli/schedule) - Schedule command reference
+- [orbita habit](/orbita/docs/cli/habit) - Habit command reference

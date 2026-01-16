@@ -1,0 +1,95 @@
+---
+title: Daily Planning
+description: A workflow for effective daily planning with Orbita.
+---
+
+# Daily Planning
+
+A structured approach to planning your day with Orbita.
+
+## Morning Routine
+
+### 1. Review Your Schedule
+
+```bash
+orbita schedule today
+```
+
+See what's already scheduled: meetings, habits, and auto-scheduled tasks.
+
+### 2. Check High-Priority Tasks
+
+```bash
+orbita task list --priority high
+```
+
+Ensure critical tasks are scheduled appropriately.
+
+### 3. Quick Capture
+
+Add any new items that came up:
+
+```bash
+orbita task create "Reply to client email" -p high -d 15
+orbita inbox add "Research that thing John mentioned"
+```
+
+### 4. Optimize If Needed
+
+If your schedule looks off:
+
+```bash
+orbita schedule optimize
+```
+
+## During the Day
+
+### Start Tasks
+
+When beginning work:
+
+```bash
+orbita task start <id>
+```
+
+### Log Progress
+
+Complete tasks as you finish:
+
+```bash
+orbita task complete <id>
+```
+
+### Log Habits
+
+After completing habits:
+
+```bash
+orbita habit log meditation
+```
+
+## End of Day
+
+### Review Completions
+
+```bash
+orbita insights today
+```
+
+### Check Tomorrow
+
+```bash
+orbita schedule show --date tomorrow
+```
+
+### Process Inbox
+
+```bash
+orbita inbox process
+```
+
+## Tips
+
+- Keep morning planning under 10 minutes
+- Don't over-schedule - leave buffer time
+- Review and adjust weekly

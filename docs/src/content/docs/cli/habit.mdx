@@ -1,0 +1,119 @@
+---
+title: orbita habit
+description: Habit tracking commands reference.
+---
+
+# orbita habit
+
+Track and manage habits.
+
+## Commands
+
+### create
+
+Create a new habit.
+
+```bash
+orbita habit create <name> [flags]
+```
+
+**Flags:**
+| Flag | Description |
+|------|-------------|
+| `--frequency` | daily, weekly, Nx/week |
+| `--duration` | Duration in minutes |
+| `--time` | Preferred time (HH:MM) |
+| `--day` | Day(s) for weekly habits |
+| `--reminder` | Enable reminders |
+
+### log
+
+Log habit completion.
+
+```bash
+orbita habit log <name> [flags]
+```
+
+**Flags:**
+| Flag | Description |
+|------|-------------|
+| `--note` | Add a note |
+| `--date` | Log for specific date |
+
+### list
+
+List all habits.
+
+```bash
+orbita habit list [flags]
+```
+
+**Flags:**
+| Flag | Description |
+|------|-------------|
+| `--archived` | Include archived habits |
+
+### show
+
+Show habit details.
+
+```bash
+orbita habit show <name>
+```
+
+### update
+
+Update habit settings.
+
+```bash
+orbita habit update <name> [flags]
+```
+
+### history
+
+View habit history.
+
+```bash
+orbita habit history <name> [--show-breaks]
+```
+
+### calendar
+
+Show habit completion calendar.
+
+```bash
+orbita habit calendar <name>
+orbita habit calendar --all
+```
+
+### streak
+
+Check streak status.
+
+```bash
+orbita habit streak <name>
+```
+
+### pause
+
+Pause habit tracking.
+
+```bash
+orbita habit pause <name> --until <date>
+```
+
+### resume
+
+Resume paused habit.
+
+```bash
+orbita habit resume <name>
+```
+
+### archive
+
+Archive a habit.
+
+```bash
+orbita habit archive <name>
+```

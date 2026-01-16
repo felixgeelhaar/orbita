@@ -1,0 +1,174 @@
+---
+title: Features Overview
+description: Explore all of Orbita's productivity features.
+---
+
+import { Card, CardGrid, Aside } from '@astrojs/starlight/components';
+
+# Features Overview
+
+Orbita is a complete productivity operating system. Here's what you can do with it.
+
+## Core Features
+
+<CardGrid>
+  <Card title="Task Management" icon="pencil">
+    Capture, organize, and execute tasks using the CORE framework. Smart prioritization helps you focus on what matters most.
+    [Learn more](/orbita/docs/features/tasks)
+  </Card>
+  <Card title="Smart Scheduling" icon="seti:clock">
+    Automatic time-blocking that respects your preferences, energy patterns, and constraints. Never manually schedule again.
+    [Learn more](/orbita/docs/features/scheduling)
+  </Card>
+  <Card title="Calendar Sync" icon="seti:notebook">
+    Bi-directional sync with Google Calendar. Your external events and Orbita blocks stay perfectly aligned.
+    [Learn more](/orbita/docs/features/calendar)
+  </Card>
+  <Card title="Habit Tracking" icon="heart">
+    Build lasting habits with adaptive scheduling and streak tracking. Celebrate milestones automatically.
+    [Learn more](/orbita/docs/features/habits)
+  </Card>
+</CardGrid>
+
+## Advanced Features
+
+<CardGrid>
+  <Card title="1:1 Meetings" icon="group">
+    Smart scheduling for recurring meetings. Track talking points and prepare effectively.
+    [Learn more](/orbita/docs/features/meetings)
+  </Card>
+  <Card title="AI Inbox" icon="email">
+    Process incoming items intelligently. AI helps categorize and prioritize your inbox.
+    [Learn more](/orbita/docs/features/inbox)
+  </Card>
+  <Card title="Automations" icon="setting">
+    Create rules that trigger actions automatically. Build your own productivity workflows.
+    [Learn more](/orbita/docs/features/automations)
+  </Card>
+  <Card title="Time Insights" icon="seti:graph">
+    Understand where your time goes. Analytics help you optimize your productivity.
+    [Learn more](/orbita/docs/features/insights)
+  </Card>
+</CardGrid>
+
+## Feature Comparison
+
+| Feature | Free | Pro |
+|---------|------|-----|
+| Task Management | Unlimited | Unlimited |
+| Basic Scheduling | ✓ | ✓ |
+| Smart Scheduling | 10 tasks/day | Unlimited |
+| Calendar Sync | 1 calendar | Unlimited |
+| Habit Tracking | 3 habits | Unlimited |
+| 1:1 Meetings | 2 recurring | Unlimited |
+| AI Inbox | - | ✓ |
+| Automations | - | ✓ |
+| Time Insights | Basic | Advanced |
+| Priority Support | - | ✓ |
+
+<Aside>
+  Orbita is free for personal use. Pro features are available with a subscription.
+</Aside>
+
+## Orbits (Modules)
+
+Orbita uses a modular architecture called "Orbits". Each orbit adds specialized functionality:
+
+### Productivity Orbits
+- **Smart Habits** - Adaptive habit scheduling
+- **Priority Engine Pro** - Advanced prioritization algorithms
+- **Focus Mode Pro** - Deep work sessions with blocking
+
+### Scheduling Orbits
+- **Smart 1:1 Scheduler** - Intelligent meeting coordination
+- **Auto-Rescheduler** - Automatic conflict resolution
+- **Ideal Week Designer** - Template-based scheduling
+
+### AI Orbits
+- **AI Inbox Pro** - Advanced AI categorization
+- **Project AI Assistant** - AI-powered project management
+
+### Insights Orbits
+- **Time Insights** - Comprehensive analytics
+- **Wellness Sync** - Health and energy tracking
+
+### Team Orbits
+- **Couples & Family Scheduler** - Shared scheduling
+- **Automations Pro** - Advanced automation rules
+
+## Integration Points
+
+### MCP (Model Context Protocol)
+
+Orbita is AI-native with full MCP support:
+
+```bash
+# Start the MCP server
+orbita mcp serve
+
+# Connect from Claude or other AI assistants
+```
+
+With MCP, your AI assistant can:
+- Create and manage tasks
+- Query your schedule
+- Log habit completions
+- Add meeting topics
+- Run reviews and planning
+
+### API Access
+
+Programmatic access for developers:
+
+```bash
+# Enable API mode
+orbita serve --api
+
+# API endpoints available at localhost:8080
+```
+
+### Shell Integration
+
+Works seamlessly with your terminal workflow:
+
+```bash
+# Quick capture from anywhere
+alias capture="orbita task create"
+
+# Daily planning
+alias plan="orbita schedule today && orbita task list --priority high"
+```
+
+## Architecture Highlights
+
+### Local-First
+
+- SQLite database by default
+- No internet required
+- Your data stays on your machine
+
+### Event-Driven
+
+- Changes propagate instantly
+- Calendar sync happens automatically
+- Real-time conflict detection
+
+### Extensible
+
+- Plugin architecture for custom integrations
+- MCP for AI assistants
+- API for custom applications
+
+## Getting Started with Features
+
+1. **Start with Tasks** - [Create your first task](/orbita/docs/features/tasks)
+2. **Set Up Scheduling** - [Configure your preferences](/orbita/docs/features/scheduling)
+3. **Connect Your Calendar** - [Enable sync](/orbita/docs/features/calendar)
+4. **Build Habits** - [Track your routines](/orbita/docs/features/habits)
+5. **Manage Meetings** - [Organize 1:1s](/orbita/docs/features/meetings)
+
+## Next Steps
+
+- [Task Management](/orbita/docs/features/tasks) - Deep dive into task features
+- [CLI Reference](/orbita/docs/cli/overview) - Complete command reference
+- [Configuration](/orbita/docs/getting-started/configuration) - Customize Orbita

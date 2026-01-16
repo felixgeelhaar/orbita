@@ -1,0 +1,112 @@
+---
+title: Architecture
+description: Technical architecture overview of Orbita.
+---
+
+# Architecture
+
+Orbita follows Domain-Driven Design (DDD) with an event-driven architecture.
+
+## Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      INTERFACE LAYER                         │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐        │
+│  │   CLI   │  │   MCP   │  │   API   │  │   Web   │        │
+│  └────┬────┘  └────┬────┘  └────┬────┘  └────┬────┘        │
+└───────┼────────────┼────────────┼────────────┼──────────────┘
+        │            │            │            │
+┌───────▼────────────▼────────────▼────────────▼──────────────┐
+│                    APPLICATION LAYER                         │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
+│  │   Command   │  │   Query     │  │  Subscribers │          │
+│  │   Handlers  │  │   Handlers  │  │              │          │
+│  └─────────────┘  └─────────────┘  └─────────────┘          │
+└─────────────────────────────────────────────────────────────┘
+        │                                    │
+┌───────▼────────────────────────────────────▼────────────────┐
+│                      DOMAIN LAYER                            │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐    │
+│  │ Identity │  │Scheduling│  │  Habits  │  │ Meetings │    │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘    │
+└─────────────────────────────────────────────────────────────┘
+        │
+┌───────▼─────────────────────────────────────────────────────┐
+│                   INFRASTRUCTURE LAYER                       │
+│  ┌───────────┐  ┌───────────┐  ┌───────────┐               │
+│  │PostgreSQL │  │  SQLite   │  │ RabbitMQ  │               │
+│  └───────────┘  └───────────┘  └───────────┘               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Bounded Contexts
+
+| Context | Description |
+|---------|-------------|
+| **Identity** | Users, authentication, settings |
+| **Productivity** | Tasks, CORE framework |
+| **Scheduling** | Schedule engine, time blocks |
+| **Habits** | Habit tracking, streaks |
+| **Meetings** | 1:1 management |
+| **Inbox** | AI inbox processing |
+| **Automations** | User-defined rules |
+| **Insights** | Analytics, time tracking |
+| **Calendar** | External calendar sync |
+
+## Event-Driven Architecture
+
+Events flow through the system:
+
+```
+Command → Handler → Domain Event → Outbox → Event Bus → Subscribers
+```
+
+### Key Events
+
+- `core.task.created`
+- `scheduling.block.scheduled`
+- `habits.habit.completed`
+- `meetings.meeting.created`
+
+## Storage Modes
+
+### Local (SQLite)
+
+Default mode with in-process event bus:
+
+```
+User → CLI → SQLite → In-Process Events
+```
+
+### Server (PostgreSQL)
+
+Full event sourcing with RabbitMQ:
+
+```
+User → CLI → PostgreSQL → RabbitMQ → Workers
+```
+
+## Directory Structure
+
+```
+internal/
+├── shared/
+│   ├── domain/          # Base types, events
+│   └── infrastructure/  # DB, event bus
+├── productivity/
+│   ├── domain/          # Task aggregate
+│   ├── application/     # Handlers
+│   └── infrastructure/  # Repos
+├── scheduling/
+├── habits/
+├── meetings/
+└── calendar/
+```
+
+## Design Principles
+
+1. **Autonomy over Configuration** - Works out of box
+2. **Adaptation over Rigidity** - Learns from behavior
+3. **Determinism over AI** - Predictable scheduling
+4. **Local First** - Data stays on machine

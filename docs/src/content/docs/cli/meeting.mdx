@@ -1,0 +1,86 @@
+---
+title: orbita meeting
+description: Meeting management commands reference.
+---
+
+# orbita meeting
+
+Manage 1:1 meetings and talking points.
+
+## Commands
+
+### add
+
+Add a recurring meeting.
+
+```bash
+orbita meeting add <title> [flags]
+```
+
+**Flags:**
+| Flag | Description |
+|------|-------------|
+| `--participant` | Participant email |
+| `--frequency` | weekly, biweekly, monthly |
+| `--duration` | Duration in minutes |
+| `--day` | Preferred day |
+| `--time` | Preferred time |
+
+### list
+
+List meetings.
+
+```bash
+orbita meeting list [flags]
+```
+
+**Flags:**
+| Flag | Description |
+|------|-------------|
+| `--upcoming` | Show upcoming only |
+
+### topic
+
+Add a talking point.
+
+```bash
+orbita meeting topic <text> --meeting <name> [flags]
+```
+
+**Flags:**
+| Flag | Description |
+|------|-------------|
+| `--meeting` | Meeting name |
+| `--priority` | high, medium, low |
+
+### topics
+
+List talking points.
+
+```bash
+orbita meeting topics <name>
+```
+
+### prepare
+
+Show meeting preparation view.
+
+```bash
+orbita meeting prepare [name]
+```
+
+### update
+
+Update meeting settings.
+
+```bash
+orbita meeting update <name> [flags]
+```
+
+### archive
+
+Archive a meeting.
+
+```bash
+orbita meeting archive <name>
+```

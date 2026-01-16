@@ -1,0 +1,329 @@
+---
+title: Task Management
+description: Capture, organize, and execute tasks with Orbita's CORE framework.
+---
+
+import { Steps, Aside, Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
+
+# Task Management
+
+Orbita's task management follows the **CORE framework**: Capture, Organize, Review, Execute.
+
+## The CORE Framework
+
+<CardGrid>
+  <Card title="Capture" icon="pencil">
+    Quickly capture tasks without breaking your flow. Orbita is always ready to receive new items.
+  </Card>
+  <Card title="Organize" icon="list-format">
+    Categorize tasks by priority, duration, and context. Let Orbita's scheduling engine do the heavy lifting.
+  </Card>
+  <Card title="Review" icon="approve-check">
+    Regular reviews keep you aligned with your goals. Daily, weekly, and monthly review support built-in.
+  </Card>
+  <Card title="Execute" icon="rocket">
+    Focus on the task at hand. Orbita ensures you're always working on the right thing at the right time.
+  </Card>
+</CardGrid>
+
+## Creating Tasks
+
+### Quick Capture
+
+```bash
+# Minimal task creation
+orbita task create "Buy groceries"
+
+# With priority and duration
+orbita task create "Prepare presentation" -p high -d 60
+
+# With due date
+orbita task create "Submit report" --due 2025-01-25
+
+# With tags
+orbita task create "Review PR #123" --tags work,code-review
+```
+
+### Task Attributes
+
+| Attribute | Flag | Description |
+|-----------|------|-------------|
+| Title | (positional) | Task description |
+| Priority | `-p`, `--priority` | `high`, `medium`, `low` |
+| Duration | `-d`, `--duration` | Estimated time in minutes |
+| Due Date | `--due` | Deadline (YYYY-MM-DD or relative) |
+| Tags | `--tags` | Comma-separated labels |
+| Notes | `--notes` | Additional details |
+| Project | `--project` | Associated project |
+
+### Relative Due Dates
+
+```bash
+orbita task create "Task" --due today
+orbita task create "Task" --due tomorrow
+orbita task create "Task" --due "next monday"
+orbita task create "Task" --due "in 3 days"
+```
+
+## Task Lifecycle
+
+<Steps>
+1. **Pending** - Task is created and waiting to be scheduled
+2. **Scheduled** - Orbita has allocated time for the task
+3. **In Progress** - You've started working on the task
+4. **Completed** - Task is done
+5. **Archived** - Task is removed from active lists
+</Steps>
+
+```bash
+# Start working on a task
+orbita task start <id>
+
+# Complete a task
+orbita task complete <id>
+
+# Archive a completed task
+orbita task archive <id>
+```
+
+## Viewing Tasks
+
+### List All Tasks
+
+```bash
+# All pending tasks
+orbita task list
+
+# Filtered by status
+orbita task list --status pending
+orbita task list --status completed
+
+# Filtered by priority
+orbita task list --priority high
+
+# Filtered by tag
+orbita task list --tag work
+
+# Combined filters
+orbita task list --priority high --tag work --status pending
+```
+
+### Task Details
+
+```bash
+orbita task show <id>
+```
+
+Output:
+```
+Task: abc123
+Title: Prepare quarterly presentation
+Status: scheduled
+Priority: High
+Duration: 90 minutes
+Due: 2025-01-25
+Tags: work, presentation
+Created: 2025-01-20 09:00
+Scheduled: 2025-01-22 10:00 - 11:30
+
+Notes:
+- Include Q4 metrics
+- Add team accomplishments slide
+```
+
+## Updating Tasks
+
+```bash
+# Update title
+orbita task update <id> --title "New title"
+
+# Change priority
+orbita task update <id> --priority high
+
+# Adjust duration
+orbita task update <id> --duration 45
+
+# Add tags
+orbita task update <id> --add-tag urgent
+
+# Remove tags
+orbita task update <id> --remove-tag optional
+
+# Update due date
+orbita task update <id> --due "next friday"
+```
+
+## Task Priority System
+
+Orbita uses a three-tier priority system:
+
+| Priority | Description | Scheduling Behavior |
+|----------|-------------|---------------------|
+| **High** | Critical tasks that must be done | Scheduled first, protected time |
+| **Medium** | Important but flexible tasks | Scheduled around high priority |
+| **Low** | Nice-to-have tasks | Fills remaining time slots |
+
+<Aside type="tip">
+  Keep high-priority tasks to 1-3 per day for realistic scheduling.
+</Aside>
+
+## Automatic Scheduling
+
+When you create a task, Orbita automatically:
+
+1. **Finds an optimal slot** based on priority and duration
+2. **Respects constraints** like work hours and existing events
+3. **Applies preferences** like ideal work times
+4. **Creates a time block** in your schedule
+
+```bash
+# Create task - automatically scheduled
+orbita task create "Deep work session" -p high -d 120
+
+# View where it's scheduled
+orbita schedule show
+```
+
+### Manual Scheduling Override
+
+```bash
+# Schedule at specific time
+orbita task schedule <id> --time "2025-01-22 14:00"
+
+# Reschedule
+orbita task reschedule <id> --time "2025-01-23 10:00"
+```
+
+## Task Projects
+
+Group related tasks into projects:
+
+```bash
+# Create a project
+orbita project create "Website Redesign"
+
+# Add task to project
+orbita task create "Design mockups" --project "Website Redesign"
+
+# View project tasks
+orbita project show "Website Redesign"
+```
+
+## Recurring Tasks
+
+For tasks that repeat:
+
+```bash
+# Daily recurring task
+orbita task create "Check email" --recur daily -d 15
+
+# Weekly task
+orbita task create "Team standup prep" --recur "weekly monday"
+
+# Custom recurrence
+orbita task create "Review metrics" --recur "every 2 weeks"
+```
+
+## Task Templates
+
+Create templates for common tasks:
+
+```bash
+# Create a template
+orbita template create "PR Review" -d 30 --tags code-review
+
+# Create task from template
+orbita task create --from-template "PR Review" "Review PR #456"
+```
+
+## Bulk Operations
+
+```bash
+# Complete multiple tasks
+orbita task complete abc123 def456 ghi789
+
+# Archive all completed tasks
+orbita task archive --completed
+
+# Update priority for multiple tasks
+orbita task update --tag urgent --priority high
+```
+
+## Integration with Schedule
+
+Tasks flow into your schedule automatically:
+
+```bash
+# View today's scheduled tasks
+orbita schedule today
+
+# See task in schedule context
+orbita schedule show --highlight-task <id>
+
+# Optimize task placement
+orbita schedule optimize
+```
+
+## Task Analytics
+
+```bash
+# View task completion stats
+orbita insights tasks
+
+# Daily summary
+orbita insights today --tasks
+
+# Weekly review
+orbita insights week --tasks
+```
+
+Output:
+```
+Task Insights (Last 7 Days)
+═══════════════════════════
+Created:    15
+Completed:  12
+Archived:   10
+Overdue:    1
+
+Completion Rate: 80%
+Avg Time/Task:   35 minutes
+
+By Priority:
+  High:   5/6 completed (83%)
+  Medium: 5/7 completed (71%)
+  Low:    2/2 completed (100%)
+```
+
+## Best Practices
+
+### Effective Task Capture
+
+- **Be specific**: "Review PR #123" not "Review code"
+- **Include duration**: Helps scheduling be more accurate
+- **Use consistent tags**: Create a tagging system and stick to it
+- **Set realistic due dates**: Orbita works better with real deadlines
+
+### Priority Guidelines
+
+- **High**: Must be done today, blocks other work
+- **Medium**: Important but can wait a day or two
+- **Low**: Would be nice to do when time permits
+
+### Daily Review
+
+```bash
+# Morning routine
+orbita schedule today              # See your day
+orbita task list --priority high   # Check critical tasks
+
+# Evening routine
+orbita task list --status pending  # Review remaining
+orbita insights today              # See accomplishments
+```
+
+## Next Steps
+
+- [Smart Scheduling](/orbita/docs/features/scheduling) - Learn how scheduling works
+- [Calendar Sync](/orbita/docs/features/calendar) - Integrate external calendars
+- [CLI Reference](/orbita/docs/cli/task) - Full task command reference

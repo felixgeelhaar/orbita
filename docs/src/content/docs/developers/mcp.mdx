@@ -1,0 +1,142 @@
+---
+title: MCP Integration
+description: Build custom integrations with Orbita's MCP server.
+---
+
+# MCP Integration
+
+Orbita exposes functionality through the Model Context Protocol (MCP).
+
+## Protocol Overview
+
+MCP is a JSON-RPC based protocol for AI tool integration.
+
+### Starting the Server
+
+```bash
+orbita mcp serve --port 3333
+```
+
+### Available Tools
+
+#### task_create
+
+Create a new task.
+
+```json
+{
+  "name": "task_create",
+  "parameters": {
+    "title": "string",
+    "priority": "high|medium|low",
+    "duration": "number (minutes)",
+    "due": "string (YYYY-MM-DD)"
+  }
+}
+```
+
+#### task_list
+
+List tasks.
+
+```json
+{
+  "name": "task_list",
+  "parameters": {
+    "status": "pending|completed|all",
+    "priority": "high|medium|low"
+  }
+}
+```
+
+#### task_complete
+
+Complete a task.
+
+```json
+{
+  "name": "task_complete",
+  "parameters": {
+    "id": "string"
+  }
+}
+```
+
+#### schedule_show
+
+View schedule.
+
+```json
+{
+  "name": "schedule_show",
+  "parameters": {
+    "date": "string (YYYY-MM-DD)"
+  }
+}
+```
+
+#### habit_log
+
+Log habit completion.
+
+```json
+{
+  "name": "habit_log",
+  "parameters": {
+    "name": "string"
+  }
+}
+```
+
+## Building Custom Clients
+
+### JavaScript
+
+```javascript
+import { Client } from "@modelcontextprotocol/sdk";
+
+const client = new Client();
+await client.connect("localhost:3333");
+
+const result = await client.call("task_create", {
+  title: "Review PR",
+  priority: "high"
+});
+```
+
+### Go
+
+```go
+import "github.com/felixgeelhaar/orbita/pkg/mcp"
+
+client := mcp.NewClient("localhost:3333")
+result, err := client.Call("task_create", map[string]any{
+  "title": "Review PR",
+  "priority": "high",
+})
+```
+
+## Resources
+
+MCP also exposes resources:
+
+- `orbita://schedule/today` - Today's schedule
+- `orbita://tasks/pending` - Pending tasks
+- `orbita://habits/active` - Active habits
+
+## Error Handling
+
+```json
+{
+  "error": {
+    "code": -32600,
+    "message": "Task not found"
+  }
+}
+```
+
+## Security
+
+- MCP runs locally only
+- No remote access by default
+- Data stays on your machine

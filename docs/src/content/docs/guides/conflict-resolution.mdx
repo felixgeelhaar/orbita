@@ -1,0 +1,96 @@
+---
+title: Conflict Resolution
+description: Handle scheduling conflicts between Orbita and external calendars.
+---
+
+# Conflict Resolution
+
+When Orbita blocks conflict with external calendar events, Orbita detects and resolves them.
+
+## Conflict Types
+
+| Type | Description |
+|------|-------------|
+| **Overlap** | External event overlaps with Orbita block |
+| **Modified** | Orbita event modified in external calendar |
+| **Deleted** | Orbita event deleted in external calendar |
+
+## Resolution Strategies
+
+### Time First (Default)
+
+Earlier-scheduled item wins:
+
+```yaml
+calendar:
+  conflict_strategy: time_first
+```
+
+### Orbita Wins
+
+Orbita blocks always take priority:
+
+```yaml
+calendar:
+  conflict_strategy: orbita_wins
+```
+
+### External Wins
+
+External events take priority, Orbita reschedules:
+
+```yaml
+calendar:
+  conflict_strategy: external_wins
+```
+
+### Manual
+
+Mark conflicts for manual review:
+
+```yaml
+calendar:
+  conflict_strategy: manual
+```
+
+## Managing Conflicts
+
+### View Conflicts
+
+```bash
+orbita conflicts show
+```
+
+### Resolve Interactively
+
+```bash
+orbita conflicts resolve
+```
+
+Options:
+- **Reschedule** - Move Orbita block
+- **Keep Both** - Allow overlap
+- **Ignore** - Mark as resolved
+
+### Auto-Resolve
+
+```bash
+orbita conflicts resolve --auto
+```
+
+## Best Practices
+
+1. Check conflicts daily
+2. Use `time_first` for mixed workflows
+3. Leave buffer time around external events
+4. Review conflict history weekly
+
+## Debugging
+
+```bash
+# See conflict history
+orbita conflicts history
+
+# Check sync logs
+orbita logs --component calendar
+```

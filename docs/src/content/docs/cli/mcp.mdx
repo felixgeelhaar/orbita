@@ -1,0 +1,86 @@
+---
+title: orbita mcp
+description: MCP server commands for AI integration.
+---
+
+# orbita mcp
+
+Start and manage the MCP (Model Context Protocol) server.
+
+## Commands
+
+### serve
+
+Start the MCP server.
+
+```bash
+orbita mcp serve [flags]
+```
+
+**Flags:**
+| Flag | Description |
+|------|-------------|
+| `--port` | Server port (default: 3333) |
+| `--host` | Server host (default: localhost) |
+
+### status
+
+Check MCP server status.
+
+```bash
+orbita mcp status
+```
+
+### tools
+
+List available MCP tools.
+
+```bash
+orbita mcp tools
+```
+
+## MCP Tools Available
+
+When the MCP server is running, AI assistants can use:
+
+| Tool | Description |
+|------|-------------|
+| `task_create` | Create a new task |
+| `task_list` | List tasks |
+| `task_complete` | Complete a task |
+| `schedule_show` | View schedule |
+| `habit_log` | Log habit completion |
+| `meeting_topic` | Add meeting topic |
+
+## Configuration
+
+```yaml
+# ~/.orbita/config.yaml
+mcp:
+  enabled: true
+  server:
+    host: localhost
+    port: 3333
+```
+
+## Connecting AI Assistants
+
+### Claude Desktop
+
+Add to Claude's MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "orbita": {
+      "command": "orbita",
+      "args": ["mcp", "serve"]
+    }
+  }
+}
+```
+
+## Next Steps
+
+- [AI Integration Guide](/orbita/docs/guides/ai-integration) - Full setup guide
+- [MCP Developer Docs](/orbita/docs/developers/mcp) - Build custom integrations

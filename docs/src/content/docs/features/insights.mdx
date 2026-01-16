@@ -1,0 +1,80 @@
+---
+title: Time Insights
+description: Analytics and time tracking to understand where your time goes.
+---
+
+# Time Insights
+
+Orbita tracks how you spend your time and provides actionable insights to improve productivity.
+
+## Viewing Insights
+
+```bash
+# Today's summary
+orbita insights today
+
+# Weekly overview
+orbita insights week
+
+# Monthly report
+orbita insights month
+```
+
+## Daily Insights
+
+```bash
+orbita insights today
+```
+
+Output:
+```
+Daily Insights - January 20, 2025
+═════════════════════════════════
+
+Time Tracked: 6h 45m
+
+By Category:
+  Deep Work:     3h 30m  ████████░░ 52%
+  Meetings:      1h 30m  ████░░░░░░ 22%
+  Admin:         1h 15m  ███░░░░░░░ 18%
+  Breaks:        30m     █░░░░░░░░░ 8%
+
+Tasks Completed: 5
+Habits Done: 3/3
+Focus Score: 85%
+```
+
+## Weekly Trends
+
+```bash
+orbita insights week
+```
+
+Shows:
+- Daily comparison
+- Peak productivity hours
+- Task completion rate
+- Habit consistency
+
+## Export Data
+
+```bash
+# Export to CSV
+orbita insights export --format csv --output report.csv
+
+# Export to JSON
+orbita insights export --format json
+```
+
+## Focus Score
+
+Orbita calculates a daily focus score based on:
+- Deep work duration
+- Context switch frequency
+- Task completion rate
+- Schedule adherence
+
+## Next Steps
+
+- [Smart Scheduling](/orbita/docs/features/scheduling) - Optimize your schedule
+- [Habit Tracking](/orbita/docs/features/habits) - Build consistent routines

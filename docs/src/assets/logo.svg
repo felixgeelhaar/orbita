@@ -1,0 +1,21 @@
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer orbit ring -->
+  <circle cx="20" cy="20" r="18" stroke="#89b4fa" stroke-width="2" fill="none" opacity="0.3"/>
+
+  <!-- Middle orbit ring -->
+  <circle cx="20" cy="20" r="12" stroke="#89b4fa" stroke-width="2" fill="none" opacity="0.6"/>
+
+  <!-- Inner orbit ring -->
+  <circle cx="20" cy="20" r="6" stroke="#89b4fa" stroke-width="2" fill="none"/>
+
+  <!-- Center core -->
+  <circle cx="20" cy="20" r="3" fill="#89b4fa"/>
+
+  <!-- Orbit dots representing tasks/habits/meetings -->
+  <circle cx="20" cy="2" r="2" fill="#a6e3a1"/> <!-- Task (top) -->
+  <circle cx="34" cy="14" r="2" fill="#f5c2e7"/> <!-- Habit (right-top) -->
+  <circle cx="8" cy="26" r="2" fill="#f9e2af"/> <!-- Meeting (left-bottom) -->
+
+  <!-- Motion trail -->
+  <path d="M20 2 Q 30 8, 34 14" stroke="#a6e3a1" stroke-width="1" fill="none" opacity="0.5"/>
+</svg>

@@ -1,0 +1,205 @@
+---
+title: Quick Start
+description: Get productive with Orbita in 5 minutes.
+---
+
+import { Steps, Aside, Card, CardGrid } from '@astrojs/starlight/components';
+
+# Quick Start
+
+Get up and running with Orbita in just a few minutes.
+
+## Your First Task
+
+<Steps>
+1. **Create a task**
+   ```bash
+   orbita task create "Review project proposal" -p high -d 45
+   ```
+   This creates a high-priority task with a 45-minute duration estimate.
+
+2. **View your tasks**
+   ```bash
+   orbita task list
+   ```
+   Output:
+   ```
+   ID        TITLE                    PRIORITY  DUE        DURATION  STATUS
+   abc123    Review project proposal  High      -          45m       pending
+   ```
+
+3. **Start working on it**
+   ```bash
+   orbita task start abc123
+   ```
+
+4. **Complete the task**
+   ```bash
+   orbita task complete abc123
+   ```
+</Steps>
+
+## Automatic Scheduling
+
+When you create a task, Orbita automatically schedules it for you:
+
+```bash
+# Create a task with a due date
+orbita task create "Prepare presentation" -p high -d 60 --due tomorrow
+
+# View your schedule
+orbita schedule show
+```
+
+Output:
+```
+Schedule for Monday, January 20, 2025
+
+09:00 - 10:00  Prepare presentation [task]
+10:30 - 11:15  Review project proposal [task]
+12:00 - 13:00  Lunch [break]
+14:00 - 14:30  Daily standup [meeting]
+```
+
+<Aside type="tip">
+  Orbita considers your existing calendar events, energy patterns, and preferences when scheduling tasks.
+</Aside>
+
+## Track Your Habits
+
+Build lasting habits with smart tracking:
+
+```bash
+# Create a daily habit
+orbita habit create "Morning meditation" --frequency daily --duration 15
+
+# Log completion
+orbita habit log meditation
+
+# View your streaks
+orbita habit list
+```
+
+Output:
+```
+HABIT                FREQUENCY  STREAK  LAST COMPLETED
+Morning meditation   Daily      7       Today
+Read 30 minutes      Daily      12      Today
+Exercise             3x/week    4       Yesterday
+```
+
+## Manage Meetings
+
+Schedule and prepare for 1:1 meetings:
+
+```bash
+# Add a recurring 1:1
+orbita meeting add "Weekly sync with Sarah" --participant sarah@company.com --frequency weekly
+
+# Add talking points
+orbita meeting topic "Discuss Q1 goals" --meeting sarah
+
+# View upcoming meetings
+orbita meeting list
+```
+
+## Calendar Sync
+
+Connect your external calendar for bi-directional sync:
+
+```bash
+# Initialize Google Calendar sync
+orbita calendar connect google
+
+# View synced events
+orbita schedule show --include-external
+
+# Force sync
+orbita sync
+```
+
+<Aside>
+  Calendar sync requires OAuth authentication. Orbita will open your browser to complete the authorization flow.
+</Aside>
+
+## Quick Reference
+
+<CardGrid>
+  <Card title="Tasks" icon="pencil">
+    ```bash
+    orbita task create "Title" -p high
+    orbita task list
+    orbita task complete <id>
+    ```
+  </Card>
+  <Card title="Schedule" icon="seti:clock">
+    ```bash
+    orbita schedule show
+    orbita schedule today
+    orbita schedule week
+    ```
+  </Card>
+  <Card title="Habits" icon="heart">
+    ```bash
+    orbita habit create "Name"
+    orbita habit log <name>
+    orbita habit list
+    ```
+  </Card>
+  <Card title="Meetings" icon="group">
+    ```bash
+    orbita meeting add "Title"
+    orbita meeting topic "Topic"
+    orbita meeting list
+    ```
+  </Card>
+</CardGrid>
+
+## Common Workflows
+
+### Morning Planning
+
+```bash
+# Review your day
+orbita schedule today
+
+# Quick capture any new tasks
+orbita task create "Reply to John's email" -p medium -d 10
+orbita task create "Review PR #123" -p high -d 30
+
+# Reschedule if needed
+orbita schedule optimize
+```
+
+### Weekly Review
+
+```bash
+# See this week's accomplishments
+orbita insights week
+
+# Review incomplete tasks
+orbita task list --status pending
+
+# Plan next week
+orbita schedule plan --week next
+```
+
+### Focus Mode
+
+```bash
+# Start a focus session
+orbita focus start --duration 90
+
+# See what to work on
+orbita focus suggest
+
+# End session
+orbita focus end
+```
+
+## Next Steps
+
+- [Configure Orbita](/orbita/docs/getting-started/configuration) to customize your workflow
+- Learn about [Task Management](/orbita/docs/features/tasks) in depth
+- Set up [Calendar Sync](/orbita/docs/features/calendar) for full integration
+- Explore the [CLI Reference](/orbita/docs/cli/overview) for all commands

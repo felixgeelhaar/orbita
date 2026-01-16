@@ -1,0 +1,98 @@
+---
+title: orbita calendar
+description: Calendar sync commands reference.
+---
+
+# orbita calendar
+
+Manage calendar connections and sync.
+
+## Commands
+
+### connect
+
+Connect an external calendar.
+
+```bash
+orbita calendar connect <provider>
+```
+
+**Providers:**
+- `google` - Google Calendar
+
+**Examples:**
+```bash
+orbita calendar connect google
+orbita calendar connect google --calendar "Work"
+```
+
+### list
+
+List connected calendars.
+
+```bash
+orbita calendar list
+```
+
+### disconnect
+
+Disconnect a calendar.
+
+```bash
+orbita calendar disconnect <provider>
+```
+
+### status
+
+Check calendar connection status.
+
+```bash
+orbita calendar status
+```
+
+### cleanup
+
+Clean up sync issues.
+
+```bash
+orbita calendar cleanup [flags]
+```
+
+**Flags:**
+| Flag | Description |
+|------|-------------|
+| `--duplicates` | Remove duplicate events |
+
+### reset
+
+Reset calendar sync state.
+
+```bash
+orbita calendar reset
+```
+
+## Related Commands
+
+### orbita sync
+
+Trigger calendar sync.
+
+```bash
+orbita sync [flags]
+```
+
+**Flags:**
+| Flag | Description |
+|------|-------------|
+| `--status` | Show sync status |
+| `--import` | Import external changes only |
+| `--verbose` | Verbose output |
+
+### orbita conflicts
+
+Manage sync conflicts.
+
+```bash
+orbita conflicts show
+orbita conflicts resolve [flags]
+```

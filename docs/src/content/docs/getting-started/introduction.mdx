@@ -1,0 +1,89 @@
+---
+title: Introduction
+description: Orbita is a CLI-first adaptive productivity operating system that orchestrates tasks, calendars, habits, and meetings.
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+# What is Orbita?
+
+Orbita is a **CLI-first adaptive productivity operating system** designed for developers and power users who want to take control of their time without leaving the terminal.
+
+Unlike traditional productivity tools that require constant attention, Orbita works **autonomously** in the background, intelligently scheduling your tasks, habits, and meetings while respecting your preferences and constraints.
+
+## Core Philosophy
+
+<CardGrid stagger>
+  <Card title="Autonomy over Configuration" icon="rocket">
+    Orbita works out of the box. No extensive setup required - install and start being productive immediately.
+  </Card>
+  <Card title="Adaptation over Rigidity" icon="setting">
+    The system continuously adjusts to your behavior patterns, learning when you're most productive and scheduling accordingly.
+  </Card>
+  <Card title="Determinism over Opaque AI" icon="approve-check">
+    Scheduling logic is predictable and transparent. AI supports your decisions but never makes them for you.
+  </Card>
+  <Card title="CLI-First Design" icon="laptop">
+    Every feature is accessible from the command line. Integrate with your existing terminal workflow seamlessly.
+  </Card>
+</CardGrid>
+
+## Key Features
+
+### Task Management
+Capture, organize, and execute tasks with the **CORE framework**:
+- **C**apture - Quick task capture without context switching
+- **O**rganize - Prioritize and categorize tasks
+- **R**eview - Regular reviews to stay on track
+- **E**xecute - Focus on what matters most
+
+### Smart Scheduling
+Orbita's scheduling engine automatically finds optimal time slots for your work:
+- Respects hard constraints (meetings, deadlines)
+- Applies soft preferences (ideal work hours, energy levels)
+- Aligns with your Ideal Week templates
+
+### Bi-Directional Calendar Sync
+Keep your external calendars in perfect sync:
+- Push Orbita blocks to Google Calendar
+- Import external events automatically
+- Intelligent conflict resolution
+
+### Habit Tracking
+Build lasting habits with smart scheduling:
+- Adaptive scheduling based on completion patterns
+- Streak tracking and milestone celebrations
+- Flexible frequency options
+
+### MCP Integration
+Designed for the AI era with native **Model Context Protocol** support:
+- Works with Claude, GPT, and other AI assistants
+- Natural language task management
+- AI-powered planning and review
+
+## Local-First Architecture
+
+Orbita runs entirely on your machine:
+- **SQLite by default** - No server required
+- **Your data stays local** - Complete privacy
+- **Works offline** - No internet dependency
+- **Optional cloud sync** - PostgreSQL + RabbitMQ for power users
+
+## Getting Started
+
+Ready to take control of your productivity?
+
+1. [Install Orbita](/orbita/docs/getting-started/installation)
+2. Follow the [Quick Start](/orbita/docs/getting-started/quickstart) guide
+3. Explore [CLI commands](/orbita/docs/cli/overview)
+
+```bash
+# Install via Homebrew
+brew install felixgeelhaar/tap/orbita
+
+# Create your first task
+orbita task create "Learn Orbita" -p high -d 30
+
+# See your schedule
+orbita schedule show
+```

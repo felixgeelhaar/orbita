@@ -1,0 +1,121 @@
+---
+title: Orbit SDK
+description: Build custom Orbits (modules) to extend Orbita.
+---
+
+# Orbit SDK
+
+Orbits are pluggable modules that extend Orbita's functionality.
+
+## What is an Orbit?
+
+An Orbit is a self-contained feature module that:
+- Has its own domain logic
+- Subscribes to events
+- Exposes CLI commands
+- Can be enabled/disabled
+
+## Built-in Orbits
+
+- Smart Habits
+- Smart 1:1 Scheduler
+- Auto-Rescheduler
+- AI Inbox Pro
+- Time Insights
+
+## Creating an Orbit
+
+### 1. Define the Module
+
+```go
+type MyOrbit struct {
+    sdk.BaseOrbit
+}
+
+func NewMyOrbit() *MyOrbit {
+    return &MyOrbit{
+        BaseOrbit: sdk.BaseOrbit{
+            Name: "my-orbit",
+            Description: "My custom orbit",
+        },
+    }
+}
+```
+
+### 2. Implement Handlers
+
+```go
+func (o *MyOrbit) OnTaskCreated(event TaskCreatedEvent) {
+    // React to task creation
+}
+```
+
+### 3. Register Commands
+
+```go
+func (o *MyOrbit) Commands() []*cobra.Command {
+    return []*cobra.Command{
+        {
+            Use:   "my-command",
+            Short: "Do something",
+            RunE:  o.handleMyCommand,
+        },
+    }
+}
+```
+
+### 4. Register the Orbit
+
+```go
+sdk.RegisterOrbit(NewMyOrbit())
+```
+
+## Capabilities
+
+Orbits can request capabilities:
+
+```go
+func (o *MyOrbit) Capabilities() []sdk.Capability {
+    return []sdk.Capability{
+        sdk.CapSubscribeEvents,
+        sdk.CapAccessSchedule,
+        sdk.CapModifyTasks,
+    }
+}
+```
+
+## Event Subscriptions
+
+```go
+func (o *MyOrbit) Subscribe() []string {
+    return []string{
+        "core.task.created",
+        "core.task.completed",
+        "scheduling.block.scheduled",
+    }
+}
+```
+
+## Testing Orbits
+
+```go
+func TestMyOrbit(t *testing.T) {
+    orbit := NewMyOrbit()
+
+    // Simulate event
+    event := TaskCreatedEvent{
+        TaskID: "test-123",
+    }
+
+    orbit.OnTaskCreated(event)
+
+    // Assert behavior
+}
+```
+
+## Distribution
+
+Orbits can be distributed as:
+- Built-in (compiled with Orbita)
+- Plugins (dynamic loading)
+- External services (via API)

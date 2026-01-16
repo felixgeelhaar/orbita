@@ -1,0 +1,65 @@
+---
+title: AI Inbox
+description: AI-powered inbox processing for intelligent task categorization.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+# AI Inbox
+
+The AI Inbox helps you process incoming items quickly with intelligent categorization and prioritization.
+
+<Aside type="caution">
+  AI Inbox is a Pro feature requiring an active subscription.
+</Aside>
+
+## Quick Capture to Inbox
+
+```bash
+# Add item to inbox
+orbita inbox add "Review the new design proposal"
+
+# Add with context
+orbita inbox add "John mentioned needing help with deployment" --source slack
+```
+
+## Processing Your Inbox
+
+```bash
+# View inbox
+orbita inbox list
+
+# Process with AI assistance
+orbita inbox process
+```
+
+The AI helps you:
+- Categorize items (task, habit, meeting, reference)
+- Suggest priority levels
+- Extract due dates from natural language
+- Identify potential duplicates
+
+## Inbox Zero Workflow
+
+```bash
+# Quick process all items
+orbita inbox process --auto
+
+# Review AI suggestions
+orbita inbox review
+```
+
+## Configuration
+
+```yaml
+# ~/.orbita/config.yaml
+inbox:
+  ai_enabled: true
+  auto_categorize: true
+  default_priority: medium
+```
+
+## Next Steps
+
+- [Task Management](/orbita/docs/features/tasks) - Where processed items go
+- [Automations](/orbita/docs/features/automations) - Automate inbox processing

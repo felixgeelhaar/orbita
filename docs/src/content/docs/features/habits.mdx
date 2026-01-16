@@ -1,0 +1,361 @@
+---
+title: Habit Tracking
+description: Build lasting habits with smart scheduling and streak tracking.
+---
+
+import { Steps, Aside, Card, CardGrid } from '@astrojs/starlight/components';
+
+# Habit Tracking
+
+Orbita helps you build and maintain habits with adaptive scheduling, streak tracking, and milestone celebrations.
+
+## Creating Habits
+
+```bash
+# Basic habit
+orbita habit create "Morning meditation"
+
+# With frequency and duration
+orbita habit create "Exercise" --frequency "3x/week" --duration 45
+
+# With preferred time
+orbita habit create "Read" --frequency daily --duration 30 --time "21:00"
+
+# With specific days
+orbita habit create "Weekly review" --frequency weekly --day friday --time "16:00"
+```
+
+### Habit Options
+
+| Option | Description |
+|--------|-------------|
+| `--frequency` | `daily`, `weekly`, `Nx/week`, custom |
+| `--duration` | Time in minutes |
+| `--time` | Preferred time (HH:MM) |
+| `--day` | Specific day(s) for weekly habits |
+| `--reminder` | Enable reminders |
+
+## Frequency Options
+
+```bash
+# Daily
+orbita habit create "Journal" --frequency daily
+
+# Weekly (specific day)
+orbita habit create "Deep clean" --frequency weekly --day saturday
+
+# Multiple times per week
+orbita habit create "Gym" --frequency "3x/week"
+
+# Custom pattern
+orbita habit create "Water plants" --frequency "every 3 days"
+
+# Weekdays only
+orbita habit create "Morning standup" --frequency weekdays
+```
+
+## Logging Completions
+
+```bash
+# Log completion
+orbita habit log meditation
+
+# Log with note
+orbita habit log exercise --note "30 min run"
+
+# Log for specific date
+orbita habit log reading --date yesterday
+
+# Log multiple
+orbita habit log meditation exercise reading
+```
+
+## Viewing Habits
+
+### List All Habits
+
+```bash
+orbita habit list
+```
+
+Output:
+```
+HABIT                FREQUENCY  STREAK  BEST    LAST COMPLETED
+Morning meditation   Daily      14      21      Today
+Exercise             3x/week    4       8       Yesterday
+Read 30 minutes      Daily      7       45      Today
+Weekly review        Weekly     3       3       5 days ago
+```
+
+### Habit Details
+
+```bash
+orbita habit show meditation
+```
+
+Output:
+```
+Habit: Morning meditation
+═════════════════════════
+
+Frequency: Daily
+Duration: 15 minutes
+Preferred Time: 07:00
+Streak: 14 days
+Best Streak: 21 days
+Total Completions: 156
+
+Recent History:
+  Mon Jan 20: ✓ Completed at 07:15
+  Sun Jan 19: ✓ Completed at 07:30
+  Sat Jan 18: ✓ Completed at 08:00
+  Fri Jan 17: ✓ Completed at 07:10
+  Thu Jan 16: ✓ Completed at 07:05
+
+Milestones:
+  🎯 7-day streak
+  🎯 14-day streak (current!)
+  ⬜ 21-day streak (7 days away)
+  ⬜ 30-day streak (16 days away)
+```
+
+## Streak Tracking
+
+### How Streaks Work
+
+- **Daily habits**: Complete each day to maintain streak
+- **Weekly habits**: Complete at least once per week
+- **Nx/week habits**: Complete N times within the week
+
+### Grace Period
+
+Configure grace period for missed days:
+
+```yaml
+# ~/.orbita/config.yaml
+habits:
+  grace_period: 2  # Hours after preferred time
+```
+
+### Streak Recovery
+
+If you miss a day:
+
+```bash
+# Check streak status
+orbita habit streak meditation
+
+# See what broke the streak
+orbita habit history meditation --show-breaks
+```
+
+## Milestones
+
+Orbita celebrates habit milestones:
+
+| Milestone | Description |
+|-----------|-------------|
+| 7 days | First week |
+| 14 days | Two weeks |
+| 21 days | Habit forming |
+| 30 days | One month |
+| 60 days | Two months |
+| 90 days | Quarter |
+| 180 days | Half year |
+| 365 days | One year |
+
+```bash
+# View milestone progress
+orbita habit milestones
+
+# See upcoming milestones
+orbita habit milestones --upcoming
+```
+
+## Adaptive Scheduling
+
+Orbita learns your patterns and adapts:
+
+### Automatic Time Adjustment
+
+If you consistently complete at a different time:
+
+```
+Originally scheduled: 07:00
+Actual completions: 07:30, 07:25, 07:35, 07:40
+
+Orbita suggests: Reschedule to 07:30?
+```
+
+### Frequency Adjustment
+
+If you're struggling with frequency:
+
+```
+Target: Daily
+Actual: 4-5 times per week
+
+Orbita suggests: Reduce to 5x/week for more realistic goals?
+```
+
+## Habit Calendar
+
+```bash
+# Monthly habit calendar
+orbita habit calendar meditation
+
+# All habits
+orbita habit calendar --all
+```
+
+Output:
+```
+Morning meditation - January 2025
+═════════════════════════════════
+
+    Mo Tu We Th Fr Sa Su
+              1  2  3  4  5
+     ✓  ✓  ✓  ✓  ✓  ✓  ✓
+     6  7  8  9 10 11 12
+     ✓  ✓  ✓  ✓  ✓  ✓  ✓
+    13 14 15 16 17 18 19
+     ✓  ✓  ✓  ✓  ✓  ✓  ✓
+    20 21 22 23 24 25 26
+     ✓  ·  ·  ·  ·  ·  ·
+
+✓ = Completed  · = Future  ✗ = Missed
+```
+
+## Habit Analytics
+
+```bash
+# Habit insights
+orbita insights habits
+```
+
+Output:
+```
+Habit Analytics (Last 30 Days)
+══════════════════════════════
+
+Overall Completion Rate: 87%
+
+By Habit:
+  Morning meditation    93%  ██████████░
+  Exercise              75%  ████████░░░
+  Reading               90%  █████████░░
+  Weekly review        100%  ███████████
+
+Best Time for Habits: 07:00 - 08:00
+Most Consistent Day: Tuesday
+Weakest Day: Sunday
+
+Recommendations:
+  • Consider moving Exercise to mornings (higher completion)
+  • Sunday is your weakest day - schedule easier habits
+```
+
+## Managing Habits
+
+### Update a Habit
+
+```bash
+# Change frequency
+orbita habit update meditation --frequency "weekdays"
+
+# Change preferred time
+orbita habit update exercise --time "18:00"
+
+# Change duration
+orbita habit update reading --duration 45
+```
+
+### Pause a Habit
+
+```bash
+# Pause for vacation
+orbita habit pause exercise --until 2025-02-01
+
+# Resume early
+orbita habit resume exercise
+```
+
+### Archive a Habit
+
+```bash
+# Archive (keeps history)
+orbita habit archive old-habit
+
+# View archived habits
+orbita habit list --archived
+
+# Restore archived habit
+orbita habit restore old-habit
+```
+
+## Reminders
+
+```bash
+# Enable reminders
+orbita habit update meditation --reminder
+
+# Set reminder time (before scheduled time)
+orbita habit update meditation --reminder-before 15
+
+# Disable reminders
+orbita habit update meditation --no-reminder
+```
+
+<Aside>
+  Reminders require notification permissions on your system.
+</Aside>
+
+## Integration with Schedule
+
+Habits automatically appear in your schedule:
+
+```bash
+orbita schedule show
+```
+
+```
+07:00 - 07:15  Morning meditation [habit]
+               └─ Streak: 14 days
+```
+
+### Habit Blocks
+
+Habits can be:
+- **Flexible**: Scheduled when convenient
+- **Fixed**: Scheduled at specific times
+
+```bash
+# Fixed time habit
+orbita habit create "Standup" --frequency weekdays --time "09:00" --fixed
+
+# Flexible habit (default)
+orbita habit create "Reading" --frequency daily --duration 30
+```
+
+## Best Practices
+
+<CardGrid>
+  <Card title="Start Small" icon="rocket">
+    Begin with 2-3 habits. Add more once consistent.
+  </Card>
+  <Card title="Stack Habits" icon="list-format">
+    Attach new habits to existing routines.
+  </Card>
+  <Card title="Track Honestly" icon="approve-check">
+    Only log when truly completed. Accuracy builds trust.
+  </Card>
+  <Card title="Review Weekly" icon="seti:clock">
+    Adjust frequency and timing based on patterns.
+  </Card>
+</CardGrid>
+
+## Next Steps
+
+- [Smart Scheduling](/orbita/docs/features/scheduling) - How habits are scheduled
+- [Time Insights](/orbita/docs/features/insights) - Analyze habit patterns
+- [CLI Reference](/orbita/docs/cli/habit) - Full habit commands

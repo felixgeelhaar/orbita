@@ -1,0 +1,100 @@
+---
+title: Engine SDK
+description: Extend Orbita's scheduling engine with custom logic.
+---
+
+# Engine SDK
+
+The Engine SDK allows you to extend Orbita's scheduling capabilities.
+
+## Overview
+
+The scheduling engine processes candidates and applies constraints to find optimal time slots.
+
+## Key Concepts
+
+### Scheduling Candidates
+
+Items that need to be scheduled:
+
+```go
+type Candidate struct {
+    ID       string
+    Type     CandidateType  // Task, Habit, Meeting
+    Duration time.Duration
+    Priority Priority
+    DueDate  *time.Time
+}
+```
+
+### Constraints
+
+Rules that affect scheduling:
+
+```go
+type Constraint interface {
+    Apply(candidate Candidate, slot TimeSlot) bool
+}
+```
+
+### Hard Constraints
+
+Never violated:
+- Work hours
+- Existing events
+- Deadlines
+
+### Soft Constraints
+
+Preferences with penalties:
+- Ideal week templates
+- Energy patterns
+- Context switching
+
+## Custom Constraints
+
+```go
+type CustomConstraint struct {
+    Name string
+}
+
+func (c *CustomConstraint) Apply(
+    candidate Candidate,
+    slot TimeSlot,
+) bool {
+    // Return true if constraint is satisfied
+    return slot.Start.Hour() >= 9
+}
+```
+
+## Registering Extensions
+
+```go
+engine := scheduler.NewEngine()
+engine.AddConstraint(&CustomConstraint{})
+```
+
+## Events
+
+The engine emits events:
+
+- `scheduling.block.scheduled`
+- `scheduling.block.rescheduled`
+- `scheduling.block.completed`
+
+Subscribe to react to scheduling changes.
+
+## Testing
+
+```go
+func TestCustomConstraint(t *testing.T) {
+    constraint := &CustomConstraint{}
+
+    slot := TimeSlot{
+        Start: time.Date(2025, 1, 20, 10, 0, 0, 0, time.UTC),
+        End:   time.Date(2025, 1, 20, 11, 0, 0, 0, time.UTC),
+    }
+
+    assert.True(t, constraint.Apply(candidate, slot))
+}
+```

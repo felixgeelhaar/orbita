@@ -1,0 +1,134 @@
+---
+title: Contributing
+description: How to contribute to Orbita.
+---
+
+# Contributing
+
+We welcome contributions to Orbita!
+
+## Getting Started
+
+### 1. Fork and Clone
+
+```bash
+git clone https://github.com/YOUR_USERNAME/orbita.git
+cd orbita
+```
+
+### 2. Install Dependencies
+
+```bash
+make setup
+```
+
+### 3. Start Development Services
+
+```bash
+make docker-up
+```
+
+### 4. Run Tests
+
+```bash
+make test
+```
+
+## Development Workflow
+
+### Building
+
+```bash
+make build
+```
+
+Binary is output to `bin/orbita`.
+
+### Testing
+
+```bash
+# All tests
+make test
+
+# Unit tests only
+make test-unit
+
+# With coverage
+make coverage
+```
+
+### Database
+
+```bash
+# Run migrations
+make migrate-up
+
+# Create new migration
+make migrate-create name=add_new_table
+
+# Generate sqlc queries
+make sqlc
+```
+
+## Code Style
+
+- Follow Go conventions
+- Use `gofmt` and `golint`
+- Write tests for new code
+- Document exported functions
+
+## Commit Messages
+
+Follow conventional commits:
+
+```
+feat: add new scheduling feature
+fix: resolve calendar sync issue
+docs: update CLI reference
+test: add tests for habit tracking
+refactor: simplify event handling
+```
+
+## Pull Requests
+
+1. Create a feature branch
+2. Make your changes
+3. Write/update tests
+4. Update documentation
+5. Submit PR against `main`
+
+### PR Checklist
+
+- [ ] Tests pass
+- [ ] Documentation updated
+- [ ] Conventional commit messages
+- [ ] No breaking changes (or documented)
+
+## Project Structure
+
+```
+.
+├── cmd/orbita/       # CLI entrypoint
+├── internal/         # Core code
+│   ├── shared/       # Shared utilities
+│   ├── productivity/ # Task domain
+│   ├── scheduling/   # Scheduling engine
+│   └── ...
+├── adapter/cli/      # CLI commands
+├── migrations/       # SQL migrations
+├── db/queries/       # sqlc queries
+└── pkg/              # Public packages
+```
+
+## Architecture
+
+See [Architecture](/orbita/docs/developers/architecture) for design details.
+
+## Getting Help
+
+- [GitHub Issues](https://github.com/felixgeelhaar/orbita/issues)
+- [Discussions](https://github.com/felixgeelhaar/orbita/discussions)
+
+## License
+
+Orbita is MIT licensed for personal use.

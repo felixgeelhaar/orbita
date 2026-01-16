@@ -1,0 +1,83 @@
+---
+title: AI Integration
+description: Set up Orbita with AI assistants using MCP.
+---
+
+# AI Integration
+
+Orbita is AI-native with full MCP (Model Context Protocol) support.
+
+## What is MCP?
+
+MCP is a protocol that allows AI assistants to interact with external tools and services. Orbita's MCP server exposes your productivity system to AI assistants like Claude.
+
+## Setting Up
+
+### 1. Start the MCP Server
+
+```bash
+orbita mcp serve
+```
+
+The server runs on `localhost:3333` by default.
+
+### 2. Configure Your AI Assistant
+
+#### Claude Desktop
+
+Add to your Claude Desktop configuration (`~/.config/claude/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "orbita": {
+      "command": "orbita",
+      "args": ["mcp", "serve"]
+    }
+  }
+}
+```
+
+## What You Can Do
+
+With MCP enabled, you can use natural language:
+
+- "Create a task to review the PR by tomorrow"
+- "What's on my schedule for today?"
+- "Log my meditation habit"
+- "Add a topic for my 1:1 with Sarah"
+- "Show me my task completion rate this week"
+
+## Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `task_create` | Create tasks |
+| `task_list` | List tasks |
+| `task_complete` | Complete tasks |
+| `schedule_show` | View schedule |
+| `habit_log` | Log habits |
+| `meeting_topic` | Add meeting topics |
+| `insights_get` | Get analytics |
+
+## Privacy
+
+- MCP runs locally
+- Data stays on your machine
+- AI sees only what you request
+
+## Troubleshooting
+
+### Server Not Starting
+
+```bash
+orbita mcp status
+```
+
+### Connection Issues
+
+Ensure the server is running:
+
+```bash
+orbita mcp serve --verbose
+```

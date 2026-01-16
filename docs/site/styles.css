@@ -214,9 +214,113 @@ p {
     margin-bottom: 64px;
 }
 
+.hero-highlights {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-bottom: 48px;
+    flex-wrap: wrap;
+}
+
+.hero-highlight {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.highlight-icon {
+    color: var(--success);
+    font-weight: bold;
+}
+
 .hero-terminal {
     max-width: 720px;
     margin: 0 auto;
+}
+
+/* Why Orbita Section */
+.why-orbita {
+    padding: 80px 0;
+    background: var(--bg-secondary);
+}
+
+.why-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 24px;
+}
+
+.why-card {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.why-card:hover {
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+}
+
+.why-icon {
+    font-size: 2.5rem;
+    margin-bottom: 16px;
+}
+
+.why-card h3 {
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+}
+
+.why-card p {
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.why-card code {
+    background: var(--terminal-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--accent-primary);
+}
+
+/* Nav Docs Link */
+.nav-docs {
+    background: rgba(99, 102, 241, 0.1);
+    padding: 6px 12px !important;
+    border-radius: 6px;
+    color: var(--accent-primary) !important;
+}
+
+.nav-docs:hover {
+    background: rgba(99, 102, 241, 0.2);
+}
+
+/* Featured Feature Card */
+.feature-card.featured {
+    border-color: var(--accent-primary);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05));
+    position: relative;
+}
+
+.feature-card.featured::before {
+    content: "NEW";
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: var(--accent-gradient);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: white;
+    letter-spacing: 0.05em;
 }
 
 /* Terminal Window */

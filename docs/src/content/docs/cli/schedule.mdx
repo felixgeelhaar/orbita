@@ -1,0 +1,88 @@
+---
+title: orbita schedule
+description: Schedule management commands reference.
+---
+
+# orbita schedule
+
+View and manage your schedule.
+
+## Commands
+
+### show
+
+Display schedule.
+
+```bash
+orbita schedule show [flags]
+```
+
+**Flags:**
+| Flag | Description |
+|------|-------------|
+| `--date` | Specific date |
+| `--from` | Start date |
+| `--to` | End date |
+| `--include-external` | Include external calendar events |
+
+### today
+
+Show today's schedule.
+
+```bash
+orbita schedule today
+```
+
+### week
+
+Show this week's schedule.
+
+```bash
+orbita schedule week
+```
+
+### optimize
+
+Optimize schedule placement.
+
+```bash
+orbita schedule optimize [flags]
+```
+
+**Flags:**
+| Flag | Description |
+|------|-------------|
+| `--date` | Date to optimize |
+| `--dry-run` | Preview without applying |
+
+### block
+
+Add a time block.
+
+```bash
+orbita schedule block <title> --start <time> --end <time>
+```
+
+**Flags:**
+| Flag | Description |
+|------|-------------|
+| `--start` | Start time (HH:MM) |
+| `--end` | End time (HH:MM) |
+| `--date` | Specific date |
+| `--recur` | Recurrence pattern |
+
+### capacity
+
+View scheduling capacity.
+
+```bash
+orbita schedule capacity [--week]
+```
+
+### defrag
+
+Consolidate free time blocks.
+
+```bash
+orbita schedule defrag [--min-block <minutes>]
+```

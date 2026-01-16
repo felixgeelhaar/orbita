@@ -1,0 +1,315 @@
+---
+title: Configuration
+description: Configure Orbita to match your workflow and preferences.
+---
+
+import { Tabs, TabItem, Aside, FileTree } from '@astrojs/starlight/components';
+
+# Configuration
+
+Orbita works out of the box with sensible defaults, but you can customize nearly every aspect to match your workflow.
+
+## Configuration File
+
+Orbita looks for configuration in `~/.orbita/config.yaml`:
+
+```yaml
+# ~/.orbita/config.yaml
+
+# Storage mode: "local" (SQLite) or "server" (PostgreSQL)
+mode: local
+
+# Database configuration
+database:
+  # Local mode: SQLite file path (relative to ORBITA_HOME)
+  sqlite_path: orbita.db
+
+  # Server mode: PostgreSQL connection
+  # postgres_url: postgres://user:pass@localhost:5432/orbita
+
+# Scheduling preferences
+scheduling:
+  # Work hours (24-hour format)
+  work_start: "09:00"
+  work_end: "18:00"
+
+  # Days you work (0 = Sunday, 6 = Saturday)
+  work_days: [1, 2, 3, 4, 5]
+
+  # Minimum break between tasks (minutes)
+  min_break: 15
+
+  # Default task duration if not specified (minutes)
+  default_duration: 30
+
+# Calendar sync
+calendar:
+  sync_enabled: false
+  sync_interval: "5m"
+
+  # Conflict resolution: orbita_wins, external_wins, time_first, manual
+  conflict_strategy: time_first
+
+  # Auto-schedule settings
+  auto_schedule:
+    tasks: true
+    habits: true
+    meetings: true
+
+# Habit tracking
+habits:
+  # Reminder time for daily habits
+  reminder_time: "08:00"
+
+  # Grace period before marking habit as missed (hours)
+  grace_period: 2
+
+# Meeting settings
+meetings:
+  # Default 1:1 duration (minutes)
+  default_duration: 30
+
+  # Buffer time around meetings (minutes)
+  buffer: 5
+
+# CLI preferences
+cli:
+  # Output format: text, json, table
+  output_format: text
+
+  # Enable colors in output
+  colors: true
+
+  # Timezone (auto-detected if not set)
+  # timezone: America/New_York
+```
+
+## Environment Variables
+
+Override any setting with environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `ORBITA_HOME` | Data directory | `~/.orbita` |
+| `ORBITA_MODE` | Storage mode (`local`/`server`) | `local` |
+| `ORBITA_DEBUG` | Enable debug logging | `false` |
+| `ORBITA_DATABASE_URL` | PostgreSQL connection string | - |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID | - |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | - |
+
+## Data Directory Structure
+
+<FileTree>
+- ~/.orbita/
+  - config.yaml       # Main configuration
+  - orbita.db         # SQLite database (local mode)
+  - tokens/           # OAuth tokens
+    - google.json
+  - logs/             # Application logs
+    - orbita.log
+  - backups/          # Automatic backups
+</FileTree>
+
+## Storage Modes
+
+### Local Mode (Default)
+
+Uses SQLite for zero-configuration local storage:
+
+```yaml
+mode: local
+database:
+  sqlite_path: orbita.db
+```
+
+<Aside type="tip">
+  Local mode is perfect for individual users. No server setup required, works offline, and your data stays on your machine.
+</Aside>
+
+### Server Mode
+
+For power users who want cloud sync or multi-device support:
+
+```yaml
+mode: server
+database:
+  postgres_url: postgres://user:pass@localhost:5432/orbita
+
+rabbitmq:
+  url: amqp://guest:guest@localhost:5672/
+
+redis:
+  url: redis://localhost:6379
+```
+
+<Aside type="caution">
+  Server mode requires PostgreSQL, RabbitMQ, and Redis. Use Docker Compose for easy setup:
+  ```bash
+  docker compose up -d
+  ```
+</Aside>
+
+## Calendar Integration
+
+### Google Calendar
+
+<Tabs>
+  <TabItem label="Quick Setup">
+    ```bash
+    # Connect Google Calendar
+    orbita calendar connect google
+
+    # Follow the OAuth flow in your browser
+    # Orbita stores tokens securely in ~/.orbita/tokens/
+    ```
+  </TabItem>
+  <TabItem label="Custom OAuth App">
+    If you want to use your own OAuth credentials:
+
+    1. Create a project in [Google Cloud Console](https://console.cloud.google.com/)
+    2. Enable the Google Calendar API
+    3. Create OAuth 2.0 credentials
+    4. Set environment variables:
+
+    ```bash
+    export GOOGLE_CLIENT_ID="your-client-id"
+    export GOOGLE_CLIENT_SECRET="your-client-secret"
+    orbita calendar connect google
+    ```
+  </TabItem>
+</Tabs>
+
+### Sync Configuration
+
+```yaml
+calendar:
+  sync_enabled: true
+  sync_interval: "5m"        # Check for external changes every 5 minutes
+
+  conflict_strategy: time_first
+  # Options:
+  # - orbita_wins: Orbita blocks take priority
+  # - external_wins: External events take priority
+  # - time_first: Earlier scheduled item wins
+  # - manual: Mark for manual review
+
+  look_ahead_days: 14        # Sync events up to 2 weeks out
+```
+
+## Scheduling Rules
+
+### Work Hours
+
+Define when Orbita can schedule tasks:
+
+```yaml
+scheduling:
+  work_start: "09:00"
+  work_end: "18:00"
+  work_days: [1, 2, 3, 4, 5]  # Monday to Friday
+```
+
+### Ideal Week Template
+
+Set preferred times for different activity types:
+
+```yaml
+scheduling:
+  ideal_week:
+    - day: 1  # Monday
+      blocks:
+        - type: deep_work
+          start: "09:00"
+          end: "12:00"
+        - type: meetings
+          start: "14:00"
+          end: "17:00"
+
+    - day: 5  # Friday
+      blocks:
+        - type: review
+          start: "15:00"
+          end: "17:00"
+```
+
+## MCP Integration
+
+Enable AI assistant integration:
+
+```yaml
+mcp:
+  enabled: true
+  server:
+    host: localhost
+    port: 3333
+```
+
+Then configure your AI client to connect to `mcp://localhost:3333`.
+
+## CLI Settings
+
+### Output Format
+
+```yaml
+cli:
+  output_format: text  # text, json, table
+  colors: true
+```
+
+Or override per-command:
+
+```bash
+orbita task list --format json
+orbita schedule show --no-color
+```
+
+### Aliases
+
+Create command aliases in your shell:
+
+```bash
+# Add to ~/.bashrc or ~/.zshrc
+alias ot="orbita task"
+alias os="orbita schedule"
+alias oh="orbita habit"
+```
+
+## Backup and Restore
+
+### Automatic Backups
+
+```yaml
+backup:
+  enabled: true
+  frequency: daily
+  keep_days: 30
+```
+
+### Manual Backup
+
+```bash
+# Export all data
+orbita export --output backup.json
+
+# Restore from backup
+orbita import --input backup.json
+```
+
+## Reset Configuration
+
+```bash
+# Reset to defaults
+orbita config reset
+
+# Reset specific section
+orbita config reset scheduling
+
+# View current config
+orbita config show
+```
+
+## Next Steps
+
+- Learn about [Task Management](/orbita/docs/features/tasks)
+- Set up [Calendar Sync](/orbita/docs/features/calendar)
+- Explore the [CLI Reference](/orbita/docs/cli/overview)

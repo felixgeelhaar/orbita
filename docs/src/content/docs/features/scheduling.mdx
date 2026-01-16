@@ -1,0 +1,338 @@
+---
+title: Smart Scheduling
+description: Automatic time-blocking that adapts to your preferences and constraints.
+---
+
+import { Steps, Aside, Card, CardGrid } from '@astrojs/starlight/components';
+
+# Smart Scheduling
+
+Orbita's scheduling engine automatically finds optimal time slots for your tasks, habits, and meetings.
+
+## How It Works
+
+When you create a schedulable item:
+
+<Steps>
+1. **Collect Candidates** - Gather tasks, habits, meetings needing scheduling
+2. **Apply Hard Constraints** - Respect meetings, deadlines, work hours
+3. **Apply Soft Penalties** - Consider preferences, energy patterns, ideal week
+4. **Find Optimal Slots** - Place items where they'll be most effective
+5. **Emit Events** - Notify calendar sync and other systems
+</Steps>
+
+## Scheduling Constraints
+
+### Hard Constraints (Never Violated)
+
+| Constraint | Description |
+|------------|-------------|
+| Work Hours | Tasks only scheduled during defined work hours |
+| Existing Events | Never double-book with calendar events |
+| Deadlines | High-priority tasks scheduled before due dates |
+| Meeting Times | Meetings at their specified times |
+
+### Soft Constraints (Preferences)
+
+| Preference | Description |
+|------------|-------------|
+| Ideal Week Template | Preferred time slots for activity types |
+| Energy Patterns | Schedule demanding tasks during peak energy |
+| Task Duration | Avoid splitting tasks across breaks |
+| Context Switching | Minimize jumping between different types of work |
+
+## Viewing Your Schedule
+
+```bash
+# Today's schedule
+orbita schedule show
+orbita schedule today
+
+# Specific date
+orbita schedule show --date 2025-01-25
+
+# This week
+orbita schedule week
+
+# Date range
+orbita schedule show --from 2025-01-20 --to 2025-01-27
+```
+
+### Schedule Output
+
+```
+Schedule for Monday, January 20, 2025
+═══════════════════════════════════════
+
+09:00 - 10:30  Deep work: API refactor [task]
+               └─ Priority: High | Duration: 90m
+10:30 - 10:45  ☕ Break
+10:45 - 11:15  Morning meditation [habit]
+               └─ Streak: 14 days
+11:15 - 12:00  Review PRs [task]
+               └─ Priority: Medium | Duration: 45m
+12:00 - 13:00  🍽 Lunch
+13:00 - 13:30  1:1 with Sarah [meeting]
+14:00 - 14:30  Team standup [external]
+14:30 - 16:00  Deep work: Feature implementation [task]
+               └─ Priority: High | Duration: 90m
+16:00 - 16:30  Email processing [task]
+               └─ Priority: Low | Duration: 30m
+
+Summary: 5 tasks | 1 habit | 1 meeting | 1 external event
+```
+
+## Configuring Scheduling
+
+### Work Hours
+
+```yaml
+# ~/.orbita/config.yaml
+scheduling:
+  work_start: "09:00"
+  work_end: "18:00"
+  work_days: [1, 2, 3, 4, 5]  # Mon-Fri
+```
+
+### Breaks
+
+```yaml
+scheduling:
+  min_break: 15           # Minimum break between tasks (minutes)
+  lunch_start: "12:00"
+  lunch_duration: 60      # Lunch break duration (minutes)
+```
+
+### Task Preferences
+
+```yaml
+scheduling:
+  default_duration: 30    # Default if not specified (minutes)
+  max_daily_deep_work: 4  # Hours of high-focus work per day
+  context_switch_penalty: 15  # Minutes added between different contexts
+```
+
+## Ideal Week Template
+
+Define your preferred weekly schedule:
+
+```yaml
+scheduling:
+  ideal_week:
+    - day: 1  # Monday
+      blocks:
+        - type: deep_work
+          start: "09:00"
+          end: "12:00"
+        - type: meetings
+          start: "14:00"
+          end: "17:00"
+
+    - day: 2  # Tuesday
+      blocks:
+        - type: deep_work
+          start: "09:00"
+          end: "11:00"
+        - type: admin
+          start: "11:00"
+          end: "12:00"
+        - type: deep_work
+          start: "14:00"
+          end: "17:00"
+
+    - day: 5  # Friday
+      blocks:
+        - type: review
+          start: "14:00"
+          end: "17:00"
+```
+
+Block types:
+- `deep_work` - High-concentration tasks
+- `meetings` - Calls and meetings
+- `admin` - Email, planning, light tasks
+- `review` - Weekly review and planning
+- `creative` - Creative or brainstorming work
+
+## Manual Scheduling
+
+### Add Time Blocks
+
+```bash
+# Block focus time
+orbita schedule block "Focus time" --start 09:00 --end 11:00
+
+# Recurring block
+orbita schedule block "No meetings" --start 09:00 --end 12:00 --recur "weekdays"
+
+# Block for specific date
+orbita schedule block "Offsite" --date 2025-01-25 --all-day
+```
+
+### Override Scheduling
+
+```bash
+# Schedule task at specific time
+orbita task schedule <id> --time "2025-01-22 14:00"
+
+# Reschedule a task
+orbita task reschedule <id> --time "tomorrow 10:00"
+
+# Move task to tomorrow
+orbita task reschedule <id> --tomorrow
+```
+
+## Optimizing Your Schedule
+
+### Auto-Optimize
+
+```bash
+# Optimize today's schedule
+orbita schedule optimize
+
+# Optimize specific date
+orbita schedule optimize --date 2025-01-25
+
+# Preview optimization without applying
+orbita schedule optimize --dry-run
+```
+
+Optimization considers:
+- Priority-based ordering
+- Minimizing context switches
+- Respecting energy patterns
+- Avoiding fragmentation
+
+### Defragmentation
+
+When your schedule becomes fragmented:
+
+```bash
+# Consolidate free time
+orbita schedule defrag
+
+# Defrag with minimum block size
+orbita schedule defrag --min-block 60
+```
+
+## Rescheduling
+
+### Automatic Rescheduling
+
+When conflicts occur, Orbita can reschedule automatically:
+
+```yaml
+scheduling:
+  auto_reschedule: true
+  reschedule_strategy: nearest  # nearest, tomorrow, optimal
+```
+
+### Manual Rescheduling
+
+```bash
+# Reschedule single task
+orbita task reschedule <id> --time "tomorrow 10:00"
+
+# Reschedule all tasks from a day
+orbita schedule reschedule --from 2025-01-20 --to 2025-01-21
+```
+
+## Schedule Analytics
+
+```bash
+# View scheduling efficiency
+orbita insights schedule
+
+# Time allocation breakdown
+orbita insights allocation
+```
+
+Output:
+```
+Schedule Analytics (This Week)
+══════════════════════════════
+
+Time Allocation:
+  Deep Work:    12h (30%)
+  Meetings:     8h (20%)
+  Admin:        6h (15%)
+  Habits:       5h (12.5%)
+  Breaks:       4h (10%)
+  Unscheduled:  5h (12.5%)
+
+Scheduling Efficiency:
+  Tasks Completed On-Time: 85%
+  Rescheduled Tasks: 3
+  Conflicts Resolved: 2
+
+Peak Productivity Hours:
+  Most Completions: 09:00 - 11:00
+  Least Interruptions: 06:00 - 09:00
+```
+
+## Event-Driven Scheduling
+
+Scheduling is event-driven in Orbita:
+
+```
+Task Created → SchedulingSubscriber → Schedule Updated → Calendar Synced
+```
+
+### Events Emitted
+
+- `scheduling.block.scheduled` - New block created
+- `scheduling.block.rescheduled` - Block moved
+- `scheduling.block.completed` - Block marked done
+- `scheduling.block.missed` - Block time passed without completion
+
+### Events Consumed
+
+- `core.task.created` - Auto-schedule new tasks
+- `habits.habit.created` - Auto-schedule habit sessions
+- `meetings.meeting.created` - Auto-schedule meetings
+
+## Troubleshooting
+
+### Task Not Scheduling
+
+```bash
+# Check for scheduling issues
+orbita task show <id> --scheduling-details
+```
+
+Common issues:
+- No available slots within constraints
+- Duration exceeds available time blocks
+- Priority too low compared to other items
+
+### Overloaded Schedule
+
+```bash
+# View scheduling capacity
+orbita schedule capacity
+
+# See overloaded days
+orbita schedule warnings
+```
+
+### Time Zone Issues
+
+```yaml
+# Set explicit timezone
+cli:
+  timezone: America/New_York
+```
+
+## Best Practices
+
+1. **Set Realistic Durations** - Underestimating leads to schedule overflow
+2. **Protect Deep Work** - Use Ideal Week to block focus time
+3. **Buffer Between Meetings** - Add 5-15 min buffers
+4. **Review Weekly** - Adjust patterns based on actual usage
+5. **Trust the Algorithm** - Let Orbita optimize, don't micromanage
+
+## Next Steps
+
+- [Calendar Sync](/orbita/docs/features/calendar) - Sync with external calendars
+- [Task Management](/orbita/docs/features/tasks) - Create schedulable tasks
+- [Configuration](/orbita/docs/getting-started/configuration) - Full scheduling config

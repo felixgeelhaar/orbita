@@ -11,6 +11,7 @@ import (
 	habitDomain "github.com/felixgeelhaar/orbita/internal/habits/domain"
 	meetingDomain "github.com/felixgeelhaar/orbita/internal/meetings/domain"
 	taskDomain "github.com/felixgeelhaar/orbita/internal/productivity/domain/task"
+	"github.com/felixgeelhaar/orbita/internal/productivity/domain/value_objects"
 	"github.com/felixgeelhaar/orbita/internal/scheduling/application/commands"
 	"github.com/felixgeelhaar/orbita/internal/scheduling/application/services"
 	"github.com/felixgeelhaar/orbita/internal/scheduling/application/subscribers"
@@ -376,4 +377,484 @@ func TestSchedulingSubscriber_UnknownEventType(t *testing.T) {
 	err := subscriber.Handle(ctx, event)
 
 	require.NoError(t, err)
+}
+
+func TestSchedulingSubscriber_HandleTaskCreated_PriorityUrgent(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	userID := uuid.New()
+	taskID := uuid.New()
+
+	testTask, _ := taskDomain.NewTask(userID, "Urgent Task")
+	testTask.SetPriority(value_objects.PriorityUrgent)
+
+	taskRepo := &mockTaskRepo{task: testTask}
+	scheduleRepo := &mockScheduleRepo{}
+	outboxRepo := &mockOutboxRepo{}
+
+	engine := services.NewSchedulerEngine(services.DefaultSchedulerConfig())
+	autoScheduleHandler := commands.NewAutoScheduleHandler(
+		scheduleRepo,
+		outboxRepo,
+		mockUnitOfWork{},
+		engine,
+		logger,
+	)
+
+	subscriber := subscribers.NewSchedulingSubscriber(
+		autoScheduleHandler,
+		taskRepo,
+		nil,
+		nil,
+		logger,
+	)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   taskID,
+		AggregateType: "Task",
+		RoutingKey:    "core.task.created",
+		Payload:       json.RawMessage(`{"title":"Urgent Task","priority":"urgent"}`),
+		Metadata:      eventbus.EventMetadata{UserID: userID},
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err)
+	assert.NotNil(t, scheduleRepo.schedule)
+}
+
+func TestSchedulingSubscriber_HandleTaskCreated_PriorityMedium(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	userID := uuid.New()
+	taskID := uuid.New()
+
+	testTask, _ := taskDomain.NewTask(userID, "Medium Task")
+	testTask.SetPriority(value_objects.PriorityMedium)
+
+	taskRepo := &mockTaskRepo{task: testTask}
+	scheduleRepo := &mockScheduleRepo{}
+	outboxRepo := &mockOutboxRepo{}
+
+	engine := services.NewSchedulerEngine(services.DefaultSchedulerConfig())
+	autoScheduleHandler := commands.NewAutoScheduleHandler(
+		scheduleRepo,
+		outboxRepo,
+		mockUnitOfWork{},
+		engine,
+		logger,
+	)
+
+	subscriber := subscribers.NewSchedulingSubscriber(
+		autoScheduleHandler,
+		taskRepo,
+		nil,
+		nil,
+		logger,
+	)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   taskID,
+		AggregateType: "Task",
+		RoutingKey:    "core.task.created",
+		Payload:       json.RawMessage(`{"title":"Medium Task","priority":"medium"}`),
+		Metadata:      eventbus.EventMetadata{UserID: userID},
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err)
+	assert.NotNil(t, scheduleRepo.schedule)
+}
+
+func TestSchedulingSubscriber_HandleTaskCreated_PriorityLow(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	userID := uuid.New()
+	taskID := uuid.New()
+
+	testTask, _ := taskDomain.NewTask(userID, "Low Task")
+	testTask.SetPriority(value_objects.PriorityLow)
+
+	taskRepo := &mockTaskRepo{task: testTask}
+	scheduleRepo := &mockScheduleRepo{}
+	outboxRepo := &mockOutboxRepo{}
+
+	engine := services.NewSchedulerEngine(services.DefaultSchedulerConfig())
+	autoScheduleHandler := commands.NewAutoScheduleHandler(
+		scheduleRepo,
+		outboxRepo,
+		mockUnitOfWork{},
+		engine,
+		logger,
+	)
+
+	subscriber := subscribers.NewSchedulingSubscriber(
+		autoScheduleHandler,
+		taskRepo,
+		nil,
+		nil,
+		logger,
+	)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   taskID,
+		AggregateType: "Task",
+		RoutingKey:    "core.task.created",
+		Payload:       json.RawMessage(`{"title":"Low Task","priority":"low"}`),
+		Metadata:      eventbus.EventMetadata{UserID: userID},
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err)
+	assert.NotNil(t, scheduleRepo.schedule)
+}
+
+func TestSchedulingSubscriber_HandleTaskCreated_PriorityDefault(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	userID := uuid.New()
+	taskID := uuid.New()
+
+	testTask, _ := taskDomain.NewTask(userID, "Unknown Priority Task")
+
+	taskRepo := &mockTaskRepo{task: testTask}
+	scheduleRepo := &mockScheduleRepo{}
+	outboxRepo := &mockOutboxRepo{}
+
+	engine := services.NewSchedulerEngine(services.DefaultSchedulerConfig())
+	autoScheduleHandler := commands.NewAutoScheduleHandler(
+		scheduleRepo,
+		outboxRepo,
+		mockUnitOfWork{},
+		engine,
+		logger,
+	)
+
+	subscriber := subscribers.NewSchedulingSubscriber(
+		autoScheduleHandler,
+		taskRepo,
+		nil,
+		nil,
+		logger,
+	)
+
+	// Use unknown priority to hit default case
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   taskID,
+		AggregateType: "Task",
+		RoutingKey:    "core.task.created",
+		Payload:       json.RawMessage(`{"title":"Unknown Priority Task","priority":"unknown"}`),
+		Metadata:      eventbus.EventMetadata{UserID: userID},
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err)
+	assert.NotNil(t, scheduleRepo.schedule)
+}
+
+func TestSchedulingSubscriber_HandleHabitCreated_HabitNotFound(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+
+	taskRepo := &mockTaskRepo{}
+	habitRepo := &mockHabitRepo{habit: nil}
+	meetingRepo := &mockMeetingRepo{}
+	scheduleRepo := &mockScheduleRepo{}
+	outboxRepo := &mockOutboxRepo{}
+
+	engine := services.NewSchedulerEngine(services.DefaultSchedulerConfig())
+	autoScheduleHandler := commands.NewAutoScheduleHandler(
+		scheduleRepo,
+		outboxRepo,
+		mockUnitOfWork{},
+		engine,
+		logger,
+	)
+
+	subscriber := subscribers.NewSchedulingSubscriber(
+		autoScheduleHandler,
+		taskRepo,
+		habitRepo,
+		meetingRepo,
+		logger,
+	)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   uuid.New(),
+		AggregateType: "Habit",
+		RoutingKey:    "habits.habit.created",
+		Payload:       json.RawMessage(`{}`),
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	// Should not error, just skip
+	require.NoError(t, err)
+	assert.Nil(t, scheduleRepo.schedule)
+}
+
+func TestSchedulingSubscriber_HandleMeetingCreated_MeetingNotFound(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+
+	taskRepo := &mockTaskRepo{}
+	habitRepo := &mockHabitRepo{}
+	meetingRepo := &mockMeetingRepo{meeting: nil}
+	scheduleRepo := &mockScheduleRepo{}
+	outboxRepo := &mockOutboxRepo{}
+
+	engine := services.NewSchedulerEngine(services.DefaultSchedulerConfig())
+	autoScheduleHandler := commands.NewAutoScheduleHandler(
+		scheduleRepo,
+		outboxRepo,
+		mockUnitOfWork{},
+		engine,
+		logger,
+	)
+
+	subscriber := subscribers.NewSchedulingSubscriber(
+		autoScheduleHandler,
+		taskRepo,
+		habitRepo,
+		meetingRepo,
+		logger,
+	)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   uuid.New(),
+		AggregateType: "Meeting",
+		RoutingKey:    "meetings.meeting.created",
+		Payload:       json.RawMessage(`{}`),
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	// Should not error, just skip
+	require.NoError(t, err)
+	assert.Nil(t, scheduleRepo.schedule)
+}
+
+func TestSchedulingSubscriber_NewWithNilLogger(t *testing.T) {
+	// This should use slog.Default() when logger is nil
+	subscriber := subscribers.NewSchedulingSubscriber(nil, nil, nil, nil, nil)
+	assert.NotNil(t, subscriber)
+}
+
+func TestSchedulingSubscriber_HandleTaskCreated_RepoError(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+
+	taskRepo := &mockTaskRepo{task: nil, err: assert.AnError}
+	scheduleRepo := &mockScheduleRepo{}
+	outboxRepo := &mockOutboxRepo{}
+
+	engine := services.NewSchedulerEngine(services.DefaultSchedulerConfig())
+	autoScheduleHandler := commands.NewAutoScheduleHandler(
+		scheduleRepo,
+		outboxRepo,
+		mockUnitOfWork{},
+		engine,
+		logger,
+	)
+
+	subscriber := subscribers.NewSchedulingSubscriber(
+		autoScheduleHandler,
+		taskRepo,
+		nil,
+		nil,
+		logger,
+	)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   uuid.New(),
+		AggregateType: "Task",
+		RoutingKey:    "core.task.created",
+		Payload:       json.RawMessage(`{}`),
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	// Should not error - silently skip on repo error
+	require.NoError(t, err)
+	assert.Nil(t, scheduleRepo.schedule)
+}
+
+func TestSchedulingSubscriber_HandleTaskCreated_WithDueDate(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	userID := uuid.New()
+	taskID := uuid.New()
+
+	testTask, _ := taskDomain.NewTask(userID, "Task with Due Date")
+	dueDate := time.Now().Add(24 * time.Hour)
+	testTask.SetDueDate(&dueDate)
+
+	taskRepo := &mockTaskRepo{task: testTask}
+	scheduleRepo := &mockScheduleRepo{}
+	outboxRepo := &mockOutboxRepo{}
+
+	engine := services.NewSchedulerEngine(services.DefaultSchedulerConfig())
+	autoScheduleHandler := commands.NewAutoScheduleHandler(
+		scheduleRepo,
+		outboxRepo,
+		mockUnitOfWork{},
+		engine,
+		logger,
+	)
+
+	subscriber := subscribers.NewSchedulingSubscriber(
+		autoScheduleHandler,
+		taskRepo,
+		nil,
+		nil,
+		logger,
+	)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   taskID,
+		AggregateType: "Task",
+		RoutingKey:    "core.task.created",
+		Payload:       json.RawMessage(`{"title":"Task with Due Date"}`),
+		Metadata:      eventbus.EventMetadata{UserID: userID},
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err)
+	assert.NotNil(t, scheduleRepo.schedule)
+}
+
+func TestSchedulingSubscriber_HandleTaskCreated_WithDuration(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	userID := uuid.New()
+	taskID := uuid.New()
+
+	testTask, _ := taskDomain.NewTask(userID, "Task with Duration")
+	duration, _ := value_objects.NewDuration(60 * time.Minute)
+	testTask.SetDuration(duration)
+
+	taskRepo := &mockTaskRepo{task: testTask}
+	scheduleRepo := &mockScheduleRepo{}
+	outboxRepo := &mockOutboxRepo{}
+
+	engine := services.NewSchedulerEngine(services.DefaultSchedulerConfig())
+	autoScheduleHandler := commands.NewAutoScheduleHandler(
+		scheduleRepo,
+		outboxRepo,
+		mockUnitOfWork{},
+		engine,
+		logger,
+	)
+
+	subscriber := subscribers.NewSchedulingSubscriber(
+		autoScheduleHandler,
+		taskRepo,
+		nil,
+		nil,
+		logger,
+	)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   taskID,
+		AggregateType: "Task",
+		RoutingKey:    "core.task.created",
+		Payload:       json.RawMessage(`{"title":"Task with Duration"}`),
+		Metadata:      eventbus.EventMetadata{UserID: userID},
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err)
+	assert.NotNil(t, scheduleRepo.schedule)
+}
+
+func TestSchedulingSubscriber_HandleHabitCreated_RepoError(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+
+	habitRepo := &mockHabitRepo{habit: nil, err: assert.AnError}
+	scheduleRepo := &mockScheduleRepo{}
+	outboxRepo := &mockOutboxRepo{}
+
+	engine := services.NewSchedulerEngine(services.DefaultSchedulerConfig())
+	autoScheduleHandler := commands.NewAutoScheduleHandler(
+		scheduleRepo,
+		outboxRepo,
+		mockUnitOfWork{},
+		engine,
+		logger,
+	)
+
+	subscriber := subscribers.NewSchedulingSubscriber(
+		autoScheduleHandler,
+		nil,
+		habitRepo,
+		nil,
+		logger,
+	)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   uuid.New(),
+		AggregateType: "Habit",
+		RoutingKey:    "habits.habit.created",
+		Payload:       json.RawMessage(`{}`),
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err)
+	assert.Nil(t, scheduleRepo.schedule)
+}
+
+func TestSchedulingSubscriber_HandleMeetingCreated_RepoError(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+
+	meetingRepo := &mockMeetingRepo{meeting: nil, err: assert.AnError}
+	scheduleRepo := &mockScheduleRepo{}
+	outboxRepo := &mockOutboxRepo{}
+
+	engine := services.NewSchedulerEngine(services.DefaultSchedulerConfig())
+	autoScheduleHandler := commands.NewAutoScheduleHandler(
+		scheduleRepo,
+		outboxRepo,
+		mockUnitOfWork{},
+		engine,
+		logger,
+	)
+
+	subscriber := subscribers.NewSchedulingSubscriber(
+		autoScheduleHandler,
+		nil,
+		nil,
+		meetingRepo,
+		logger,
+	)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   uuid.New(),
+		AggregateType: "Meeting",
+		RoutingKey:    "meetings.meeting.created",
+		Payload:       json.RawMessage(`{}`),
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err)
+	assert.Nil(t, scheduleRepo.schedule)
 }

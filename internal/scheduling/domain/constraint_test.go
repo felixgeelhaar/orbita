@@ -152,3 +152,17 @@ func TestConstraintSet_Add(t *testing.T) {
 	earlyBlock := createTestBlock(t, time.Date(2024, 1, 1, 6, 0, 0, 0, time.UTC), time.Hour)
 	assert.False(t, cs.Validate(earlyBlock))
 }
+
+func TestDayOfWeekConstraint_TypeAndPenalty(t *testing.T) {
+	weekdays := []time.Weekday{time.Monday, time.Tuesday, time.Wednesday, time.Thursday, time.Friday}
+	constraint := domain.NewDayOfWeekConstraint(domain.ConstraintTypeHard, weekdays, 15.0)
+
+	// Test Type() getter
+	assert.Equal(t, domain.ConstraintTypeHard, constraint.Type())
+
+	// Test Penalty() when not satisfied (weekend)
+	saturday := time.Date(2024, 1, 6, 10, 0, 0, 0, time.UTC) // Saturday
+	weekendBlock := createTestBlock(t, saturday, time.Hour)
+	assert.False(t, constraint.Satisfied(weekendBlock))
+	assert.Equal(t, 15.0, constraint.Penalty(weekendBlock))
+}

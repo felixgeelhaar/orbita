@@ -363,3 +363,159 @@ func TestNewListTasksHandler(t *testing.T) {
 
 	require.NotNil(t, handler)
 }
+
+func TestListTasksHandler_FilterOverdue(t *testing.T) {
+	userID := uuid.New()
+	repo := new(mockTaskRepo)
+	handler := NewListTasksHandler(repo)
+
+	now := time.Now()
+	yesterday := now.Add(-24 * time.Hour)
+	tomorrow := now.Add(24 * time.Hour)
+
+	task1 := createTestTask(userID, "Overdue task")
+	_ = task1.SetDueDate(&yesterday)
+	task2 := createTestTask(userID, "Future task")
+	_ = task2.SetDueDate(&tomorrow)
+	task3 := createTestTask(userID, "No due date")
+	tasks := []*task.Task{task1, task2, task3}
+
+	repo.On("FindPending", mock.Anything, userID).Return(tasks, nil)
+
+	query := ListTasksQuery{
+		UserID:  userID,
+		Overdue: true,
+	}
+
+	result, err := handler.Handle(context.Background(), query)
+
+	require.NoError(t, err)
+	require.Len(t, result, 1)
+	assert.Equal(t, "Overdue task", result[0].Title)
+
+	repo.AssertExpectations(t)
+}
+
+func TestListTasksHandler_FilterDueToday(t *testing.T) {
+	userID := uuid.New()
+	repo := new(mockTaskRepo)
+	handler := NewListTasksHandler(repo)
+
+	now := time.Now()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 12, 0, 0, 0, now.Location())
+	yesterday := now.Add(-24 * time.Hour)
+	tomorrow := now.Add(24 * time.Hour)
+
+	task1 := createTestTask(userID, "Due today")
+	_ = task1.SetDueDate(&today)
+	task2 := createTestTask(userID, "Due yesterday")
+	_ = task2.SetDueDate(&yesterday)
+	task3 := createTestTask(userID, "Due tomorrow")
+	_ = task3.SetDueDate(&tomorrow)
+	tasks := []*task.Task{task1, task2, task3}
+
+	repo.On("FindPending", mock.Anything, userID).Return(tasks, nil)
+
+	query := ListTasksQuery{
+		UserID:   userID,
+		DueToday: true,
+	}
+
+	result, err := handler.Handle(context.Background(), query)
+
+	require.NoError(t, err)
+	require.Len(t, result, 1)
+	assert.Equal(t, "Due today", result[0].Title)
+
+	repo.AssertExpectations(t)
+}
+
+func TestListTasksHandler_SortByDueDate(t *testing.T) {
+	userID := uuid.New()
+	repo := new(mockTaskRepo)
+	handler := NewListTasksHandler(repo)
+
+	now := time.Now()
+	earlier := now.Add(-1 * time.Hour)
+	later := now.Add(1 * time.Hour)
+
+	task1 := createTestTask(userID, "Later")
+	_ = task1.SetDueDate(&later)
+	task2 := createTestTask(userID, "Earlier")
+	_ = task2.SetDueDate(&earlier)
+	task3 := createTestTask(userID, "No due date")
+	tasks := []*task.Task{task1, task2, task3}
+
+	repo.On("FindPending", mock.Anything, userID).Return(tasks, nil)
+
+	query := ListTasksQuery{
+		UserID:    userID,
+		SortBy:    "due_date",
+		SortOrder: "asc",
+	}
+
+	result, err := handler.Handle(context.Background(), query)
+
+	require.NoError(t, err)
+	require.Len(t, result, 3)
+	// Tasks with no due date should be last, Earlier should be first
+	assert.Equal(t, "Earlier", result[0].Title)
+	assert.Equal(t, "Later", result[1].Title)
+
+	repo.AssertExpectations(t)
+}
+
+func TestListTasksHandler_SortByCreatedAt(t *testing.T) {
+	userID := uuid.New()
+	repo := new(mockTaskRepo)
+	handler := NewListTasksHandler(repo)
+
+	tasks := []*task.Task{
+		createTestTask(userID, "Task 1"),
+		createTestTask(userID, "Task 2"),
+	}
+
+	repo.On("FindPending", mock.Anything, userID).Return(tasks, nil)
+
+	query := ListTasksQuery{
+		UserID:    userID,
+		SortBy:    "created_at",
+		SortOrder: "desc",
+	}
+
+	result, err := handler.Handle(context.Background(), query)
+
+	require.NoError(t, err)
+	require.Len(t, result, 2)
+
+	repo.AssertExpectations(t)
+}
+
+func TestListTasksHandler_SortByTitle(t *testing.T) {
+	userID := uuid.New()
+	repo := new(mockTaskRepo)
+	handler := NewListTasksHandler(repo)
+
+	tasks := []*task.Task{
+		createTestTask(userID, "Zebra task"),
+		createTestTask(userID, "Apple task"),
+	}
+
+	repo.On("FindPending", mock.Anything, userID).Return(tasks, nil)
+
+	query := ListTasksQuery{
+		UserID:    userID,
+		SortBy:    "title",
+		SortOrder: "desc",
+	}
+
+	result, err := handler.Handle(context.Background(), query)
+
+	require.NoError(t, err)
+	require.Len(t, result, 2)
+	// desc order: Zebra before Apple
+	assert.Equal(t, "Zebra task", result[0].Title)
+	assert.Equal(t, "Apple task", result[1].Title)
+
+	repo.AssertExpectations(t)
+}

@@ -429,6 +429,60 @@ func TestCalendarImportWorker_RunStopsOnContextCancel(t *testing.T) {
 	assert.False(t, worker.IsRunning())
 }
 
+func TestCalendarImportWorker_Stop(t *testing.T) {
+	importer := &mockImporter{}
+	repo := &mockSyncStateRepo{
+		pendingStates: []*domain.SyncState{},
+	}
+	config := CalendarImportWorkerConfig{
+		Interval:         100 * time.Millisecond, // Short interval for test
+		LookAheadDays:    DefaultLookAheadDays,
+		MaxSyncErrors:    DefaultMaxSyncErrors,
+		BatchSize:        10,
+		SkipOrbitaEvents: true,
+	}
+
+	worker := NewCalendarImportWorker(importer, repo, nil, config, nil)
+
+	ctx := context.Background()
+
+	// Run worker in goroutine
+	done := make(chan error, 1)
+	go func() {
+		done <- worker.Run(ctx)
+	}()
+
+	// Give it time to start
+	time.Sleep(30 * time.Millisecond)
+	assert.True(t, worker.IsRunning())
+
+	// Call Stop
+	worker.Stop()
+
+	// Worker should stop gracefully
+	select {
+	case err := <-done:
+		assert.NoError(t, err) // Stop signal returns nil, not an error
+	case <-time.After(1 * time.Second):
+		t.Fatal("worker did not stop after Stop() called")
+	}
+
+	assert.False(t, worker.IsRunning())
+}
+
+func TestCalendarImportWorker_StopWhenNotRunning(t *testing.T) {
+	importer := &mockImporter{}
+	repo := &mockSyncStateRepo{}
+	config := DefaultImportWorkerConfig()
+
+	worker := NewCalendarImportWorker(importer, repo, nil, config, nil)
+
+	// Worker is not running, calling Stop should be safe (no panic)
+	assert.False(t, worker.IsRunning())
+	worker.Stop() // Should not panic
+	assert.False(t, worker.IsRunning())
+}
+
 func TestDefaultImportWorkerConfig(t *testing.T) {
 	config := DefaultImportWorkerConfig()
 
@@ -474,4 +528,287 @@ func TestCalculateSyncHash(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestCalendarImportWorker_RunImportCycle_ContextCancelled(t *testing.T) {
+	userID := uuid.New()
+	calendarID := "primary"
+
+	importer := &mockImporter{
+		events: []application.CalendarEvent{
+			{
+				ID:      "event-1",
+				Summary: "Meeting",
+			},
+		},
+	}
+
+	syncState := domain.NewSyncState(userID, calendarID, "google")
+	repo := &mockSyncStateRepo{
+		pendingStates: []*domain.SyncState{syncState},
+	}
+	config := DefaultImportWorkerConfig()
+
+	worker := NewCalendarImportWorker(importer, repo, nil, config, nil)
+
+	// Create cancelled context
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	// runImportCycle should exit early on context cancellation
+	worker.runImportCycle(ctx)
+
+	// Importer may or may not be called depending on timing
+	// The important thing is it doesn't hang or error
+}
+
+func TestCalendarImportWorker_RunImportCycle_FindPendingSyncError(t *testing.T) {
+	importer := &mockImporter{}
+	repo := &mockSyncStateRepo{
+		findErr: errors.New("database error"),
+	}
+	config := DefaultImportWorkerConfig()
+
+	worker := NewCalendarImportWorker(importer, repo, nil, config, nil)
+
+	ctx := context.Background()
+	worker.runImportCycle(ctx)
+
+	// Should not panic or call importer
+	assert.Empty(t, importer.calls)
+}
+
+func TestCalendarImportWorker_InitializeSyncState_FindError(t *testing.T) {
+	importer := &mockImporter{}
+	repo := &mockSyncStateRepo{
+		findErr: errors.New("database error"),
+	}
+	config := DefaultImportWorkerConfig()
+
+	worker := NewCalendarImportWorker(importer, repo, nil, config, nil)
+
+	ctx := context.Background()
+	state, err := worker.InitializeSyncState(ctx, uuid.New(), "primary", "google")
+
+	assert.Error(t, err)
+	assert.Nil(t, state)
+}
+
+func TestCalendarImportWorker_InitializeSyncState_SaveError(t *testing.T) {
+	importer := &mockImporter{}
+	repo := &mockSyncStateRepo{
+		saveErr: errors.New("save failed"),
+	}
+	config := DefaultImportWorkerConfig()
+
+	worker := NewCalendarImportWorker(importer, repo, nil, config, nil)
+
+	ctx := context.Background()
+	state, err := worker.InitializeSyncState(ctx, uuid.New(), "primary", "google")
+
+	assert.Error(t, err)
+	assert.Nil(t, state)
+}
+
+func TestCalendarImportWorker_ForceSync_FindError(t *testing.T) {
+	importer := &mockImporter{}
+	repo := &mockSyncStateRepo{
+		findErr: errors.New("database error"),
+	}
+	config := DefaultImportWorkerConfig()
+
+	worker := NewCalendarImportWorker(importer, repo, nil, config, nil)
+
+	ctx := context.Background()
+	err := worker.ForceSync(ctx, uuid.New(), "primary")
+
+	assert.Error(t, err)
+}
+
+func TestCalendarImportWorker_RunImportCycle_SaveStateError(t *testing.T) {
+	userID := uuid.New()
+	calendarID := "primary"
+
+	importer := &mockImporter{
+		events: []application.CalendarEvent{
+			{
+				ID:      "event-1",
+				Summary: "Meeting",
+			},
+		},
+	}
+
+	syncState := domain.NewSyncState(userID, calendarID, "google")
+	repo := &mockSyncStateRepo{
+		pendingStates: []*domain.SyncState{syncState},
+		saveErr:       errors.New("save failed"),
+	}
+	config := DefaultImportWorkerConfig()
+
+	worker := NewCalendarImportWorker(importer, repo, nil, config, nil)
+
+	ctx := context.Background()
+	worker.runImportCycle(ctx)
+
+	// Import was called despite save error
+	require.Len(t, importer.calls, 1)
+}
+
+func TestCalendarImportWorker_RunWithTickerTick(t *testing.T) {
+	importer := &mockImporter{
+		events: []application.CalendarEvent{},
+	}
+	userID := uuid.New()
+	syncState := domain.NewSyncState(userID, "primary", "google")
+	repo := &mockSyncStateRepo{
+		pendingStates: []*domain.SyncState{syncState},
+	}
+	config := CalendarImportWorkerConfig{
+		Interval:         30 * time.Millisecond, // Very short interval
+		LookAheadDays:    DefaultLookAheadDays,
+		MaxSyncErrors:    DefaultMaxSyncErrors,
+		BatchSize:        10,
+		SkipOrbitaEvents: true,
+	}
+
+	worker := NewCalendarImportWorker(importer, repo, nil, config, nil)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Run worker in goroutine
+	done := make(chan error, 1)
+	go func() {
+		done <- worker.Run(ctx)
+	}()
+
+	// Wait for initial run + one ticker tick (import should be called at least twice)
+	time.Sleep(80 * time.Millisecond)
+
+	// Cancel to stop
+	cancel()
+
+	select {
+	case <-done:
+		// Worker stopped
+	case <-time.After(1 * time.Second):
+		t.Fatal("worker did not stop")
+	}
+
+	// Importer should have been called at least twice (initial + ticker)
+	assert.GreaterOrEqual(t, len(importer.calls), 2)
+}
+
+func TestCalendarImportWorker_ImportForUser_ConflictHandlerSuccess(t *testing.T) {
+	userID := uuid.New()
+	calendarID := "primary"
+
+	importer := &mockImporter{
+		events: []application.CalendarEvent{
+			{
+				ID:            "event-1",
+				Summary:       "External Meeting",
+				StartTime:     time.Now().Add(1 * time.Hour),
+				EndTime:       time.Now().Add(2 * time.Hour),
+				IsOrbitaEvent: false, // External event
+			},
+		},
+	}
+
+	syncState := domain.NewSyncState(userID, calendarID, "google")
+	repo := &mockSyncStateRepo{
+		pendingStates: []*domain.SyncState{syncState},
+	}
+
+	// Conflict handler that succeeds (returns nil)
+	conflictHandler := &mockConflictHandler{
+		err: nil,
+	}
+
+	config := DefaultImportWorkerConfig()
+	config.SkipOrbitaEvents = true
+
+	worker := NewCalendarImportWorker(importer, repo, conflictHandler, config, nil)
+
+	ctx := context.Background()
+	worker.runImportCycle(ctx)
+
+	// Conflict handler should have been called
+	assert.Equal(t, 1, conflictHandler.calls)
+
+	// Sync state should have been saved with success (no errors)
+	require.Len(t, repo.savedStates, 1)
+	assert.Empty(t, repo.savedStates[0].LastError())
+}
+
+func TestCalendarImportWorker_ImportForUser_FetchErrorSaveFailure(t *testing.T) {
+	userID := uuid.New()
+	calendarID := "primary"
+
+	importer := &mockImporter{
+		err: errors.New("fetch failed"),
+	}
+
+	syncState := domain.NewSyncState(userID, calendarID, "google")
+	repo := &mockSyncStateRepo{
+		pendingStates: []*domain.SyncState{syncState},
+		saveErr:       errors.New("save also failed"),
+	}
+	config := DefaultImportWorkerConfig()
+
+	worker := NewCalendarImportWorker(importer, repo, nil, config, nil)
+
+	ctx := context.Background()
+	worker.runImportCycle(ctx)
+
+	// Should not panic, both errors are logged
+	require.Len(t, importer.calls, 1)
+}
+
+func TestCalendarImportWorker_ImportForUser_MultipleStatesWithContextCancel(t *testing.T) {
+	userID1 := uuid.New()
+	userID2 := uuid.New()
+
+	importer := &mockImporter{
+		events: []application.CalendarEvent{},
+	}
+
+	syncState1 := domain.NewSyncState(userID1, "primary", "google")
+	syncState2 := domain.NewSyncState(userID2, "primary", "google")
+	repo := &mockSyncStateRepo{
+		pendingStates: []*domain.SyncState{syncState1, syncState2},
+	}
+	config := DefaultImportWorkerConfig()
+
+	worker := NewCalendarImportWorker(importer, repo, nil, config, nil)
+
+	// Create a context that cancels after first import
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Use a custom importer that cancels the context after first call
+	cancellingImporter := &contextCancellingImporter{
+		events: []application.CalendarEvent{},
+		cancel: cancel,
+	}
+	worker.importer = cancellingImporter
+
+	worker.runImportCycle(ctx)
+
+	// Only one import should have been called before context was cancelled
+	assert.Equal(t, 1, cancellingImporter.calls)
+}
+
+type contextCancellingImporter struct {
+	events []application.CalendarEvent
+	cancel context.CancelFunc
+	calls  int
+}
+
+func (m *contextCancellingImporter) ListEvents(ctx context.Context, userID uuid.UUID, start, end time.Time, includeOrbitaEvents bool) ([]application.CalendarEvent, error) {
+	m.calls++
+	m.cancel() // Cancel after first call
+	return m.events, nil
+}
+
+func (m *contextCancellingImporter) ListCalendars(ctx context.Context, userID uuid.UUID) ([]application.Calendar, error) {
+	return nil, nil
 }

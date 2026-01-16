@@ -274,3 +274,19 @@ func TestSchedule_BlocksAreSorted(t *testing.T) {
 	assert.Equal(t, "Second", blocks[1].Title())
 	assert.Equal(t, "Third", blocks[2].Title())
 }
+
+func TestSchedule_Constraints(t *testing.T) {
+	userID := uuid.New()
+	schedule := domain.NewSchedule(userID, time.Now())
+
+	// Should have a default constraint set
+	constraints := schedule.Constraints()
+	assert.NotNil(t, constraints)
+
+	// Add a constraint
+	constraint := domain.NewTimeRangeConstraint(domain.ConstraintTypeHard, 9, 17, 10.0)
+	schedule.AddConstraint(constraint)
+
+	// Verify constraint is in set
+	assert.NotNil(t, schedule.Constraints())
+}

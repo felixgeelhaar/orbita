@@ -3,6 +3,7 @@ package google
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -363,5 +364,685 @@ func TestSyncer_GoldenRequestPayload(t *testing.T) {
 	_, err = syncer.Sync(context.Background(), uuid.New(), blocks)
 	if err != nil {
 		t.Fatalf("sync failed: %v", err)
+	}
+}
+
+func TestNewSyncer(t *testing.T) {
+	source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "test"})
+	provider := stubTokenSourceProvider{source: source}
+
+	syncer := NewSyncer(provider, nil)
+
+	if syncer == nil {
+		t.Fatal("expected non-nil syncer")
+	}
+	if syncer.baseURL != defaultBaseURL {
+		t.Errorf("expected baseURL %s, got %s", defaultBaseURL, syncer.baseURL)
+	}
+	if syncer.calendarID != "primary" {
+		t.Errorf("expected calendarID 'primary', got %s", syncer.calendarID)
+	}
+	if syncer.deleteMissing {
+		t.Error("expected deleteMissing to be false")
+	}
+}
+
+func TestSyncer_ListEventsSimple(t *testing.T) {
+	now := time.Now().UTC()
+	eventID := uuid.New().String()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"items": []map[string]any{
+				{
+					"id":      eventID,
+					"summary": "Test Event",
+					"start": map[string]any{
+						"dateTime": now.Add(1 * time.Hour).Format(time.RFC3339),
+					},
+					"end": map[string]any{
+						"dateTime": now.Add(2 * time.Hour).Format(time.RFC3339),
+					},
+				},
+			},
+		})
+	}))
+	defer server.Close()
+
+	source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "test"})
+	syncer := NewSyncerWithBaseURL(stubTokenSourceProvider{source: source}, nil, server.URL)
+
+	events, err := syncer.ListEventsSimple(context.Background(), uuid.New(), now, now.Add(24*time.Hour), false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(events))
+	}
+	if events[0].ID != eventID {
+		t.Errorf("expected event ID %s, got %s", eventID, events[0].ID)
+	}
+	if events[0].Summary != "Test Event" {
+		t.Errorf("expected summary 'Test Event', got %s", events[0].Summary)
+	}
+}
+
+func TestSyncer_ListEventsSimple_Error(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "test"})
+	syncer := NewSyncerWithBaseURL(stubTokenSourceProvider{source: source}, nil, server.URL)
+
+	now := time.Now().UTC()
+	_, err := syncer.ListEventsSimple(context.Background(), uuid.New(), now, now.Add(24*time.Hour), false)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestSyncer_Sync_MissedBlock(t *testing.T) {
+	var seenDescription string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if desc, ok := payload["description"].(string); ok {
+			seenDescription = desc
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "test"})
+	syncer := NewSyncerWithBaseURL(stubTokenSourceProvider{source: source}, nil, server.URL)
+
+	blocks := []calendarApp.TimeBlock{
+		{
+			ID:        uuid.New(),
+			Title:     "Missed event",
+			BlockType: "task",
+			StartTime: time.Now().Add(1 * time.Hour),
+			EndTime:   time.Now().Add(2 * time.Hour),
+			Completed: false,
+			Missed:    true,
+		},
+	}
+
+	_, err := syncer.Sync(context.Background(), uuid.New(), blocks)
+	if err != nil {
+		t.Fatalf("sync failed: %v", err)
+	}
+
+	if !strings.Contains(seenDescription, "Missed") {
+		t.Errorf("expected description to contain 'Missed', got %q", seenDescription)
+	}
+}
+
+func TestSyncer_WithEmptyAttendees(t *testing.T) {
+	var seenAttendees []any
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if att, ok := payload["attendees"].([]any); ok {
+			seenAttendees = att
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "test"})
+	syncer := NewSyncerWithBaseURL(stubTokenSourceProvider{source: source}, nil, server.URL).
+		WithAttendees([]string{"valid@example.com", "", "another@example.com"})
+
+	blocks := []calendarApp.TimeBlock{
+		{
+			ID:        uuid.New(),
+			Title:     "Meeting",
+			BlockType: "meeting",
+			StartTime: time.Now().Add(1 * time.Hour),
+			EndTime:   time.Now().Add(2 * time.Hour),
+		},
+	}
+
+	_, err := syncer.Sync(context.Background(), uuid.New(), blocks)
+	if err != nil {
+		t.Fatalf("sync failed: %v", err)
+	}
+
+	// Empty emails should be filtered out, leaving only 2 valid attendees
+	if len(seenAttendees) != 2 {
+		t.Errorf("expected 2 attendees (empty filtered), got %d", len(seenAttendees))
+	}
+}
+
+func TestSyncer_WithInvalidReminders(t *testing.T) {
+	var seenReminders map[string]any
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if rem, ok := payload["reminders"].(map[string]any); ok {
+			seenReminders = rem
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "test"})
+	syncer := NewSyncerWithBaseURL(stubTokenSourceProvider{source: source}, nil, server.URL).
+		WithReminders([]int{10, 0, -5, 30})
+
+	blocks := []calendarApp.TimeBlock{
+		{
+			ID:        uuid.New(),
+			Title:     "Meeting",
+			BlockType: "meeting",
+			StartTime: time.Now().Add(1 * time.Hour),
+			EndTime:   time.Now().Add(2 * time.Hour),
+		},
+	}
+
+	_, err := syncer.Sync(context.Background(), uuid.New(), blocks)
+	if err != nil {
+		t.Fatalf("sync failed: %v", err)
+	}
+
+	// Zero and negative reminders should be filtered out
+	if overrides, ok := seenReminders["overrides"].([]any); ok {
+		if len(overrides) != 2 {
+			t.Errorf("expected 2 valid reminders, got %d", len(overrides))
+		}
+	}
+}
+
+func TestSyncer_UpdateAfterConflictFailure(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			w.WriteHeader(http.StatusConflict)
+		case http.MethodPut:
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	defer server.Close()
+
+	source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "test"})
+	syncer := NewSyncerWithBaseURL(stubTokenSourceProvider{source: source}, nil, server.URL)
+
+	blocks := []calendarApp.TimeBlock{
+		{
+			ID:        uuid.New(),
+			Title:     "Update fail",
+			BlockType: "task",
+			StartTime: time.Now().Add(1 * time.Hour),
+			EndTime:   time.Now().Add(2 * time.Hour),
+		},
+	}
+
+	result, err := syncer.Sync(context.Background(), uuid.New(), blocks)
+	if err != nil {
+		t.Fatalf("sync should not return error: %v", err)
+	}
+	if result.Failed != 1 {
+		t.Errorf("expected 1 failed, got %d", result.Failed)
+	}
+}
+
+func TestSyncer_DeleteMissingEvents_DeleteFailure(t *testing.T) {
+	keepID := uuid.New()
+	deleteID := uuid.New()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			w.WriteHeader(http.StatusOK)
+		case http.MethodGet:
+			if strings.Contains(r.URL.RawQuery, "privateExtendedProperty=orbita=1") {
+				_ = json.NewEncoder(w).Encode(map[string]any{
+					"items": []map[string]any{
+						{"id": keepID.String()},
+						{"id": deleteID.String()},
+					},
+				})
+				return
+			}
+			w.WriteHeader(http.StatusNotFound)
+		case http.MethodDelete:
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	defer server.Close()
+
+	source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "test"})
+	syncer := NewSyncerWithBaseURL(stubTokenSourceProvider{source: source}, nil, server.URL).WithDeleteMissing(true)
+
+	blocks := []calendarApp.TimeBlock{
+		{
+			ID:        keepID,
+			Title:     "Keep",
+			BlockType: "task",
+			StartTime: time.Now().Add(1 * time.Hour),
+			EndTime:   time.Now().Add(2 * time.Hour),
+		},
+	}
+
+	result, err := syncer.Sync(context.Background(), uuid.New(), blocks)
+	if err != nil {
+		t.Fatalf("sync should not return error: %v", err)
+	}
+	// Delete failures don't cause sync to fail, they're logged
+	if result.Created != 1 {
+		t.Errorf("expected 1 created, got %d", result.Created)
+	}
+}
+
+func TestSyncer_ListCalendars_Error(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "test"})
+	syncer := NewSyncerWithBaseURL(stubTokenSourceProvider{source: source}, nil, server.URL)
+
+	_, err := syncer.ListCalendars(context.Background(), uuid.New())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestSyncer_ListCalendars_DecodeError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("invalid json"))
+	}))
+	defer server.Close()
+
+	source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "test"})
+	syncer := NewSyncerWithBaseURL(stubTokenSourceProvider{source: source}, nil, server.URL)
+
+	_, err := syncer.ListCalendars(context.Background(), uuid.New())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestSyncer_DeleteEvent_Error(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "test"})
+	syncer := NewSyncerWithBaseURL(stubTokenSourceProvider{source: source}, nil, server.URL)
+
+	err := syncer.DeleteEvent(context.Background(), uuid.New(), uuid.New())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestSyncer_ListEvents_AllEvents(t *testing.T) {
+	// Test with onlyOrbitaEvents = false (all events)
+	start := time.Date(2024, time.May, 2, 9, 0, 0, 0, time.UTC)
+	end := start.Add(24 * time.Hour)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Verify no orbita filter
+		if strings.Contains(r.URL.RawQuery, "orbita") {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"items": []map[string]any{
+				{
+					"id":      "event-1",
+					"summary": "External Event",
+					"start":   map[string]any{"dateTime": "2024-05-02T09:00:00Z"},
+					"end":     map[string]any{"dateTime": "2024-05-02T10:00:00Z"},
+				},
+			},
+		})
+	}))
+	defer server.Close()
+
+	source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "test"})
+	syncer := NewSyncerWithBaseURL(stubTokenSourceProvider{source: source}, nil, server.URL)
+
+	events, err := syncer.ListEvents(context.Background(), uuid.New(), start, end, false)
+	if err != nil {
+		t.Fatalf("list failed: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(events))
+	}
+	if events[0].IsOrbitaEvent {
+		t.Error("expected event to not be orbita event")
+	}
+}
+
+func TestSyncer_ListEvents_WithOrbitaProperty(t *testing.T) {
+	start := time.Date(2024, time.May, 2, 9, 0, 0, 0, time.UTC)
+	end := start.Add(24 * time.Hour)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"items": []map[string]any{
+				{
+					"id":      "event-1",
+					"summary": "Orbita Block",
+					"extendedProperties": map[string]any{
+						"private": map[string]any{
+							"orbita": "1",
+						},
+					},
+					"start": map[string]any{"dateTime": "2024-05-02T09:00:00Z"},
+					"end":   map[string]any{"dateTime": "2024-05-02T10:00:00Z"},
+				},
+			},
+		})
+	}))
+	defer server.Close()
+
+	source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "test"})
+	syncer := NewSyncerWithBaseURL(stubTokenSourceProvider{source: source}, nil, server.URL)
+
+	events, err := syncer.ListEvents(context.Background(), uuid.New(), start, end, false)
+	if err != nil {
+		t.Fatalf("list failed: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(events))
+	}
+	if !events[0].IsOrbitaEvent {
+		t.Error("expected event to be orbita event")
+	}
+}
+
+func TestSyncer_ListEvents_WithAttendees(t *testing.T) {
+	start := time.Date(2024, time.May, 2, 9, 0, 0, 0, time.UTC)
+	end := start.Add(24 * time.Hour)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"items": []map[string]any{
+				{
+					"id":          "event-1",
+					"summary":     "Meeting",
+					"description": "Team sync",
+					"location":    "Room A",
+					"status":      "confirmed",
+					"organizer":   map[string]any{"email": "organizer@example.com"},
+					"attendees": []map[string]any{
+						{"email": "alice@example.com"},
+						{"email": "bob@example.com"},
+					},
+					"recurringEventId": "recurring-123",
+					"start":            map[string]any{"dateTime": "2024-05-02T09:00:00Z"},
+					"end":              map[string]any{"dateTime": "2024-05-02T10:00:00Z"},
+				},
+			},
+		})
+	}))
+	defer server.Close()
+
+	source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "test"})
+	syncer := NewSyncerWithBaseURL(stubTokenSourceProvider{source: source}, nil, server.URL)
+
+	events, err := syncer.ListEvents(context.Background(), uuid.New(), start, end, false)
+	if err != nil {
+		t.Fatalf("list failed: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(events))
+	}
+	if events[0].Description != "Team sync" {
+		t.Errorf("expected description 'Team sync', got %s", events[0].Description)
+	}
+	if events[0].Location != "Room A" {
+		t.Errorf("expected location 'Room A', got %s", events[0].Location)
+	}
+	if events[0].Organizer != "organizer@example.com" {
+		t.Errorf("expected organizer, got %s", events[0].Organizer)
+	}
+	if len(events[0].Attendees) != 2 {
+		t.Errorf("expected 2 attendees, got %d", len(events[0].Attendees))
+	}
+	if !events[0].IsRecurring {
+		t.Error("expected event to be recurring")
+	}
+}
+
+func TestSyncer_ListEvents_InvalidTimes(t *testing.T) {
+	start := time.Date(2024, time.May, 2, 9, 0, 0, 0, time.UTC)
+	end := start.Add(24 * time.Hour)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"items": []map[string]any{
+				{
+					"id":      "valid-event",
+					"summary": "Valid",
+					"start":   map[string]any{"dateTime": "2024-05-02T09:00:00Z"},
+					"end":     map[string]any{"dateTime": "2024-05-02T10:00:00Z"},
+				},
+				{
+					"id":      "invalid-start",
+					"summary": "Invalid Start",
+					"start":   map[string]any{"dateTime": "not-a-date"},
+					"end":     map[string]any{"dateTime": "2024-05-02T10:00:00Z"},
+				},
+				{
+					"id":      "invalid-end",
+					"summary": "Invalid End",
+					"start":   map[string]any{"dateTime": "2024-05-02T09:00:00Z"},
+					"end":     map[string]any{"dateTime": "not-a-date"},
+				},
+				{
+					"id":      "no-times",
+					"summary": "No Times",
+				},
+			},
+		})
+	}))
+	defer server.Close()
+
+	source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "test"})
+	syncer := NewSyncerWithBaseURL(stubTokenSourceProvider{source: source}, nil, server.URL)
+
+	events, err := syncer.ListEvents(context.Background(), uuid.New(), start, end, false)
+	if err != nil {
+		t.Fatalf("list failed: %v", err)
+	}
+	// Only the valid event should be returned
+	if len(events) != 1 {
+		t.Fatalf("expected 1 valid event, got %d", len(events))
+	}
+	if events[0].ID != "valid-event" {
+		t.Errorf("expected valid-event, got %s", events[0].ID)
+	}
+}
+
+func TestSyncer_ListEvents_InvalidAllDayDates(t *testing.T) {
+	start := time.Date(2024, time.May, 2, 9, 0, 0, 0, time.UTC)
+	end := start.Add(24 * time.Hour)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"items": []map[string]any{
+				{
+					"id":      "valid-allday",
+					"summary": "Valid All Day",
+					"start":   map[string]any{"date": "2024-05-02"},
+					"end":     map[string]any{"date": "2024-05-03"},
+				},
+				{
+					"id":      "invalid-start-date",
+					"summary": "Invalid Start Date",
+					"start":   map[string]any{"date": "not-a-date"},
+					"end":     map[string]any{"date": "2024-05-03"},
+				},
+				{
+					"id":      "invalid-end-date",
+					"summary": "Invalid End Date",
+					"start":   map[string]any{"date": "2024-05-02"},
+					"end":     map[string]any{"date": "not-a-date"},
+				},
+			},
+		})
+	}))
+	defer server.Close()
+
+	source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "test"})
+	syncer := NewSyncerWithBaseURL(stubTokenSourceProvider{source: source}, nil, server.URL)
+
+	events, err := syncer.ListEvents(context.Background(), uuid.New(), start, end, false)
+	if err != nil {
+		t.Fatalf("list failed: %v", err)
+	}
+	// Only the valid all-day event should be returned
+	if len(events) != 1 {
+		t.Fatalf("expected 1 valid event, got %d", len(events))
+	}
+	if events[0].ID != "valid-allday" {
+		t.Errorf("expected valid-allday, got %s", events[0].ID)
+	}
+	if !events[0].IsAllDay {
+		t.Error("expected event to be all-day")
+	}
+}
+
+func TestSyncer_Sync_NilOAuthService(t *testing.T) {
+	syncer := &Syncer{
+		oauthService: nil,
+	}
+
+	_, err := syncer.Sync(context.Background(), uuid.New(), nil)
+	if err == nil {
+		t.Fatal("expected error for nil oauth service")
+	}
+	if !strings.Contains(err.Error(), "oauth service not configured") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestSyncer_ListCalendars_NilOAuthService(t *testing.T) {
+	syncer := &Syncer{
+		oauthService: nil,
+	}
+
+	_, err := syncer.ListCalendars(context.Background(), uuid.New())
+	if err == nil {
+		t.Fatal("expected error for nil oauth service")
+	}
+}
+
+func TestSyncer_DeleteEvent_NilOAuthService(t *testing.T) {
+	syncer := &Syncer{
+		oauthService: nil,
+	}
+
+	err := syncer.DeleteEvent(context.Background(), uuid.New(), uuid.New())
+	if err == nil {
+		t.Fatal("expected error for nil oauth service")
+	}
+}
+
+func TestSyncer_ListEvents_NilOAuthService(t *testing.T) {
+	syncer := &Syncer{
+		oauthService: nil,
+	}
+
+	_, err := syncer.ListEvents(context.Background(), uuid.New(), time.Now(), time.Now().Add(time.Hour), false)
+	if err == nil {
+		t.Fatal("expected error for nil oauth service")
+	}
+}
+
+func TestSyncer_TokenSourceError(t *testing.T) {
+	provider := stubTokenSourceProvider{
+		source: nil,
+		err:    fmt.Errorf("token error"),
+	}
+	syncer := NewSyncer(provider, nil)
+
+	t.Run("Sync", func(t *testing.T) {
+		_, err := syncer.Sync(context.Background(), uuid.New(), nil)
+		if err == nil {
+			t.Fatal("expected error")
+		}
+	})
+
+	t.Run("ListCalendars", func(t *testing.T) {
+		_, err := syncer.ListCalendars(context.Background(), uuid.New())
+		if err == nil {
+			t.Fatal("expected error")
+		}
+	})
+
+	t.Run("DeleteEvent", func(t *testing.T) {
+		err := syncer.DeleteEvent(context.Background(), uuid.New(), uuid.New())
+		if err == nil {
+			t.Fatal("expected error")
+		}
+	})
+
+	t.Run("ListEvents", func(t *testing.T) {
+		_, err := syncer.ListEvents(context.Background(), uuid.New(), time.Now(), time.Now().Add(time.Hour), false)
+		if err == nil {
+			t.Fatal("expected error")
+		}
+	})
+}
+
+func TestNewSyncerWithBaseURL_EmptyURL(t *testing.T) {
+	source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "test"})
+	syncer := NewSyncerWithBaseURL(stubTokenSourceProvider{source: source}, nil, "")
+
+	if syncer.baseURL != defaultBaseURL {
+		t.Errorf("expected default URL %s, got %s", defaultBaseURL, syncer.baseURL)
+	}
+}
+
+func TestSyncer_WithCalendarID_Empty(t *testing.T) {
+	source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "test"})
+	syncer := NewSyncer(stubTokenSourceProvider{source: source}, nil)
+
+	// Empty string should not change calendar ID
+	syncer.WithCalendarID("")
+	if syncer.calendarID != "primary" {
+		t.Errorf("expected 'primary', got %s", syncer.calendarID)
 	}
 }

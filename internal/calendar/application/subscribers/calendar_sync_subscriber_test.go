@@ -411,3 +411,485 @@ func TestCalendarSyncSubscriber_UnknownEventType(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, syncer.syncedBlocks)
 }
+
+func TestCalendarSyncSubscriber_InvalidPayload_BlockScheduled(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	syncer := &mockSyncer{}
+	subscriber := subscribers.NewCalendarSyncSubscriber(syncer, nil, logger)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:    uuid.New(),
+		RoutingKey: "scheduling.block.scheduled",
+		Payload:    json.RawMessage(`{invalid json`),
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err) // Should not fail, just log error
+	assert.Empty(t, syncer.syncedBlocks)
+}
+
+func TestCalendarSyncSubscriber_InvalidPayload_BlockRescheduled(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	syncer := &mockSyncer{}
+	subscriber := subscribers.NewCalendarSyncSubscriber(syncer, nil, logger)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:    uuid.New(),
+		RoutingKey: "scheduling.block.rescheduled",
+		Payload:    json.RawMessage(`{invalid json`),
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err)
+	assert.Empty(t, syncer.syncedBlocks)
+}
+
+func TestCalendarSyncSubscriber_InvalidPayload_BlockCompleted(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	syncer := &mockSyncer{}
+	subscriber := subscribers.NewCalendarSyncSubscriber(syncer, nil, logger)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:    uuid.New(),
+		RoutingKey: "scheduling.block.completed",
+		Payload:    json.RawMessage(`{invalid json`),
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err)
+	assert.Empty(t, syncer.syncedBlocks)
+}
+
+func TestCalendarSyncSubscriber_InvalidPayload_BlockMissed(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	syncer := &mockSyncer{}
+	subscriber := subscribers.NewCalendarSyncSubscriber(syncer, nil, logger)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:    uuid.New(),
+		RoutingKey: "scheduling.block.missed",
+		Payload:    json.RawMessage(`{invalid json`),
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err)
+	assert.Empty(t, syncer.syncedBlocks)
+}
+
+func TestCalendarSyncSubscriber_ScheduleRepoError(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	syncer := &mockSyncer{}
+	scheduleRepo := &mockScheduleRepo{
+		schedule: nil,
+		err:      errors.New("database connection failed"),
+	}
+
+	subscriber := subscribers.NewCalendarSyncSubscriber(syncer, scheduleRepo, logger)
+
+	payload := subscribers.BlockRescheduledPayload{
+		BlockID:      uuid.New(),
+		OldStartTime: time.Now(),
+		OldEndTime:   time.Now().Add(30 * time.Minute),
+		NewStartTime: time.Now().Add(1 * time.Hour),
+		NewEndTime:   time.Now().Add(90 * time.Minute),
+	}
+	payloadBytes, _ := json.Marshal(payload)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   uuid.New(),
+		AggregateType: "Schedule",
+		RoutingKey:    "scheduling.block.rescheduled",
+		Payload:       payloadBytes,
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err) // Should not fail, just log error
+	assert.Empty(t, syncer.syncedBlocks)
+}
+
+func TestCalendarSyncSubscriber_BlockNotFound_Rescheduled(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	userID := uuid.New()
+	syncer := &mockSyncer{}
+
+	// Create a schedule WITHOUT the block we're looking for
+	schedule := schedulingDomain.NewSchedule(userID, time.Now())
+	scheduleRepo := &mockScheduleRepo{schedule: schedule}
+
+	subscriber := subscribers.NewCalendarSyncSubscriber(syncer, scheduleRepo, logger)
+
+	// Try to reschedule a block that doesn't exist
+	payload := subscribers.BlockRescheduledPayload{
+		BlockID:      uuid.New(), // Non-existent block ID
+		OldStartTime: time.Now(),
+		OldEndTime:   time.Now().Add(30 * time.Minute),
+		NewStartTime: time.Now().Add(1 * time.Hour),
+		NewEndTime:   time.Now().Add(90 * time.Minute),
+	}
+	payloadBytes, _ := json.Marshal(payload)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   uuid.New(),
+		AggregateType: "Schedule",
+		RoutingKey:    "scheduling.block.rescheduled",
+		Payload:       payloadBytes,
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err) // Should not fail, just log error
+	assert.Empty(t, syncer.syncedBlocks)
+}
+
+func TestCalendarSyncSubscriber_BlockNotFound_Completed(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	userID := uuid.New()
+	syncer := &mockSyncer{}
+
+	schedule := schedulingDomain.NewSchedule(userID, time.Now())
+	scheduleRepo := &mockScheduleRepo{schedule: schedule}
+
+	subscriber := subscribers.NewCalendarSyncSubscriber(syncer, scheduleRepo, logger)
+
+	payload := subscribers.BlockStatusPayload{
+		BlockID:     uuid.New(), // Non-existent block ID
+		BlockType:   "task",
+		ReferenceID: uuid.New(),
+	}
+	payloadBytes, _ := json.Marshal(payload)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   uuid.New(),
+		AggregateType: "Schedule",
+		RoutingKey:    "scheduling.block.completed",
+		Payload:       payloadBytes,
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err)
+	assert.Empty(t, syncer.syncedBlocks)
+}
+
+func TestCalendarSyncSubscriber_BlockNotFound_Missed(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	userID := uuid.New()
+	syncer := &mockSyncer{}
+
+	schedule := schedulingDomain.NewSchedule(userID, time.Now())
+	scheduleRepo := &mockScheduleRepo{schedule: schedule}
+
+	subscriber := subscribers.NewCalendarSyncSubscriber(syncer, scheduleRepo, logger)
+
+	payload := subscribers.BlockStatusPayload{
+		BlockID:     uuid.New(), // Non-existent block ID
+		BlockType:   "task",
+		ReferenceID: uuid.New(),
+	}
+	payloadBytes, _ := json.Marshal(payload)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   uuid.New(),
+		AggregateType: "Schedule",
+		RoutingKey:    "scheduling.block.missed",
+		Payload:       payloadBytes,
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err)
+	assert.Empty(t, syncer.syncedBlocks)
+}
+
+func TestCalendarSyncSubscriber_ScheduleNotFound_Completed(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	syncer := &mockSyncer{}
+	scheduleRepo := &mockScheduleRepo{schedule: nil}
+
+	subscriber := subscribers.NewCalendarSyncSubscriber(syncer, scheduleRepo, logger)
+
+	payload := subscribers.BlockStatusPayload{
+		BlockID:     uuid.New(),
+		BlockType:   "task",
+		ReferenceID: uuid.New(),
+	}
+	payloadBytes, _ := json.Marshal(payload)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   uuid.New(),
+		AggregateType: "Schedule",
+		RoutingKey:    "scheduling.block.completed",
+		Payload:       payloadBytes,
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err)
+	assert.Empty(t, syncer.syncedBlocks)
+}
+
+func TestCalendarSyncSubscriber_ScheduleNotFound_Missed(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	syncer := &mockSyncer{}
+	scheduleRepo := &mockScheduleRepo{schedule: nil}
+
+	subscriber := subscribers.NewCalendarSyncSubscriber(syncer, scheduleRepo, logger)
+
+	payload := subscribers.BlockStatusPayload{
+		BlockID:     uuid.New(),
+		BlockType:   "task",
+		ReferenceID: uuid.New(),
+	}
+	payloadBytes, _ := json.Marshal(payload)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   uuid.New(),
+		AggregateType: "Schedule",
+		RoutingKey:    "scheduling.block.missed",
+		Payload:       payloadBytes,
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err)
+	assert.Empty(t, syncer.syncedBlocks)
+}
+
+func TestCalendarSyncSubscriber_UserIDFromSchedule(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	userID := uuid.New()
+	blockID := uuid.New()
+
+	syncer := &mockSyncer{
+		syncResult: &application.SyncResult{Created: 1},
+	}
+
+	schedule := schedulingDomain.NewSchedule(userID, time.Now())
+	scheduleRepo := &mockScheduleRepo{schedule: schedule}
+
+	subscriber := subscribers.NewCalendarSyncSubscriber(syncer, scheduleRepo, logger)
+
+	payload := subscribers.BlockScheduledPayload{
+		BlockID:     blockID,
+		BlockType:   "task",
+		ReferenceID: uuid.New(),
+		Title:       "Test Task",
+		StartTime:   time.Now().Add(1 * time.Hour),
+		EndTime:     time.Now().Add(90 * time.Minute),
+	}
+	payloadBytes, _ := json.Marshal(payload)
+
+	// Event WITHOUT userID in metadata - should get from schedule
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   schedule.ID(),
+		AggregateType: "Schedule",
+		RoutingKey:    "scheduling.block.scheduled",
+		Payload:       payloadBytes,
+		Metadata:      eventbus.EventMetadata{UserID: uuid.Nil}, // No userID
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err)
+	assert.Len(t, syncer.syncedBlocks, 1)
+	// Should have gotten userID from schedule
+	assert.Equal(t, userID, syncer.syncedUserID)
+}
+
+func TestCalendarSyncSubscriber_ScheduleNotFound_NoUserID(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	syncer := &mockSyncer{}
+	scheduleRepo := &mockScheduleRepo{schedule: nil}
+
+	subscriber := subscribers.NewCalendarSyncSubscriber(syncer, scheduleRepo, logger)
+
+	payload := subscribers.BlockScheduledPayload{
+		BlockID:     uuid.New(),
+		BlockType:   "task",
+		ReferenceID: uuid.New(),
+		Title:       "Test Task",
+		StartTime:   time.Now().Add(1 * time.Hour),
+		EndTime:     time.Now().Add(90 * time.Minute),
+	}
+	payloadBytes, _ := json.Marshal(payload)
+
+	// Event WITHOUT userID in metadata and schedule not found
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   uuid.New(),
+		AggregateType: "Schedule",
+		RoutingKey:    "scheduling.block.scheduled",
+		Payload:       payloadBytes,
+		Metadata:      eventbus.EventMetadata{UserID: uuid.Nil},
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err) // Should not fail, just log error
+	assert.Empty(t, syncer.syncedBlocks)
+}
+
+func TestCalendarSyncSubscriber_SyncError_Rescheduled(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	userID := uuid.New()
+
+	syncer := &mockSyncer{
+		syncErr: errors.New("sync failed"),
+	}
+
+	schedule := schedulingDomain.NewSchedule(userID, time.Now())
+	startTime := time.Now().Add(1 * time.Hour)
+	endTime := startTime.Add(30 * time.Minute)
+	block, _ := schedule.AddBlock(
+		schedulingDomain.BlockTypeTask,
+		uuid.New(),
+		"Test Task",
+		startTime,
+		endTime,
+	)
+	scheduleRepo := &mockScheduleRepo{schedule: schedule}
+
+	subscriber := subscribers.NewCalendarSyncSubscriber(syncer, scheduleRepo, logger)
+
+	payload := subscribers.BlockRescheduledPayload{
+		BlockID:      block.ID(),
+		OldStartTime: startTime,
+		OldEndTime:   endTime,
+		NewStartTime: time.Now().Add(2 * time.Hour),
+		NewEndTime:   time.Now().Add(150 * time.Minute),
+	}
+	payloadBytes, _ := json.Marshal(payload)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   uuid.New(),
+		AggregateType: "Schedule",
+		RoutingKey:    "scheduling.block.rescheduled",
+		Payload:       payloadBytes,
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err) // Should not fail, just log error
+}
+
+func TestCalendarSyncSubscriber_SyncError_Completed(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	userID := uuid.New()
+
+	syncer := &mockSyncer{
+		syncErr: errors.New("sync failed"),
+	}
+
+	schedule := schedulingDomain.NewSchedule(userID, time.Now())
+	startTime := time.Now().Add(1 * time.Hour)
+	endTime := startTime.Add(30 * time.Minute)
+	block, _ := schedule.AddBlock(
+		schedulingDomain.BlockTypeTask,
+		uuid.New(),
+		"Test Task",
+		startTime,
+		endTime,
+	)
+	scheduleRepo := &mockScheduleRepo{schedule: schedule}
+
+	subscriber := subscribers.NewCalendarSyncSubscriber(syncer, scheduleRepo, logger)
+
+	payload := subscribers.BlockStatusPayload{
+		BlockID:     block.ID(),
+		BlockType:   "task",
+		ReferenceID: uuid.New(),
+	}
+	payloadBytes, _ := json.Marshal(payload)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   uuid.New(),
+		AggregateType: "Schedule",
+		RoutingKey:    "scheduling.block.completed",
+		Payload:       payloadBytes,
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err)
+}
+
+func TestCalendarSyncSubscriber_SyncError_Missed(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	userID := uuid.New()
+
+	syncer := &mockSyncer{
+		syncErr: errors.New("sync failed"),
+	}
+
+	schedule := schedulingDomain.NewSchedule(userID, time.Now())
+	startTime := time.Now().Add(1 * time.Hour)
+	endTime := startTime.Add(30 * time.Minute)
+	block, _ := schedule.AddBlock(
+		schedulingDomain.BlockTypeTask,
+		uuid.New(),
+		"Test Task",
+		startTime,
+		endTime,
+	)
+	scheduleRepo := &mockScheduleRepo{schedule: schedule}
+
+	subscriber := subscribers.NewCalendarSyncSubscriber(syncer, scheduleRepo, logger)
+
+	payload := subscribers.BlockStatusPayload{
+		BlockID:     block.ID(),
+		BlockType:   "task",
+		ReferenceID: uuid.New(),
+	}
+	payloadBytes, _ := json.Marshal(payload)
+
+	event := &eventbus.ConsumedEvent{
+		EventID:       uuid.New(),
+		AggregateID:   uuid.New(),
+		AggregateType: "Schedule",
+		RoutingKey:    "scheduling.block.missed",
+		Payload:       payloadBytes,
+	}
+
+	ctx := context.Background()
+	err := subscriber.Handle(ctx, event)
+
+	require.NoError(t, err)
+}
+
+func TestNewCalendarSyncSubscriber_NilLogger(t *testing.T) {
+	syncer := &mockSyncer{}
+	scheduleRepo := &mockScheduleRepo{}
+
+	// Pass nil logger - should use default
+	subscriber := subscribers.NewCalendarSyncSubscriber(syncer, scheduleRepo, nil)
+
+	assert.NotNil(t, subscriber)
+}

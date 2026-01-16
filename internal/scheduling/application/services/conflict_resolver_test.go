@@ -484,3 +484,135 @@ func TestDetectOverlap(t *testing.T) {
 	assert.False(t, hasConflict)
 	assert.Equal(t, domain.ConflictType(""), conflictType)
 }
+
+func TestConflictResolver_ResolveConflict_ExternalWins_ScheduleNotFound(t *testing.T) {
+	repo := newMockScheduleRepoForConflicts()
+	schedulerEngine := NewSchedulerEngine(DefaultSchedulerConfig())
+	config := ConflictResolverConfig{Strategy: domain.StrategyExternalWins}
+	resolver := NewConflictResolver(repo, schedulerEngine, config, nil)
+
+	ctx := context.Background()
+	userID := uuid.New()
+	now := time.Now()
+
+	// Create conflict without any schedule in repo
+	conflict := domain.NewConflict(
+		userID,
+		domain.ConflictTypeOverlap,
+		uuid.New(),
+		domain.TimeRange{Start: now, End: now.Add(1 * time.Hour)},
+		"external-event-1",
+		domain.TimeRange{Start: now.Add(30 * time.Minute), End: now.Add(90 * time.Minute)},
+	)
+
+	result, err := resolver.ResolveConflict(ctx, conflict)
+
+	require.NoError(t, err)
+	assert.True(t, result.HasConflict)
+	assert.Equal(t, domain.ResolutionPending, result.Resolution)
+	assert.Contains(t, result.Message, "Schedule not found")
+}
+
+func TestConflictResolver_ResolveConflict_ExternalWins_BlockNotFound(t *testing.T) {
+	repo := newMockScheduleRepoForConflicts()
+	schedulerEngine := NewSchedulerEngine(DefaultSchedulerConfig())
+	config := ConflictResolverConfig{Strategy: domain.StrategyExternalWins}
+	resolver := NewConflictResolver(repo, schedulerEngine, config, nil)
+
+	ctx := context.Background()
+	userID := uuid.New()
+	today := time.Now().Truncate(24 * time.Hour)
+
+	// Create schedule WITHOUT any block
+	schedule := domain.NewSchedule(userID, today)
+	repo.schedules[userID.String()+"_"+today.Format("2006-01-02")] = schedule
+
+	// Create conflict with a non-existent block ID
+	conflict := domain.NewConflict(
+		userID,
+		domain.ConflictTypeOverlap,
+		uuid.New(), // Random block ID that doesn't exist
+		domain.TimeRange{Start: today.Add(10 * time.Hour), End: today.Add(11 * time.Hour)},
+		"external-event-1",
+		domain.TimeRange{Start: today.Add(10*time.Hour + 30*time.Minute), End: today.Add(11*time.Hour + 30*time.Minute)},
+	)
+
+	result, err := resolver.ResolveConflict(ctx, conflict)
+
+	require.NoError(t, err)
+	assert.True(t, result.HasConflict)
+	assert.Equal(t, domain.ResolutionPending, result.Resolution)
+	assert.Contains(t, result.Message, "Block not found")
+}
+
+func TestConflictResolver_ResolveConflict_ExternalWins_NoAvailableSlots(t *testing.T) {
+	repo := newMockScheduleRepoForConflicts()
+	schedulerEngine := NewSchedulerEngine(DefaultSchedulerConfig())
+	config := ConflictResolverConfig{Strategy: domain.StrategyExternalWins}
+	resolver := NewConflictResolver(repo, schedulerEngine, config, nil)
+
+	ctx := context.Background()
+	userID := uuid.New()
+	today := time.Now().Truncate(24 * time.Hour).UTC()
+
+	// Create schedule with a very long block that needs rescheduling
+	schedule := domain.NewSchedule(userID, today)
+
+	// Add a 7-hour block that we'll try to reschedule (leaves only 1 hour)
+	blockStart := today.Add(9 * time.Hour) // 9:00
+	blockEnd := today.Add(16 * time.Hour)  // 16:00 (7 hours)
+	block, err := schedule.AddBlock(domain.BlockTypeTask, uuid.New(), "Long block to reschedule", blockStart, blockEnd)
+	require.NoError(t, err)
+
+	// Fill remaining slot from 16:00 to 17:00 (1 hour filler)
+	_, err = schedule.AddBlock(domain.BlockTypeTask, uuid.New(), "Filler", today.Add(16*time.Hour), today.Add(17*time.Hour))
+	require.NoError(t, err)
+
+	repo.schedules[userID.String()+"_"+today.Format("2006-01-02")] = schedule
+
+	// Create conflict for the 7-hour block
+	// After removing it, only 1 hour slot is available, but block needs 7 hours
+	conflict := domain.NewConflict(
+		userID,
+		domain.ConflictTypeOverlap,
+		block.ID(),
+		domain.TimeRange{Start: blockStart, End: blockEnd},
+		"external-event-1",
+		domain.TimeRange{Start: blockStart, End: blockStart.Add(30 * time.Minute)},
+	)
+
+	result, err := resolver.ResolveConflict(ctx, conflict)
+
+	require.NoError(t, err)
+	assert.True(t, result.HasConflict)
+	assert.Equal(t, domain.ResolutionPending, result.Resolution)
+	assert.Contains(t, result.Message, "No available time slots")
+}
+
+func TestConflictResolver_ResolveConflict_ExternalWins_FindScheduleError(t *testing.T) {
+	repo := newMockScheduleRepoForConflicts()
+	repo.err = assert.AnError // Set error to simulate database failure
+	schedulerEngine := NewSchedulerEngine(DefaultSchedulerConfig())
+	config := ConflictResolverConfig{Strategy: domain.StrategyExternalWins}
+	resolver := NewConflictResolver(repo, schedulerEngine, config, nil)
+
+	ctx := context.Background()
+	userID := uuid.New()
+	now := time.Now()
+
+	conflict := domain.NewConflict(
+		userID,
+		domain.ConflictTypeOverlap,
+		uuid.New(),
+		domain.TimeRange{Start: now, End: now.Add(1 * time.Hour)},
+		"external-event-1",
+		domain.TimeRange{Start: now.Add(30 * time.Minute), End: now.Add(90 * time.Minute)},
+	)
+
+	result, err := resolver.ResolveConflict(ctx, conflict)
+
+	require.NoError(t, err)
+	assert.True(t, result.HasConflict)
+	assert.Equal(t, domain.ResolutionPending, result.Resolution)
+	assert.Contains(t, result.Message, "Failed to find schedule")
+}

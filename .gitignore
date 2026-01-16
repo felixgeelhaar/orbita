@@ -56,3 +56,5 @@ tmp/
 
 # License signing keys (private key is server-side only)
 internal/licensing/infrastructure/crypto/license_private_key.pem
+# Relicta release run state files
+.relicta/releases/run-*.json

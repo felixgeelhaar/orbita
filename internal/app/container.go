@@ -2,17 +2,27 @@ package app
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
+	"time"
 
 	automationApp "github.com/felixgeelhaar/orbita/internal/automations/application"
 	automationPersistence "github.com/felixgeelhaar/orbita/internal/automations/infrastructure/persistence"
-	db "github.com/felixgeelhaar/orbita/db/generated"
+	db "github.com/felixgeelhaar/orbita/db/generated/postgres"
 	insightsApp "github.com/felixgeelhaar/orbita/internal/insights/application"
 	insightsPersistence "github.com/felixgeelhaar/orbita/internal/insights/infrastructure/persistence"
 	billingApp "github.com/felixgeelhaar/orbita/internal/billing/application"
+	billingDomain "github.com/felixgeelhaar/orbita/internal/billing/domain"
 	billingPersistence "github.com/felixgeelhaar/orbita/internal/billing/infrastructure/persistence"
 	calendarApp "github.com/felixgeelhaar/orbita/internal/calendar/application"
+	calendarSubs "github.com/felixgeelhaar/orbita/internal/calendar/application/subscribers"
+	calendarWorkers "github.com/felixgeelhaar/orbita/internal/calendar/application/workers"
+	calendarDomain "github.com/felixgeelhaar/orbita/internal/calendar/domain"
+	calendarPersistence "github.com/felixgeelhaar/orbita/internal/calendar/infrastructure/persistence"
+	licensingApp "github.com/felixgeelhaar/orbita/internal/licensing/application"
+	licensingCrypto "github.com/felixgeelhaar/orbita/internal/licensing/infrastructure/crypto"
+	licensingPersistence "github.com/felixgeelhaar/orbita/internal/licensing/infrastructure/persistence"
 	marketplaceDomain "github.com/felixgeelhaar/orbita/internal/marketplace/domain"
 	marketplaceQueries "github.com/felixgeelhaar/orbita/internal/marketplace/application/queries"
 	marketplacePersistence "github.com/felixgeelhaar/orbita/internal/marketplace/infrastructure/persistence"
@@ -20,6 +30,7 @@ import (
 	"github.com/felixgeelhaar/orbita/internal/engine/builtin"
 	"github.com/felixgeelhaar/orbita/internal/engine/registry"
 	"github.com/felixgeelhaar/orbita/internal/engine/runtime"
+	habitsDomain "github.com/felixgeelhaar/orbita/internal/habits/domain"
 	orbitAPI "github.com/felixgeelhaar/orbita/internal/orbit/api"
 	"github.com/felixgeelhaar/orbita/internal/orbit/builtin/focusmode"
 	"github.com/felixgeelhaar/orbita/internal/orbit/builtin/idealweek"
@@ -38,16 +49,23 @@ import (
 	inboxServices "github.com/felixgeelhaar/orbita/internal/inbox/services"
 	meetingCommands "github.com/felixgeelhaar/orbita/internal/meetings/application/commands"
 	meetingQueries "github.com/felixgeelhaar/orbita/internal/meetings/application/queries"
+	meetingsDomain "github.com/felixgeelhaar/orbita/internal/meetings/domain"
 	meetingPersistence "github.com/felixgeelhaar/orbita/internal/meetings/infrastructure/persistence"
 	"github.com/felixgeelhaar/orbita/internal/productivity/application/commands"
 	"github.com/felixgeelhaar/orbita/internal/productivity/application/queries"
+	"github.com/felixgeelhaar/orbita/internal/productivity/domain/task"
 	"github.com/felixgeelhaar/orbita/internal/productivity/infrastructure/persistence"
 	scheduleCommands "github.com/felixgeelhaar/orbita/internal/scheduling/application/commands"
 	scheduleQueries "github.com/felixgeelhaar/orbita/internal/scheduling/application/queries"
 	schedulerServices "github.com/felixgeelhaar/orbita/internal/scheduling/application/services"
+	scheduleSubs "github.com/felixgeelhaar/orbita/internal/scheduling/application/subscribers"
+	schedulingDomain "github.com/felixgeelhaar/orbita/internal/scheduling/domain"
 	schedulePersistence "github.com/felixgeelhaar/orbita/internal/scheduling/infrastructure/persistence"
 	sharedApplication "github.com/felixgeelhaar/orbita/internal/shared/application"
 	sharedCrypto "github.com/felixgeelhaar/orbita/internal/shared/infrastructure/crypto"
+	"github.com/felixgeelhaar/orbita/internal/shared/infrastructure/database"
+	"github.com/felixgeelhaar/orbita/internal/shared/infrastructure/migrations"
+	_ "github.com/felixgeelhaar/orbita/internal/shared/infrastructure/database/sqlite" // Register SQLite driver
 	"github.com/felixgeelhaar/orbita/internal/shared/infrastructure/eventbus"
 	"github.com/felixgeelhaar/orbita/internal/shared/infrastructure/outbox"
 	sharedPersistence "github.com/felixgeelhaar/orbita/internal/shared/infrastructure/persistence"
@@ -62,21 +80,23 @@ type Container struct {
 	Logger *slog.Logger
 
 	// Database
-	DB *pgxpool.Pool
+	DB       *pgxpool.Pool
+	DBConn   database.Connection // Abstract connection for driver-agnostic access
+	DBDriver database.Driver
 
 	// Redis
 	RedisClient *redis.Client
 
-	// Repositories
-	TaskRepo              *persistence.PostgresTaskRepository
-	HabitRepo             *habitPersistence.PostgresHabitRepository
-	MeetingRepo           *meetingPersistence.PostgresMeetingRepository
+	// Repositories (use interfaces for driver-agnostic access)
+	TaskRepo              task.Repository
+	HabitRepo             habitsDomain.Repository
+	MeetingRepo           meetingsDomain.Repository
 	EntitlementRepo       *billingPersistence.PostgresEntitlementRepository
 	SubscriptionRepo      *billingPersistence.PostgresSubscriptionRepository
-	ScheduleRepo          *schedulePersistence.PostgresScheduleRepository
+	ScheduleRepo          schedulingDomain.ScheduleRepository
 	RescheduleAttemptRepo *schedulePersistence.PostgresRescheduleAttemptRepository
 	OAuthTokenRepo        *identityPersistence.OAuthTokenRepository
-	SettingsRepo          *identityPersistence.SettingsRepository
+	SettingsRepo          identitySettings.Repository
 	OutboxRepo            outbox.Repository
 
 	// Publishers
@@ -130,10 +150,22 @@ type Container struct {
 	// Auth
 	AuthService     *identityOAuth.Service
 	SettingsService *identitySettings.Service
-	BillingService  *billingApp.Service
+	BillingService  billingDomain.BillingService
+
+	// Licensing (local mode)
+	LicenseService *licensingApp.Service
 
 	// Calendar Sync
-	CalendarSyncer calendarApp.Syncer
+	CalendarSyncer       calendarApp.Syncer
+	CalendarImporter     calendarApp.Importer
+	SyncStateRepo        calendarDomain.SyncStateRepository
+	CalendarImportWorker *calendarWorkers.CalendarImportWorker
+	ConflictResolver     *schedulerServices.ConflictResolver
+
+	// Event Subscribers
+	SchedulingSubscriber   *scheduleSubs.SchedulingSubscriber
+	CalendarSyncSubscriber *calendarSubs.CalendarSyncSubscriber
+	InProcessEventBus      *eventbus.InProcessEventBus
 
 	// Schedule Query Handlers
 	GetScheduleHandler            *scheduleQueries.GetScheduleHandler
@@ -223,7 +255,7 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 	}
 
 	// Create repositories
-	c.TaskRepo = persistence.NewPostgresTaskRepository(pool)
+	c.TaskRepo = persistence.NewPostgresTaskRepositoryFromPool(pool)
 	c.HabitRepo = habitPersistence.NewPostgresHabitRepository(pool)
 	c.MeetingRepo = meetingPersistence.NewPostgresMeetingRepository(pool)
 	c.EntitlementRepo = billingPersistence.NewPostgresEntitlementRepository(pool)
@@ -535,6 +567,12 @@ func (c *Container) Close() {
 		}
 	}
 
+	// Stop calendar import worker
+	if c.CalendarImportWorker != nil && c.CalendarImportWorker.IsRunning() {
+		c.CalendarImportWorker.Stop()
+		c.Logger.Info("calendar import worker stopped")
+	}
+
 	if c.OutboxProcessor != nil {
 		c.OutboxProcessor.Stop()
 	}
@@ -555,7 +593,16 @@ func (c *Container) Close() {
 
 	if c.DB != nil {
 		c.DB.Close()
-		c.Logger.Info("database connection closed")
+		c.Logger.Info("PostgreSQL connection closed")
+	}
+
+	// Close SQLite connection if using local mode
+	if c.DBConn != nil && c.DBDriver == database.DriverSQLite {
+		if err := c.DBConn.Close(); err != nil {
+			c.Logger.Warn("error closing SQLite connection", "error", err)
+		} else {
+			c.Logger.Info("SQLite connection closed")
+		}
 	}
 }
 
@@ -574,4 +621,281 @@ func NewDevelopmentContainer(logger *slog.Logger) *Container {
 	// This container is useful for testing CLI structure without DB
 
 	return c
+}
+
+// NewLocalContainer creates a container for local mode with SQLite.
+// This provides zero-config operation without requiring PostgreSQL, Redis, or RabbitMQ.
+func NewLocalContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) (*Container, error) {
+	c := &Container{
+		Config: cfg,
+		Logger: logger,
+	}
+
+	// Initialize SQLite database
+	conn, err := initSQLiteConnection(ctx, cfg, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize SQLite: %w", err)
+	}
+
+	// Create repository factory
+	factory := NewRepositoryFactory(conn)
+
+	// Create repositories using factory
+	taskRepo, err := factory.TaskRepository()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create task repository: %w", err)
+	}
+	c.TaskRepo = taskRepo
+
+	habitRepo, err := factory.HabitRepository()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create habit repository: %w", err)
+	}
+	c.HabitRepo = habitRepo
+
+	meetingRepo, err := factory.MeetingRepository()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create meeting repository: %w", err)
+	}
+	c.MeetingRepo = meetingRepo
+
+	scheduleRepo, err := factory.ScheduleRepository()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create schedule repository: %w", err)
+	}
+	c.ScheduleRepo = scheduleRepo
+
+	settingsRepo, err := factory.SettingsRepository()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create settings repository: %w", err)
+	}
+	c.SettingsRepo = settingsRepo
+
+	outboxRepo, err := factory.OutboxRepository()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create outbox repository: %w", err)
+	}
+	c.OutboxRepo = outboxRepo
+
+	// Use noop publisher for local mode (no RabbitMQ)
+	c.EventPublisher = eventbus.NewNoopPublisher(logger)
+
+	// Create unit of work for SQLite
+	c.UnitOfWork = sharedPersistence.NewSQLiteUnitOfWork(conn.DB())
+
+	// Create task command handlers
+	c.CreateTaskHandler = commands.NewCreateTaskHandler(taskRepo, outboxRepo, c.UnitOfWork)
+	c.CompleteTaskHandler = commands.NewCompleteTaskHandler(taskRepo, outboxRepo, c.UnitOfWork)
+	c.ArchiveTaskHandler = commands.NewArchiveTaskHandler(taskRepo, outboxRepo, c.UnitOfWork)
+
+	// Create task query handlers
+	c.ListTasksHandler = queries.NewListTasksHandler(taskRepo)
+	c.GetTaskHandler = queries.NewGetTaskHandler(taskRepo)
+
+	// Create habit command handlers
+	c.CreateHabitHandler = habitCommands.NewCreateHabitHandler(habitRepo, outboxRepo, c.UnitOfWork)
+	c.LogCompletionHandler = habitCommands.NewLogCompletionHandler(habitRepo, outboxRepo, c.UnitOfWork)
+	c.ArchiveHabitHandler = habitCommands.NewArchiveHabitHandler(habitRepo, outboxRepo, c.UnitOfWork)
+	c.AdjustHabitFrequencyHandler = habitCommands.NewAdjustHabitFrequencyHandler(habitRepo, outboxRepo, c.UnitOfWork)
+
+	// Create habit query handlers
+	c.ListHabitsHandler = habitQueries.NewListHabitsHandler(habitRepo)
+	c.GetHabitHandler = habitQueries.NewGetHabitHandler(habitRepo)
+
+	// Create meeting command handlers
+	c.CreateMeetingHandler = meetingCommands.NewCreateMeetingHandler(meetingRepo, outboxRepo, c.UnitOfWork)
+	c.UpdateMeetingHandler = meetingCommands.NewUpdateMeetingHandler(meetingRepo, outboxRepo, c.UnitOfWork)
+	c.ArchiveMeetingHandler = meetingCommands.NewArchiveMeetingHandler(meetingRepo, outboxRepo, c.UnitOfWork)
+	c.MarkMeetingHeldHandler = meetingCommands.NewMarkMeetingHeldHandler(meetingRepo, c.UnitOfWork)
+	c.AdjustMeetingCadenceHandler = meetingCommands.NewAdjustMeetingCadenceHandler(meetingRepo, outboxRepo, c.UnitOfWork)
+
+	// Create meeting query handlers
+	c.ListMeetingsHandler = meetingQueries.NewListMeetingsHandler(meetingRepo)
+	c.GetMeetingHandler = meetingQueries.NewGetMeetingHandler(meetingRepo)
+	c.ListMeetingCandidatesHandler = meetingQueries.NewListMeetingCandidatesHandler(meetingRepo)
+
+	// Create scheduler engine
+	c.SchedulerEngine = schedulerServices.NewSchedulerEngine(schedulerServices.DefaultSchedulerConfig())
+
+	// Create schedule command handlers
+	c.AddBlockHandler = scheduleCommands.NewAddBlockHandler(scheduleRepo, outboxRepo, c.UnitOfWork)
+	c.CompleteBlockHandler = scheduleCommands.NewCompleteBlockHandler(scheduleRepo, outboxRepo, c.UnitOfWork)
+	c.RemoveBlockHandler = scheduleCommands.NewRemoveBlockHandler(scheduleRepo, outboxRepo, c.UnitOfWork)
+	c.RescheduleBlockHandler = scheduleCommands.NewRescheduleBlockHandler(scheduleRepo, outboxRepo, c.UnitOfWork)
+	c.AutoScheduleHandler = scheduleCommands.NewAutoScheduleHandler(scheduleRepo, outboxRepo, c.UnitOfWork, c.SchedulerEngine, logger)
+
+	// Create schedule query handlers
+	c.GetScheduleHandler = scheduleQueries.NewGetScheduleHandler(scheduleRepo)
+	c.FindAvailableSlotsHandler = scheduleQueries.NewFindAvailableSlotsHandler(scheduleRepo)
+
+	// Create conflict resolver
+	conflictConfig := schedulerServices.ConflictResolverConfig{
+		Strategy: schedulingDomain.ConflictResolutionStrategy(cfg.CalendarConflictStrategy),
+	}
+	c.ConflictResolver = schedulerServices.NewConflictResolver(scheduleRepo, c.SchedulerEngine, conflictConfig, logger)
+
+	// Create sync state repository for SQLite
+	c.SyncStateRepo = calendarPersistence.NewSQLiteSyncStateRepository(conn.DB())
+
+	// Create in-process event bus for local mode (no RabbitMQ)
+	c.InProcessEventBus = eventbus.NewInProcessEventBus(logger)
+
+	// Create scheduling subscriber (auto-schedule tasks/habits/meetings)
+	c.SchedulingSubscriber = scheduleSubs.NewSchedulingSubscriber(
+		c.AutoScheduleHandler,
+		taskRepo,
+		habitRepo,
+		meetingRepo,
+		logger,
+	)
+
+	// Enable/disable based on config
+	c.SchedulingSubscriber.SetEnabled(
+		cfg.CalendarAutoScheduleTasks || cfg.CalendarAutoScheduleHabits || cfg.CalendarAutoScheduleMeetings,
+	)
+
+	// Register scheduling subscriber with event bus
+	c.InProcessEventBus.RegisterConsumer(c.SchedulingSubscriber)
+
+	// Create calendar sync subscriber (syncs scheduled blocks to external calendar)
+	// Note: In local mode, CalendarSyncer is nil unless user has configured Google OAuth
+	if c.CalendarSyncer != nil {
+		c.CalendarSyncSubscriber = calendarSubs.NewCalendarSyncSubscriber(
+			c.CalendarSyncer,
+			scheduleRepo,
+			logger,
+		)
+		c.InProcessEventBus.RegisterConsumer(c.CalendarSyncSubscriber)
+		logger.Info("calendar sync subscriber enabled")
+	}
+
+	// Create calendar import worker (imports external events and handles conflicts)
+	if cfg.CalendarSyncEnabled && c.CalendarImporter != nil {
+		// Create conflict handler adapter for calendar import worker
+		conflictHandler := schedulerServices.NewConflictHandlerAdapter(
+			c.ConflictResolver,
+			scheduleRepo,
+			logger,
+		)
+
+		workerConfig := calendarWorkers.CalendarImportWorkerConfig{
+			Interval:         cfg.CalendarSyncInterval,
+			LookAheadDays:    cfg.CalendarSyncLookAheadDays,
+			MaxSyncErrors:    5,
+			BatchSize:        10,
+			SkipOrbitaEvents: true,
+		}
+		c.CalendarImportWorker = calendarWorkers.NewCalendarImportWorker(
+			c.CalendarImporter,
+			c.SyncStateRepo,
+			conflictHandler,
+			workerConfig,
+			logger,
+		)
+		logger.Info("calendar import worker configured",
+			"interval", cfg.CalendarSyncInterval,
+			"look_ahead_days", cfg.CalendarSyncLookAheadDays,
+		)
+	}
+
+	// Create settings service
+	c.SettingsService = identitySettings.NewService(settingsRepo)
+
+	// Create license service for local mode
+	licenseRepo := licensingPersistence.NewFileRepository(cfg.LicenseFilePath())
+	licenseVerifier, err := licensingCrypto.NewVerifier()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create license verifier: %w", err)
+	}
+	c.LicenseService = licensingApp.NewService(licenseRepo, licenseVerifier, logger)
+
+	// Create LocalBillingService that wraps the license service
+	c.BillingService = licensingApp.NewLocalBillingService(c.LicenseService)
+
+	// Store connection for Close
+	c.DBConn = conn
+	c.DBDriver = database.DriverSQLite
+
+	logger.Info("local mode container initialized",
+		"database", cfg.SQLitePath,
+		"driver", "sqlite",
+	)
+
+	return c, nil
+}
+
+// sqliteConnection is a type that implements database.Connection and exposes DB()
+type sqliteConnection interface {
+	database.Connection
+	DB() *sql.DB
+}
+
+// initSQLiteConnection initializes the SQLite database connection with auto-migration.
+func initSQLiteConnection(ctx context.Context, cfg *config.Config, logger *slog.Logger) (sqliteConnection, error) {
+	// Create SQLite connection
+	conn, err := database.NewConnection(ctx, database.Config{
+		Driver:     database.DriverSQLite,
+		SQLitePath: cfg.SQLitePath,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create SQLite connection: %w", err)
+	}
+
+	// Type assert to get SQLite-specific connection with DB() method
+	sqliteConn, ok := conn.(sqliteConnection)
+	if !ok {
+		conn.Close()
+		return nil, fmt.Errorf("expected SQLite connection with DB() method, got %T", conn)
+	}
+
+	// Run auto-migrations for SQLite
+	if err := runSQLiteMigrations(ctx, sqliteConn.DB(), logger); err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("failed to run migrations: %w", err)
+	}
+
+	// Ensure local user exists
+	if err := ensureLocalUserExists(ctx, sqliteConn.DB(), cfg.UserID, logger); err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("failed to ensure local user exists: %w", err)
+	}
+
+	return sqliteConn, nil
+}
+
+// runSQLiteMigrations applies SQLite schema migrations.
+func runSQLiteMigrations(ctx context.Context, db *sql.DB, logger *slog.Logger) error {
+	logger.Info("running SQLite migrations")
+	if err := migrations.RunSQLiteMigrations(ctx, db); err != nil {
+		return err
+	}
+	logger.Info("SQLite migrations completed successfully")
+	return nil
+}
+
+// ensureLocalUserExists creates the local user in SQLite if they don't exist.
+func ensureLocalUserExists(ctx context.Context, db *sql.DB, userID string, logger *slog.Logger) error {
+	// Check if user exists
+	var exists int
+	err := db.QueryRowContext(ctx, "SELECT 1 FROM users WHERE id = ?", userID).Scan(&exists)
+	if err == nil {
+		// User already exists
+		return nil
+	}
+	if err != sql.ErrNoRows {
+		return fmt.Errorf("failed to check user existence: %w", err)
+	}
+
+	// Create the local user
+	now := time.Now().Format(time.RFC3339)
+	_, err = db.ExecContext(ctx,
+		"INSERT INTO users (id, email, name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+		userID, "local@orbita.local", "Local User", now, now,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create local user: %w", err)
+	}
+
+	logger.Info("created local user", "user_id", userID)
+	return nil
 }

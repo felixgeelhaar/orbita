@@ -14,6 +14,7 @@ import (
 	"github.com/felixgeelhaar/orbita/adapter/cli/habit"
 	"github.com/felixgeelhaar/orbita/adapter/cli/inbox"
 	"github.com/felixgeelhaar/orbita/adapter/cli/insights"
+	"github.com/felixgeelhaar/orbita/adapter/cli/license"
 	"github.com/felixgeelhaar/orbita/adapter/cli/mcp"
 	"github.com/felixgeelhaar/orbita/adapter/cli/meeting"
 	"github.com/felixgeelhaar/orbita/adapter/cli/schedule"
@@ -58,9 +59,23 @@ func main() {
 	}
 	cli.SetLogger(logger)
 
-	// Try to initialize the full container
+	// Initialize container based on mode
 	var cliApp *cli.App
-	container, err := app.NewContainer(ctx, cfg, logger)
+	var container *app.Container
+
+	if cfg.IsLocalMode() {
+		// Use SQLite local mode (zero-config, no external services)
+		logger.Info("starting in local mode with SQLite", "database", cfg.SQLitePath)
+		container, err = app.NewLocalContainer(ctx, cfg, logger)
+		if err != nil {
+			logger.Error("failed to initialize local container", "error", err)
+			os.Exit(1)
+		}
+	} else {
+		// Use full PostgreSQL mode with external services
+		container, err = app.NewContainer(ctx, cfg, logger)
+	}
+
 	if err != nil {
 		if cfg.IsDevelopment() {
 			logger.Warn("failed to initialize container, running in limited mode", "error", err)
@@ -73,11 +88,19 @@ func main() {
 	} else {
 		defer container.Close()
 
-		// Start outbox processor in background (optional in CLI)
-		if cfg.OutboxProcessorEnabled {
+		// Start outbox processor in background (optional in CLI, not available in local mode)
+		if cfg.OutboxProcessorEnabled && container.OutboxProcessor != nil {
 			go container.OutboxProcessor.Start(ctx)
+		} else if container.OutboxProcessor == nil {
+			logger.Debug("outbox processor not available in local mode")
 		} else {
 			logger.Info("outbox processor disabled in CLI")
+		}
+
+		// Start calendar import worker in background (for automatic external calendar sync)
+		if container.CalendarImportWorker != nil {
+			go container.CalendarImportWorker.Run(ctx)
+			logger.Info("calendar import worker started")
 		}
 
 		// Create CLI app with handlers
@@ -145,6 +168,11 @@ func main() {
 			insights.SetService(container.InsightsService)
 			cliApp.SetInsightsService(container.InsightsService)
 		}
+
+		// Set license service for local mode
+		if container.LicenseService != nil {
+			license.SetLicenseService(container.LicenseService)
+		}
 	}
 
 	// Set the CLI app
@@ -162,6 +190,8 @@ func main() {
 	cli.AddCommand(cliSettings.Cmd)
 	cli.AddCommand(automation.Cmd)
 	cli.AddCommand(insights.Cmd)
+	cli.AddCommand(license.Cmd)
+	cli.AddCommand(license.UpgradeCmd) // Also add at root level for convenience
 
 	// Execute CLI
 	cli.Execute()

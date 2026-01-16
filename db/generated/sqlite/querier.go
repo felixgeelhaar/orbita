@@ -11,12 +11,14 @@ import (
 
 type Querier interface {
 	CancelAutomationPendingActionsByRuleID(ctx context.Context, ruleID string) error
+	ClearPrimaryCalendarForUser(ctx context.Context, userID string) error
 	CountAutomationRuleExecutionsSince(ctx context.Context, arg CountAutomationRuleExecutionsSinceParams) (int64, error)
 	CountAutomationRulesByUserID(ctx context.Context, userID string) (int64, error)
 	CountTasksByStatus(ctx context.Context, userID string) ([]CountTasksByStatusRow, error)
 	CreateAutomationPendingAction(ctx context.Context, arg CreateAutomationPendingActionParams) error
 	CreateAutomationRule(ctx context.Context, arg CreateAutomationRuleParams) error
 	CreateAutomationRuleExecution(ctx context.Context, arg CreateAutomationRuleExecutionParams) error
+	CreateConnectedCalendar(ctx context.Context, arg CreateConnectedCalendarParams) error
 	CreateHabit(ctx context.Context, arg CreateHabitParams) error
 	CreateHabitCompletion(ctx context.Context, arg CreateHabitCompletionParams) error
 	CreateMeeting(ctx context.Context, arg CreateMeetingParams) error
@@ -35,6 +37,8 @@ type Querier interface {
 	CreateWeeklySummary(ctx context.Context, arg CreateWeeklySummaryParams) error
 	DeleteAutomationRule(ctx context.Context, id string) error
 	DeleteAutomationRuleExecutionsOlderThan(ctx context.Context, completedAt sql.NullString) error
+	DeleteConnectedCalendar(ctx context.Context, id string) error
+	DeleteConnectedCalendarsByUserAndProvider(ctx context.Context, arg DeleteConnectedCalendarsByUserAndProviderParams) error
 	DeleteExecutedAutomationPendingActions(ctx context.Context, executedAt sql.NullString) error
 	DeleteHabit(ctx context.Context, id string) error
 	DeleteHabitCompletionsByHabitID(ctx context.Context, habitID string) error
@@ -65,10 +69,16 @@ type Querier interface {
 	GetAutomationRulesByUserID(ctx context.Context, userID string) ([]AutomationRule, error)
 	GetAverageProductivityScore(ctx context.Context, arg GetAverageProductivityScoreParams) (int64, error)
 	GetCalendarID(ctx context.Context, userID string) (string, error)
+	GetConnectedCalendarByID(ctx context.Context, id string) (ConnectedCalendar, error)
+	GetConnectedCalendarByUserProviderCalendar(ctx context.Context, arg GetConnectedCalendarByUserProviderCalendarParams) (ConnectedCalendar, error)
+	GetConnectedCalendarsByUser(ctx context.Context, userID string) ([]ConnectedCalendar, error)
+	GetConnectedCalendarsByUserAndProvider(ctx context.Context, arg GetConnectedCalendarsByUserAndProviderParams) ([]ConnectedCalendar, error)
 	GetDeleteMissing(ctx context.Context, userID string) (int64, error)
 	GetDueAutomationPendingActions(ctx context.Context, limit int64) ([]AutomationPendingAction, error)
 	GetEnabledAutomationRulesByTriggerType(ctx context.Context, arg GetEnabledAutomationRulesByTriggerTypeParams) ([]AutomationRule, error)
 	GetEnabledAutomationRulesByUserID(ctx context.Context, userID string) ([]AutomationRule, error)
+	GetEnabledPullCalendarsByUser(ctx context.Context, userID string) ([]ConnectedCalendar, error)
+	GetEnabledPushCalendarsByUser(ctx context.Context, userID string) ([]ConnectedCalendar, error)
 	GetFailedEvents(ctx context.Context, arg GetFailedEventsParams) ([]Outbox, error)
 	GetHabitByID(ctx context.Context, id string) (Habit, error)
 	GetHabitCompletionsByDateRange(ctx context.Context, arg GetHabitCompletionsByDateRangeParams) (int64, error)
@@ -84,6 +94,7 @@ type Querier interface {
 	GetMeetingsByUserID(ctx context.Context, userID string) ([]Meeting, error)
 	GetPeakProductivityHours(ctx context.Context, arg GetPeakProductivityHoursParams) ([]GetPeakProductivityHoursRow, error)
 	GetPendingTasksByUserID(ctx context.Context, userID string) ([]Task, error)
+	GetPrimaryConnectedCalendarByUser(ctx context.Context, userID string) (ConnectedCalendar, error)
 	GetProductivityGoal(ctx context.Context, id string) (ProductivityGoal, error)
 	GetProductivityGoalsByPeriod(ctx context.Context, arg GetProductivityGoalsByPeriodParams) ([]ProductivityGoal, error)
 	GetProductivityGoalsByType(ctx context.Context, arg GetProductivityGoalsByTypeParams) ([]ProductivityGoal, error)
@@ -118,6 +129,7 @@ type Querier interface {
 	UpdateAutomationPendingAction(ctx context.Context, arg UpdateAutomationPendingActionParams) error
 	UpdateAutomationRule(ctx context.Context, arg UpdateAutomationRuleParams) error
 	UpdateAutomationRuleExecution(ctx context.Context, arg UpdateAutomationRuleExecutionParams) error
+	UpdateConnectedCalendar(ctx context.Context, arg UpdateConnectedCalendarParams) error
 	UpdateHabit(ctx context.Context, arg UpdateHabitParams) error
 	UpdateMeeting(ctx context.Context, arg UpdateMeetingParams) error
 	UpdateProductivityGoal(ctx context.Context, arg UpdateProductivityGoalParams) error

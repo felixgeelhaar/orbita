@@ -20,6 +20,7 @@ import (
 	calendarWorkers "github.com/felixgeelhaar/orbita/internal/calendar/application/workers"
 	calendarDomain "github.com/felixgeelhaar/orbita/internal/calendar/domain"
 	calendarPersistence "github.com/felixgeelhaar/orbita/internal/calendar/infrastructure/persistence"
+	calendarSetup "github.com/felixgeelhaar/orbita/internal/calendar/setup"
 	licensingApp "github.com/felixgeelhaar/orbita/internal/licensing/application"
 	licensingCrypto "github.com/felixgeelhaar/orbita/internal/licensing/infrastructure/crypto"
 	licensingPersistence "github.com/felixgeelhaar/orbita/internal/licensing/infrastructure/persistence"
@@ -161,6 +162,9 @@ type Container struct {
 	SyncStateRepo        calendarDomain.SyncStateRepository
 	CalendarImportWorker *calendarWorkers.CalendarImportWorker
 	ConflictResolver     *schedulerServices.ConflictResolver
+	ProviderRegistry     *calendarApp.ProviderRegistry
+	SyncCoordinator      *calendarApp.SyncCoordinator
+	ConnectedCalendarRepo calendarDomain.ConnectedCalendarRepository
 
 	// Event Subscribers
 	SchedulingSubscriber   *scheduleSubs.SchedulingSubscriber
@@ -399,7 +403,23 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 		}
 	}
 
-	// Create calendar syncer if provider is supported
+	// Create connected calendar repository
+	c.ConnectedCalendarRepo = calendarPersistence.NewPostgresConnectedCalendarRepository(pool)
+
+	// Create provider registry and register available providers
+	c.ProviderRegistry = calendarApp.NewProviderRegistry()
+	providerConfig := calendarSetup.ProviderConfig{
+		Logger: logger,
+	}
+	if c.AuthService != nil {
+		providerConfig.GoogleOAuth = c.AuthService
+	}
+	calendarSetup.RegisterProviders(c.ProviderRegistry, providerConfig)
+
+	// Create sync coordinator
+	c.SyncCoordinator = calendarApp.NewSyncCoordinator(c.ProviderRegistry, c.ConnectedCalendarRepo)
+
+	// Create calendar syncer if provider is supported (legacy single-provider mode)
 	if c.AuthService != nil && cfg.OAuthProvider == "google" {
 		syncer := googleCalendar.NewSyncer(c.AuthService, logger)
 		if cfg.CalendarDeleteMissing {
@@ -736,6 +756,25 @@ func NewLocalContainer(ctx context.Context, cfg *config.Config, logger *slog.Log
 
 	// Create sync state repository for SQLite
 	c.SyncStateRepo = calendarPersistence.NewSQLiteSyncStateRepository(conn.DB())
+
+	// Create connected calendar repository for SQLite
+	connectedCalendarRepo, err := factory.ConnectedCalendarRepository()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create connected calendar repository: %w", err)
+	}
+	c.ConnectedCalendarRepo = connectedCalendarRepo
+
+	// Create provider registry and register available providers
+	c.ProviderRegistry = calendarApp.NewProviderRegistry()
+	providerConfig := calendarSetup.ProviderConfig{
+		Logger: logger,
+	}
+	// Note: OAuth providers will be registered when user configures them via CLI
+	// For local mode, we don't auto-configure OAuth from environment
+	calendarSetup.RegisterProviders(c.ProviderRegistry, providerConfig)
+
+	// Create sync coordinator
+	c.SyncCoordinator = calendarApp.NewSyncCoordinator(c.ProviderRegistry, c.ConnectedCalendarRepo)
 
 	// Create in-process event bus for local mode (no RabbitMQ)
 	c.InProcessEventBus = eventbus.NewInProcessEventBus(logger)

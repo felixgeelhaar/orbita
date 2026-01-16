@@ -61,6 +61,36 @@ type AutomationRuleExecution struct {
 	SkipReason          sql.NullString `json:"skip_reason"`
 }
 
+type CalendarSyncState struct {
+	ID           string         `json:"id"`
+	UserID       string         `json:"user_id"`
+	CalendarID   string         `json:"calendar_id"`
+	Provider     string         `json:"provider"`
+	SyncToken    sql.NullString `json:"sync_token"`
+	LastSyncedAt sql.NullString `json:"last_synced_at"`
+	LastSyncHash sql.NullString `json:"last_sync_hash"`
+	SyncErrors   int64          `json:"sync_errors"`
+	LastError    sql.NullString `json:"last_error"`
+	CreatedAt    string         `json:"created_at"`
+	UpdatedAt    string         `json:"updated_at"`
+}
+
+type ConnectedCalendar struct {
+	ID         string         `json:"id"`
+	UserID     string         `json:"user_id"`
+	Provider   string         `json:"provider"`
+	CalendarID string         `json:"calendar_id"`
+	Name       string         `json:"name"`
+	IsPrimary  int64          `json:"is_primary"`
+	IsEnabled  int64          `json:"is_enabled"`
+	SyncPush   int64          `json:"sync_push"`
+	SyncPull   int64          `json:"sync_pull"`
+	Config     sql.NullString `json:"config"`
+	LastSyncAt sql.NullString `json:"last_sync_at"`
+	CreatedAt  string         `json:"created_at"`
+	UpdatedAt  string         `json:"updated_at"`
+}
+
 type Entitlement struct {
 	ID          string         `json:"id"`
 	Name        string         `json:"name"`

@@ -61,6 +61,36 @@ type AutomationRuleExecution struct {
 	SkipReason          pgtype.Text        `json:"skip_reason"`
 }
 
+type CalendarSyncState struct {
+	ID           pgtype.UUID        `json:"id"`
+	UserID       pgtype.UUID        `json:"user_id"`
+	CalendarID   string             `json:"calendar_id"`
+	Provider     string             `json:"provider"`
+	SyncToken    pgtype.Text        `json:"sync_token"`
+	LastSyncedAt pgtype.Timestamptz `json:"last_synced_at"`
+	LastSyncHash pgtype.Text        `json:"last_sync_hash"`
+	SyncErrors   int32              `json:"sync_errors"`
+	LastError    pgtype.Text        `json:"last_error"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type ConnectedCalendar struct {
+	ID         pgtype.UUID        `json:"id"`
+	UserID     pgtype.UUID        `json:"user_id"`
+	Provider   string             `json:"provider"`
+	CalendarID string             `json:"calendar_id"`
+	Name       string             `json:"name"`
+	IsPrimary  bool               `json:"is_primary"`
+	IsEnabled  bool               `json:"is_enabled"`
+	SyncPush   bool               `json:"sync_push"`
+	SyncPull   bool               `json:"sync_pull"`
+	Config     []byte             `json:"config"`
+	LastSyncAt pgtype.Timestamptz `json:"last_sync_at"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Entitlement struct {
 	UserID    pgtype.UUID        `json:"user_id"`
 	Module    string             `json:"module"`

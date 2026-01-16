@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 
+	calendarDomain "github.com/felixgeelhaar/orbita/internal/calendar/domain"
+	calendarPersistence "github.com/felixgeelhaar/orbita/internal/calendar/infrastructure/persistence"
 	habitsDomain "github.com/felixgeelhaar/orbita/internal/habits/domain"
 	habitsPersistence "github.com/felixgeelhaar/orbita/internal/habits/infrastructure/persistence"
 	settingsApp "github.com/felixgeelhaar/orbita/internal/identity/application/settings"
@@ -159,6 +161,50 @@ func (f *RepositoryFactory) OutboxRepository() (outbox.Repository, error) {
 			return nil, err
 		}
 		return outbox.NewSQLiteRepository(db), nil
+
+	default:
+		return nil, fmt.Errorf("unsupported driver: %s", f.driver)
+	}
+}
+
+// ConnectedCalendarRepository creates a connected calendar repository for the configured driver.
+func (f *RepositoryFactory) ConnectedCalendarRepository() (calendarDomain.ConnectedCalendarRepository, error) {
+	switch f.driver {
+	case database.DriverPostgres:
+		pool, err := f.getPostgresPool()
+		if err != nil {
+			return nil, err
+		}
+		return calendarPersistence.NewPostgresConnectedCalendarRepository(pool), nil
+
+	case database.DriverSQLite:
+		db, err := f.getSQLiteDB()
+		if err != nil {
+			return nil, err
+		}
+		return calendarPersistence.NewSQLiteConnectedCalendarRepository(db), nil
+
+	default:
+		return nil, fmt.Errorf("unsupported driver: %s", f.driver)
+	}
+}
+
+// SyncStateRepository creates a sync state repository for the configured driver.
+func (f *RepositoryFactory) SyncStateRepository() (calendarDomain.SyncStateRepository, error) {
+	switch f.driver {
+	case database.DriverPostgres:
+		pool, err := f.getPostgresPool()
+		if err != nil {
+			return nil, err
+		}
+		return calendarPersistence.NewPostgresSyncStateRepository(pool), nil
+
+	case database.DriverSQLite:
+		db, err := f.getSQLiteDB()
+		if err != nil {
+			return nil, err
+		}
+		return calendarPersistence.NewSQLiteSyncStateRepository(db), nil
 
 	default:
 		return nil, fmt.Errorf("unsupported driver: %s", f.driver)

@@ -4,7 +4,7 @@
 
 Orbita is a CLI-first adaptive productivity operating system that orchestrates tasks, calendars, habits, and meetings. Built with Domain-Driven Design as a modular monolith, ready for service extraction.
 
-**Current Version:** v0.2.0 (v0.3.0 features complete)
+**Current Version:** v0.4.0
 **Architecture:** DDD Modular Monolith
 **Primary Interface:** CLI + MCP (AI Integration)
 
@@ -58,7 +58,10 @@ Orbita is a CLI-first adaptive productivity operating system that orchestrates t
 - **Metadata Support**: Custom fields and tags
 
 #### 6. Calendar Integration
-- **Google Calendar Sync**: Two-way synchronization
+- **Multi-Provider Support**: Google, Microsoft, Apple, CalDAV
+- **Provider Registry**: Factory pattern for extensible provider support
+- **Sync Coordinator**: Orchestrate sync across multiple calendars
+- **Connected Calendars**: Track and manage multiple calendar connections
 - **Event Import/Export**: ICS format support
 - **Conflict Detection**: Cross-calendar awareness
 
@@ -243,7 +246,20 @@ Orbita is a CLI-first adaptive productivity operating system that orchestrates t
 - [x] Configurable weights
 - [x] Human-readable score explanations
 
-### Medium Term (v0.4.0) 🔄 PARTIAL
+### v0.4.0 ✅ COMPLETE
+
+#### Multi-Provider Calendar Integration ✅
+- [x] Provider Registry with factory pattern
+- [x] Google Calendar OAuth2 integration
+- [x] Microsoft Outlook/365 OAuth2 integration
+- [x] Apple Calendar (iCloud) CalDAV integration
+- [x] Generic CalDAV support (Fastmail, Nextcloud, etc.)
+- [x] Connected Calendar entity and repository
+- [x] Sync Coordinator for multi-provider orchestration
+- [x] CLI commands: `orbita auth connect/list/disconnect`
+- [x] Push/pull configuration per calendar
+- [x] Primary calendar designation
+- [x] SQLite and PostgreSQL repository implementations
 
 #### Ideal Week Designer ✅
 - [x] Week template creation and management
@@ -254,6 +270,8 @@ Orbita is a CLI-first adaptive productivity operating system that orchestrates t
 - [x] Actual vs ideal comparison
 - [x] Adherence scoring by day and type
 - [x] AI-generated recommendations
+
+### Long Term (v0.5.0)
 
 #### Project AI Assistant
 - [ ] Project creation and breakdown
@@ -294,7 +312,9 @@ Orbita is a CLI-first adaptive productivity operating system that orchestrates t
 - [ ] Revenue sharing for publishers
 
 #### Advanced Integrations
-- [ ] Outlook Calendar sync
+- [x] Outlook Calendar sync (completed in v0.4.0)
+- [x] Apple Calendar sync (completed in v0.4.0)
+- [x] CalDAV support (completed in v0.4.0)
 - [ ] Notion integration
 - [ ] Linear/Jira sync
 - [ ] Slack notifications
@@ -373,4 +393,4 @@ See `CONTRIBUTING.md` for guidelines.
 ---
 
 *Last Updated: January 2025*
-*Version: v0.2.0*
+*Version: v0.4.0*

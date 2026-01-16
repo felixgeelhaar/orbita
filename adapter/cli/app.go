@@ -4,6 +4,7 @@ import (
 	automationApp "github.com/felixgeelhaar/orbita/internal/automations/application"
 	billingDomain "github.com/felixgeelhaar/orbita/internal/billing/domain"
 	calendarApp "github.com/felixgeelhaar/orbita/internal/calendar/application"
+	calendarDomain "github.com/felixgeelhaar/orbita/internal/calendar/domain"
 	"github.com/felixgeelhaar/orbita/internal/engine/registry"
 	"github.com/felixgeelhaar/orbita/internal/engine/runtime"
 	habitCommands "github.com/felixgeelhaar/orbita/internal/habits/application/commands"
@@ -76,7 +77,10 @@ type App struct {
 	ListInboxItemsHandler *inboxQueries.ListInboxItemsHandler
 
 	// Calendar Sync
-	CalendarSyncer calendarApp.Syncer
+	CalendarSyncer   calendarApp.Syncer
+	ProviderRegistry *calendarApp.ProviderRegistry
+	SyncCoordinator  *calendarApp.SyncCoordinator
+	CalendarRepo     calendarDomain.ConnectedCalendarRepository
 
 	// Settings
 	SettingsService *identitySettings.Service
@@ -193,6 +197,21 @@ func (a *App) SetCurrentUserID(id uuid.UUID) {
 // SetCalendarSyncer updates the calendar syncer.
 func (a *App) SetCalendarSyncer(syncer calendarApp.Syncer) {
 	a.CalendarSyncer = syncer
+}
+
+// SetProviderRegistry updates the provider registry.
+func (a *App) SetProviderRegistry(reg *calendarApp.ProviderRegistry) {
+	a.ProviderRegistry = reg
+}
+
+// SetSyncCoordinator updates the sync coordinator.
+func (a *App) SetSyncCoordinator(coord *calendarApp.SyncCoordinator) {
+	a.SyncCoordinator = coord
+}
+
+// SetCalendarRepo updates the connected calendar repository.
+func (a *App) SetCalendarRepo(repo calendarDomain.ConnectedCalendarRepository) {
+	a.CalendarRepo = repo
 }
 
 // SetSettingsService updates the settings service.

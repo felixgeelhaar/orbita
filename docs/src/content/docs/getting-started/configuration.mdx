@@ -94,8 +94,15 @@ Override any setting with environment variables:
 | `ORBITA_MODE` | Storage mode (`local`/`server`) | `local` |
 | `ORBITA_DEBUG` | Enable debug logging | `false` |
 | `ORBITA_DATABASE_URL` | PostgreSQL connection string | - |
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID | - |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | - |
+
+### Calendar OAuth Configuration
+
+| Variable | Description |
+|----------|-------------|
+| `OAUTH_GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `OAUTH_GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+| `OAUTH_MICROSOFT_CLIENT_ID` | Microsoft OAuth client ID |
+| `OAUTH_MICROSOFT_CLIENT_SECRET` | Microsoft OAuth client secret |
 
 ## Data Directory Structure
 
@@ -151,30 +158,82 @@ redis:
 
 ## Calendar Integration
 
-### Google Calendar
+Orbita supports multiple calendar providers simultaneously.
+
+### Supported Providers
+
+| Provider | Authentication | Command |
+|----------|---------------|---------|
+| Google Calendar | OAuth2 | `orbita auth connect google` |
+| Microsoft Outlook | OAuth2 | `orbita auth connect microsoft` |
+| Apple Calendar | CalDAV + App Password | `orbita auth connect apple` |
+| CalDAV (Generic) | Basic Auth | `orbita auth connect caldav --url <url>` |
+
+### Quick Setup
 
 <Tabs>
-  <TabItem label="Quick Setup">
+  <TabItem label="Google">
     ```bash
     # Connect Google Calendar
-    orbita calendar connect google
+    orbita auth connect google
 
     # Follow the OAuth flow in your browser
     # Orbita stores tokens securely in ~/.orbita/tokens/
     ```
   </TabItem>
-  <TabItem label="Custom OAuth App">
-    If you want to use your own OAuth credentials:
+  <TabItem label="Microsoft">
+    ```bash
+    # Connect Microsoft Outlook/365
+    orbita auth connect microsoft
 
+    # Works with personal and work/school accounts
+    ```
+  </TabItem>
+  <TabItem label="Apple">
+    ```bash
+    # Connect Apple Calendar (iCloud)
+    orbita auth connect apple
+
+    # Requires an app-specific password from appleid.apple.com
+    ```
+  </TabItem>
+  <TabItem label="CalDAV">
+    ```bash
+    # Connect any CalDAV server
+    orbita auth connect caldav --url https://caldav.fastmail.com
+
+    # Supports Fastmail, Nextcloud, and self-hosted servers
+    ```
+  </TabItem>
+</Tabs>
+
+### Custom OAuth Apps
+
+For self-hosted setups or custom configurations:
+
+<Tabs>
+  <TabItem label="Google">
     1. Create a project in [Google Cloud Console](https://console.cloud.google.com/)
     2. Enable the Google Calendar API
     3. Create OAuth 2.0 credentials
     4. Set environment variables:
 
     ```bash
-    export GOOGLE_CLIENT_ID="your-client-id"
-    export GOOGLE_CLIENT_SECRET="your-client-secret"
-    orbita calendar connect google
+    export OAUTH_GOOGLE_CLIENT_ID="your-client-id"
+    export OAUTH_GOOGLE_CLIENT_SECRET="your-client-secret"
+    orbita auth connect google
+    ```
+  </TabItem>
+  <TabItem label="Microsoft">
+    1. Register an app in [Azure Portal](https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade)
+    2. Add Calendar API permissions (Calendars.ReadWrite)
+    3. Create a client secret
+    4. Set environment variables:
+
+    ```bash
+    export OAUTH_MICROSOFT_CLIENT_ID="your-client-id"
+    export OAUTH_MICROSOFT_CLIENT_SECRET="your-client-secret"
+    orbita auth connect microsoft
     ```
   </TabItem>
 </Tabs>

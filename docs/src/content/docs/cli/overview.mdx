@@ -47,6 +47,10 @@ These flags work with any command:
     Manage 1:1 meetings
     [View reference](/orbita/docs/cli/meeting)
   </Card>
+  <Card title="orbita auth" icon="key">
+    Connect calendar providers
+    [View reference](/orbita/docs/cli/calendar)
+  </Card>
   <Card title="orbita calendar" icon="seti:notebook">
     Calendar sync commands
     [View reference](/orbita/docs/cli/calendar)
@@ -143,17 +147,26 @@ orbita meeting list
 orbita meeting prepare <name>
 ```
 
-### Calendar Commands
+### Authentication & Calendar Commands
 
 ```bash
-# Connect a calendar
-orbita calendar connect google
+# Connect calendar providers
+orbita auth connect google       # Google Calendar
+orbita auth connect microsoft    # Microsoft Outlook/365
+orbita auth connect apple        # Apple Calendar (iCloud)
+orbita auth connect caldav --url https://caldav.fastmail.com  # CalDAV
 
 # List connected calendars
-orbita calendar list
+orbita auth list
 
-# Sync now
-orbita sync
+# Disconnect a provider
+orbita auth disconnect microsoft
+
+# Sync to all calendars
+orbita sync --all
+
+# Sync to specific provider
+orbita sync --provider google
 
 # View sync status
 orbita sync --status

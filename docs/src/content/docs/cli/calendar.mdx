@@ -1,56 +1,166 @@
 ---
-title: orbita calendar
-description: Calendar sync commands reference.
+title: orbita calendar & auth
+description: Calendar sync and authentication commands reference.
 ---
 
-# orbita calendar
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
-Manage calendar connections and sync.
+# orbita calendar & auth
 
-## Commands
+Manage calendar connections, authentication, and sync.
 
-### connect
+## Authentication Commands
 
-Connect an external calendar.
+### orbita auth connect
+
+Connect to a calendar provider.
 
 ```bash
-orbita calendar connect <provider>
+orbita auth connect <provider> [flags]
 ```
 
 **Providers:**
-- `google` - Google Calendar
+- `google` - Google Calendar (OAuth2)
+- `microsoft` - Microsoft Outlook/365 (OAuth2)
+- `apple` - Apple Calendar / iCloud (CalDAV with app-specific password)
+- `caldav` - Generic CalDAV (Fastmail, Nextcloud, etc.)
+
+**Flags:**
+| Flag | Description |
+|------|-------------|
+| `--name` | Display name for the calendar |
+| `--primary` | Set as primary calendar for imports |
+| `--push` | Enable pushing Orbita blocks (default: true) |
+| `--pull` | Enable pulling events from this calendar |
+| `--url` | CalDAV server URL (required for caldav provider) |
+
+**Examples:**
+
+<Tabs>
+  <TabItem label="Google">
+    ```bash
+    # Basic connection
+    orbita auth connect google
+
+    # Set as primary with pull enabled
+    orbita auth connect google --primary --pull
+
+    # Custom name
+    orbita auth connect google --name "Work Calendar"
+    ```
+  </TabItem>
+  <TabItem label="Microsoft">
+    ```bash
+    # Connect Microsoft 365
+    orbita auth connect microsoft
+
+    # Work account push-only
+    orbita auth connect microsoft --name "Work" --push --no-pull
+    ```
+  </TabItem>
+  <TabItem label="Apple">
+    ```bash
+    # Connect Apple iCloud
+    orbita auth connect apple
+
+    # You'll be prompted for:
+    # - Apple ID (email)
+    # - App-specific password
+    ```
+    <Aside type="note">
+      Generate an app-specific password at [appleid.apple.com](https://appleid.apple.com/account/manage)
+    </Aside>
+  </TabItem>
+  <TabItem label="CalDAV">
+    ```bash
+    # Fastmail
+    orbita auth connect caldav --url https://caldav.fastmail.com
+
+    # Nextcloud
+    orbita auth connect caldav --url https://cloud.example.com/remote.php/dav
+
+    # Custom CalDAV server
+    orbita auth connect caldav --url https://caldav.example.com --name "Personal"
+    ```
+  </TabItem>
+</Tabs>
+
+---
+
+### orbita auth list
+
+List all connected calendars.
+
+```bash
+orbita auth list
+```
+
+**Output:**
+```
+Connected Calendars:
+  ✓ google     felix@example.com      [primary] [push] [pull]
+  ✓ microsoft  felix@company.com                [push]
+  ✓ caldav     Personal (Fastmail)              [push]
+```
+
+---
+
+### orbita auth disconnect
+
+Disconnect a calendar provider.
+
+```bash
+orbita auth disconnect <provider>
+```
 
 **Examples:**
 ```bash
-orbita calendar connect google
-orbita calendar connect google --calendar "Work"
+orbita auth disconnect microsoft
+# Output: Disconnected Microsoft calendar.
+
+orbita auth disconnect caldav
+# Output: Disconnected CalDAV calendar.
 ```
 
-### list
+---
 
-List connected calendars.
+## Calendar Commands
+
+### orbita calendar list
+
+List connected calendars (alias for `orbita auth list`).
 
 ```bash
 orbita calendar list
 ```
 
-### disconnect
+---
 
-Disconnect a calendar.
+### orbita calendar status
 
-```bash
-orbita calendar disconnect <provider>
-```
-
-### status
-
-Check calendar connection status.
+Check calendar connection and sync status.
 
 ```bash
 orbita calendar status
 ```
 
-### cleanup
+**Output:**
+```
+Calendar Status
+═══════════════
+
+Connected Providers: 3
+  ✓ google     Last sync: 2 min ago
+  ✓ microsoft  Last sync: 5 min ago
+  ✓ caldav     Last sync: 3 min ago
+
+Sync Status: Active
+Next sync in: 2 minutes
+```
+
+---
+
+### orbita calendar cleanup
 
 Clean up sync issues.
 
@@ -62,20 +172,35 @@ orbita calendar cleanup [flags]
 | Flag | Description |
 |------|-------------|
 | `--duplicates` | Remove duplicate events |
+| `--orphaned` | Remove orphaned sync records |
 
-### reset
+---
+
+### orbita calendar reset
 
 Reset calendar sync state.
 
 ```bash
-orbita calendar reset
+orbita calendar reset [flags]
 ```
 
-## Related Commands
+**Flags:**
+| Flag | Description |
+|------|-------------|
+| `--provider` | Reset only specific provider |
+| `--confirm` | Skip confirmation prompt |
+
+<Aside type="caution">
+  This removes all sync state. Events will be re-synced on the next sync cycle.
+</Aside>
+
+---
+
+## Sync Commands
 
 ### orbita sync
 
-Trigger calendar sync.
+Trigger calendar synchronization.
 
 ```bash
 orbita sync [flags]
@@ -84,15 +209,103 @@ orbita sync [flags]
 **Flags:**
 | Flag | Description |
 |------|-------------|
+| `--all` | Sync to all connected calendars |
+| `--provider` | Sync to specific provider only |
 | `--status` | Show sync status |
 | `--import` | Import external changes only |
 | `--verbose` | Verbose output |
 
-### orbita conflicts
+**Examples:**
+```bash
+# Sync to all calendars
+orbita sync --all
 
-Manage sync conflicts.
+# Sync to specific provider
+orbita sync --provider google
+
+# Check status only
+orbita sync --status
+
+# Import only (no push)
+orbita sync --import
+
+# Verbose sync
+orbita sync --all --verbose
+```
+
+---
+
+## Conflict Commands
+
+### orbita conflicts show
+
+View pending sync conflicts.
 
 ```bash
 orbita conflicts show
-orbita conflicts resolve [flags]
 ```
+
+**Output:**
+```
+Pending Conflicts (1)
+═════════════════════
+
+#1 OVERLAP
+  Orbita Block: "Deep work session" (10:00 - 12:00)
+  External Event: "Urgent team meeting" (11:00 - 12:00)
+  Source: Microsoft Outlook
+  Detected: 5 minutes ago
+```
+
+---
+
+### orbita conflicts resolve
+
+Resolve sync conflicts.
+
+```bash
+orbita conflicts resolve [id] [flags]
+```
+
+**Flags:**
+| Flag | Description |
+|------|-------------|
+| `--auto` | Auto-resolve all conflicts |
+| `--action` | Resolution action: `reschedule`, `keep`, `delete`, `ignore` |
+
+**Examples:**
+```bash
+# Interactive resolution
+orbita conflicts resolve
+
+# Resolve specific conflict
+orbita conflicts resolve 1 --action reschedule
+
+# Auto-resolve all
+orbita conflicts resolve --auto
+```
+
+---
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `OAUTH_GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `OAUTH_GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+| `OAUTH_MICROSOFT_CLIENT_ID` | Microsoft OAuth client ID |
+| `OAUTH_MICROSOFT_CLIENT_SECRET` | Microsoft OAuth client secret |
+
+---
+
+## Related Commands
+
+- [`orbita schedule`](/orbita/docs/cli/schedule) - View and manage schedule
+- [`orbita settings`](/orbita/docs/cli/settings) - Configure sync settings
+
+---
+
+## See Also
+
+- [Calendar Sync Feature](/orbita/docs/features/calendar) - Full calendar sync documentation
+- [Configuration](/orbita/docs/getting-started/configuration) - OAuth setup guide

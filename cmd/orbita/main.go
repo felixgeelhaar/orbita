@@ -149,6 +149,20 @@ func main() {
 		if container.CalendarSyncer != nil {
 			cliApp.SetCalendarSyncer(container.CalendarSyncer)
 		}
+
+		// Wire calendar multi-provider infrastructure
+		if container.ConnectedCalendarRepo != nil {
+			cliAuth.SetCalendarRepo(container.ConnectedCalendarRepo)
+			cliApp.SetCalendarRepo(container.ConnectedCalendarRepo)
+		}
+		if container.ProviderRegistry != nil {
+			cliAuth.SetProviderRegistry(container.ProviderRegistry)
+			cliApp.SetProviderRegistry(container.ProviderRegistry)
+		}
+		if container.SyncCoordinator != nil {
+			cliAuth.SetSyncCoordinator(container.SyncCoordinator)
+			cliApp.SetSyncCoordinator(container.SyncCoordinator)
+		}
 		if container.SettingsService != nil {
 			cliApp.SetSettingsService(container.SettingsService)
 		}

@@ -1,76 +1,194 @@
 ---
 title: Calendar Sync
-description: Bi-directional calendar synchronization with Google Calendar.
+description: Multi-provider bi-directional calendar synchronization with Google, Microsoft, Apple, and CalDAV.
 ---
 
 import { Steps, Aside, Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 
 # Calendar Sync
 
-Orbita provides **bi-directional calendar synchronization**, keeping your external calendars and Orbita schedule in perfect alignment.
+Orbita provides **bi-directional calendar synchronization** with multiple providers, keeping your external calendars and Orbita schedule in perfect alignment.
 
-<Aside type="tip" title="New Feature">
-  Bi-directional calendar sync is a new feature in Orbita 0.4.0. It automatically detects changes in both directions.
+<Aside type="tip" title="New in v0.4.0">
+  Multi-provider calendar support is now available! Connect Google, Microsoft Outlook, Apple Calendar, and any CalDAV server simultaneously.
 </Aside>
+
+## Supported Providers
+
+<CardGrid>
+  <Card title="Google Calendar" icon="google">
+    OAuth2 authentication with full read/write access to Google Calendar.
+  </Card>
+  <Card title="Microsoft Outlook" icon="seti:outlook">
+    Microsoft 365 and personal Outlook accounts via Microsoft Graph API.
+  </Card>
+  <Card title="Apple Calendar" icon="apple">
+    iCloud CalDAV with app-specific password authentication.
+  </Card>
+  <Card title="CalDAV" icon="server">
+    Generic CalDAV for Fastmail, Nextcloud, and self-hosted calendars.
+  </Card>
+</CardGrid>
 
 ## How It Works
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    BI-DIRECTIONAL SYNC                       │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    MULTI-PROVIDER BI-DIRECTIONAL SYNC                     │
+└─────────────────────────────────────────────────────────────────────────┘
 
-          Orbita                           Google Calendar
-    ┌─────────────────┐               ┌─────────────────┐
-    │                 │   Push        │                 │
-    │  Task Created   │──────────────►│  Event Created  │
-    │  Block Added    │               │                 │
-    │                 │               │                 │
-    │                 │   Pull        │                 │
-    │  Block Updated  │◄──────────────│  Event Changed  │
-    │  Conflict Found │               │                 │
-    └─────────────────┘               └─────────────────┘
+               Orbita                              External Calendars
+    ┌─────────────────────┐               ┌─────────────────────────────┐
+    │                     │   Push        │  Google Calendar            │
+    │  Task Created       │──────────────►│  Microsoft Outlook          │
+    │  Block Added        │               │  Apple Calendar (iCloud)    │
+    │                     │               │  CalDAV (Fastmail, etc.)    │
+    │                     │   Pull        │                             │
+    │  Block Updated      │◄──────────────│  External events imported   │
+    │  Conflict Found     │               │  across all providers       │
+    └─────────────────────┘               └─────────────────────────────┘
 ```
 
-### Push Sync (Orbita → Calendar)
+### Push Sync (Orbita → Calendars)
 
 When you create tasks, habits, or meetings in Orbita:
 1. Orbita automatically schedules them
-2. Scheduled blocks push to your external calendar
+2. Scheduled blocks push to your connected calendars
 3. Calendar events include Orbita metadata for tracking
 
-### Pull Sync (Calendar → Orbita)
+### Pull Sync (Calendars → Orbita)
 
 When external events are added or modified:
 1. Orbita detects changes via periodic polling
 2. External events appear as blocked time
 3. Conflicts are detected and resolved automatically
 
-## Setting Up Calendar Sync
+## Connecting Calendar Providers
 
-<Steps>
-1. **Connect your calendar**
-   ```bash
-   orbita calendar connect google
-   ```
-   This opens your browser for OAuth authentication.
+Use the `orbita auth` commands to manage calendar connections.
 
-2. **Verify connection**
-   ```bash
-   orbita calendar list
-   ```
-   You should see your connected calendars.
+<Tabs>
+  <TabItem label="Google">
+    ```bash
+    orbita auth connect google
+    ```
+    Opens your browser for OAuth authentication with Google.
+  </TabItem>
+  <TabItem label="Microsoft">
+    ```bash
+    orbita auth connect microsoft
+    ```
+    Opens your browser for OAuth authentication with Microsoft (works with both personal and work/school accounts).
+  </TabItem>
+  <TabItem label="Apple">
+    ```bash
+    orbita auth connect apple
+    ```
+    Prompts for your Apple ID and an **app-specific password**.
 
-3. **Enable automatic sync**
-   ```bash
-   orbita settings set calendar.sync_enabled true
-   ```
+    <Aside type="note">
+      You need to generate an app-specific password at [appleid.apple.com](https://appleid.apple.com/account/manage) under "Sign-In and Security" > "App-Specific Passwords".
+    </Aside>
+  </TabItem>
+  <TabItem label="CalDAV">
+    ```bash
+    orbita auth connect caldav --url https://caldav.example.com
+    ```
+    Prompts for username and password. Works with:
+    - Fastmail: `https://caldav.fastmail.com`
+    - Nextcloud: `https://your-server/remote.php/dav`
+    - Other CalDAV servers
+  </TabItem>
+</Tabs>
 
-4. **Test the sync**
-   ```bash
-   orbita sync
-   ```
-</Steps>
+### Connection Options
+
+```bash
+orbita auth connect <provider> [flags]
+  --name string     Display name for the calendar
+  --primary         Set as primary calendar for imports
+  --push            Enable pushing Orbita blocks (default: true)
+  --pull            Enable pulling external events (default: false)
+  --url string      CalDAV server URL (required for caldav provider)
+```
+
+## Managing Connections
+
+### List Connected Calendars
+
+```bash
+orbita auth list
+```
+
+Output:
+```
+Connected Calendars:
+  ✓ google     felix@example.com      [primary] [push] [pull]
+  ✓ microsoft  felix@company.com                [push]
+  ✓ caldav     Personal (Fastmail)              [push]
+```
+
+### Disconnect a Calendar
+
+```bash
+orbita auth disconnect <provider>
+```
+
+Example:
+```bash
+orbita auth disconnect microsoft
+# Output: Disconnected Microsoft calendar.
+```
+
+## Syncing
+
+### Sync to All Calendars
+
+```bash
+orbita sync --all
+```
+
+Output:
+```
+Syncing 5 blocks to 3 calendars...
+  google:    ✓ created=2 updated=1 deleted=0
+  microsoft: ✓ created=2 updated=1 deleted=0
+  caldav:    ✓ created=2 updated=1 deleted=0
+```
+
+### Sync to Specific Provider
+
+```bash
+orbita sync --provider microsoft
+```
+
+Output:
+```
+Syncing 5 blocks to Microsoft...
+  created=2 updated=1 deleted=0
+```
+
+### Sync Status
+
+```bash
+orbita sync --status
+```
+
+Output:
+```
+Calendar Sync Status
+═══════════════════════
+Connected Calendars: 3
+Last Sync: 2 minutes ago
+Sync Interval: 5 minutes
+Next Sync: 3 minutes
+
+Statistics (Last 24h):
+  Events Pushed: 8
+  Events Pulled: 3
+  Conflicts Resolved: 1
+  Pending Conflicts: 0
+```
 
 ## Configuration
 
@@ -132,9 +250,7 @@ calendar:
   </TabItem>
 </Tabs>
 
-## Using Calendar Sync
-
-### Viewing Synced Events
+## Viewing Synced Events
 
 ```bash
 # Show schedule with external events
@@ -152,42 +268,7 @@ Schedule for Monday, January 20, 2025
 10:30 - 11:00  Client Call [external] ← From Google Calendar
 12:00 - 13:00  Lunch [break]
 14:00 - 14:30  Daily standup [meeting]
-15:00 - 16:00  Team Planning [external] ← From Google Calendar
-```
-
-### Manual Sync
-
-```bash
-# Force sync now
-orbita sync
-
-# Sync and show status
-orbita sync --status
-
-# Import external changes only
-orbita sync --import
-```
-
-### Sync Status
-
-```bash
-orbita sync --status
-```
-
-Output:
-```
-Calendar Sync Status
-═══════════════════════
-Connected Calendars: 1
-Last Sync: 2 minutes ago
-Sync Interval: 5 minutes
-Next Sync: 3 minutes
-
-Statistics (Last 24h):
-  Events Pushed: 8
-  Events Pulled: 3
-  Conflicts Resolved: 1
-  Pending Conflicts: 0
+15:00 - 16:00  Team Planning [external] ← From Microsoft Outlook
 ```
 
 ## Conflict Management
@@ -206,6 +287,7 @@ Pending Conflicts (1)
 #1 OVERLAP
   Orbita Block: "Deep work session" (10:00 - 12:00)
   External Event: "Urgent team meeting" (11:00 - 12:00)
+  Source: Microsoft Outlook
   Detected: 5 minutes ago
 
   Resolution Options:
@@ -228,9 +310,43 @@ orbita conflicts resolve --auto
 orbita conflicts resolve 1 --action reschedule
 ```
 
+## Primary Calendar
+
+Set one calendar as primary for event imports:
+
+```bash
+# Set primary during connection
+orbita auth connect google --primary
+
+# Or update later
+orbita settings set calendar.primary google
+```
+
+The primary calendar is used when:
+- Importing events without specifying a source
+- Checking availability across all calendars
+- Default destination for quick-add events
+
+## Push and Pull Settings
+
+Each connected calendar can be configured for:
+
+| Setting | Description |
+|---------|-------------|
+| **Push** | Send Orbita blocks to this calendar |
+| **Pull** | Import external events from this calendar |
+
+```bash
+# Enable both push and pull
+orbita auth connect google --push --pull
+
+# Push only (don't clutter Orbita with external events)
+orbita auth connect microsoft --push --no-pull
+```
+
 ## Event Properties
 
-### Orbita Events in Calendar
+### Orbita Events in External Calendars
 
 When Orbita syncs to your calendar, events include:
 
@@ -240,7 +356,7 @@ When Orbita syncs to your calendar, events include:
 - **Extended Properties**: Orbita IDs for tracking
 
 <Aside>
-  Don't modify Orbita-created events directly in Google Calendar. Changes may be overwritten on next sync.
+  Don't modify Orbita-created events directly in your external calendar. Changes may be overwritten on next sync.
 </Aside>
 
 ### External Events in Orbita
@@ -256,29 +372,8 @@ orbita schedule show
 10:30 - 11:00  Client Call [external]
                └─ Source: Google Calendar (Work)
                └─ Attendees: john@company.com, sarah@company.com
-```
-
-## Multiple Calendars
-
-### Adding Calendars
-
-```bash
-# Connect additional calendar
-orbita calendar connect google --calendar "Personal"
-
-# List all calendars
-orbita calendar list
-```
-
-### Calendar Selection
-
-```bash
-# Sync to specific calendar
-orbita settings set calendar.default_calendar "Work"
-
-# Per-item calendar selection
-orbita task create "Team event" --calendar "Work"
-orbita habit create "Evening run" --calendar "Personal"
+15:00 - 16:00  Team Planning [external]
+               └─ Source: Microsoft Outlook
 ```
 
 ## Troubleshooting
@@ -287,10 +382,10 @@ orbita habit create "Evening run" --calendar "Personal"
 
 ```bash
 # Check connection status
-orbita calendar status
+orbita auth list
 
-# Re-authenticate
-orbita calendar connect google --force
+# Re-authenticate a provider
+orbita auth connect google --force
 
 # View sync logs
 orbita logs --component calendar
@@ -299,9 +394,9 @@ orbita logs --component calendar
 ### Sync Not Working
 
 <Steps>
-1. Verify calendar is connected
+1. Verify calendars are connected
    ```bash
-   orbita calendar list
+   orbita auth list
    ```
 
 2. Check sync is enabled
@@ -311,7 +406,7 @@ orbita logs --component calendar
 
 3. Force a manual sync
    ```bash
-   orbita sync --verbose
+   orbita sync --all --verbose
    ```
 
 4. Check for errors
@@ -328,12 +423,12 @@ If you see duplicate events:
 # Clean up duplicates
 orbita calendar cleanup --duplicates
 
-# Reset sync state
-orbita calendar reset
+# Reset sync state for a provider
+orbita calendar reset --provider google
 ```
 
 <Aside type="caution">
-  `calendar reset` removes all sync state. Events will be re-synced on next sync cycle.
+  `calendar reset` removes all sync state for that provider. Events will be re-synced on next sync cycle.
 </Aside>
 
 ## Privacy & Security
@@ -341,39 +436,54 @@ orbita calendar reset
 ### Data Handling
 
 - OAuth tokens stored locally in `~/.orbita/tokens/`
+- CalDAV credentials encrypted at rest
 - Calendar data cached temporarily during sync
 - No data sent to third-party servers
 
 ### Permissions Required
 
-Orbita requests these Google Calendar permissions:
-- Read calendar events
-- Create/modify events
-- Delete events created by Orbita
+| Provider | Permissions |
+|----------|-------------|
+| Google | Read/write calendar events |
+| Microsoft | Calendars.ReadWrite |
+| Apple | CalDAV access (via app-specific password) |
+| CalDAV | Basic authentication |
 
 ### Revoking Access
 
 ```bash
-# Disconnect calendar
-orbita calendar disconnect google
+# Disconnect from Orbita
+orbita auth disconnect <provider>
 
-# Or revoke from Google Account settings
-# https://myaccount.google.com/permissions
+# Additionally revoke from provider settings:
+# Google: https://myaccount.google.com/permissions
+# Microsoft: https://account.microsoft.com/privacy/app-access
+# Apple: Remove app-specific password from Apple ID settings
 ```
 
 ## Best Practices
 
 1. **Start with one calendar** - Add more once basic sync works
-2. **Use time_first strategy** - Fair resolution for mixed workflows
-3. **Review conflicts weekly** - Don't let pending conflicts pile up
-4. **Keep buffer time** - External events may not have buffers
+2. **Use push-only for work calendars** - Avoid cluttering Orbita with all meetings
+3. **Set a primary for imports** - Clear source of truth for availability
+4. **Review conflicts weekly** - Don't let pending conflicts pile up
+5. **Keep buffer time** - External events may not have buffers
 
-## Coming Soon
+## OAuth Configuration (Self-Hosted)
 
-- Apple Calendar (iCloud) support
-- Outlook/Microsoft 365 support
-- CalDAV support for self-hosted calendars
-- Real-time webhook-based sync
+For self-hosted setups, configure your own OAuth credentials:
+
+```bash
+# Google
+export OAUTH_GOOGLE_CLIENT_ID="your-client-id"
+export OAUTH_GOOGLE_CLIENT_SECRET="your-client-secret"
+
+# Microsoft
+export OAUTH_MICROSOFT_CLIENT_ID="your-client-id"
+export OAUTH_MICROSOFT_CLIENT_SECRET="your-client-secret"
+```
+
+See [Configuration](/orbita/docs/getting-started/configuration) for full OAuth setup instructions.
 
 ## Next Steps
 

@@ -149,9 +149,10 @@ type Container struct {
 	SchedulerEngine *schedulerServices.SchedulerEngine
 
 	// Auth
-	AuthService     *identityOAuth.Service
-	SettingsService *identitySettings.Service
-	BillingService  billingDomain.BillingService
+	AuthService            *identityOAuth.Service
+	MultiProviderOAuth     *identityOAuth.MultiProviderOAuthService
+	SettingsService        *identitySettings.Service
+	BillingService         billingDomain.BillingService
 
 	// Licensing (local mode)
 	LicenseService *licensingApp.Service
@@ -402,6 +403,13 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 			}
 		}
 	}
+
+	// Create multi-provider OAuth service and register configured providers
+	c.MultiProviderOAuth = identityOAuth.NewMultiProviderOAuthService()
+	if c.AuthService != nil {
+		c.MultiProviderOAuth.RegisterProvider(calendarDomain.ProviderGoogle, c.AuthService)
+	}
+	// TODO: Add Microsoft, Apple providers when credentials are configured
 
 	// Create connected calendar repository
 	c.ConnectedCalendarRepo = calendarPersistence.NewPostgresConnectedCalendarRepository(pool)

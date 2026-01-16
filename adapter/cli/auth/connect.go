@@ -44,7 +44,7 @@ type OAuthServiceGetter func(provider calendarDomain.ProviderType) OAuthService
 // OAuthService is the interface for OAuth operations.
 type OAuthService interface {
 	AuthURL(state string) string
-	ExchangeAndStore(ctx context.Context, userID uuid.UUID, code string) (interface{}, error)
+	ExchangeAndStore(ctx context.Context, userID uuid.UUID, code string) (any, error)
 }
 
 var getOAuthService OAuthServiceGetter

@@ -21,6 +21,7 @@ import (
 	cliSettings "github.com/felixgeelhaar/orbita/adapter/cli/settings"
 	"github.com/felixgeelhaar/orbita/adapter/cli/task"
 	"github.com/felixgeelhaar/orbita/internal/app"
+	calendarDomain "github.com/felixgeelhaar/orbita/internal/calendar/domain"
 	"github.com/felixgeelhaar/orbita/pkg/config"
 	"github.com/google/uuid"
 )
@@ -162,6 +163,11 @@ func main() {
 		if container.SyncCoordinator != nil {
 			cliAuth.SetSyncCoordinator(container.SyncCoordinator)
 			cliApp.SetSyncCoordinator(container.SyncCoordinator)
+		}
+		if container.MultiProviderOAuth != nil {
+			cliAuth.SetOAuthServiceGetter(func(provider calendarDomain.ProviderType) cliAuth.OAuthService {
+				return container.MultiProviderOAuth.GetCLIService(provider)
+			})
 		}
 		if container.SettingsService != nil {
 			cliApp.SetSettingsService(container.SettingsService)

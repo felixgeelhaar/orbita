@@ -2,6 +2,7 @@ package domain
 
 import (
 	"encoding/base64"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -100,7 +101,7 @@ func (l *License) HasEntitlement(module string) bool {
 // SignatureBytes returns the decoded signature bytes.
 func (l *License) SignatureBytes() ([]byte, error) {
 	if l == nil || l.Signature == "" {
-		return nil, ErrInvalidSignature
+		return nil, nil
 	}
 	return base64.StdEncoding.DecodeString(l.Signature)
 }
@@ -134,14 +135,20 @@ func (l *License) GraceDaysRemaining() int {
 }
 
 // MaskedKey returns the license key with middle sections masked for display.
-// e.g., "ORB-XXXX-****-****"
+// e.g., "ORB-****-****-IJKL"
 func (l *License) MaskedKey() string {
 	if l == nil || l.LicenseKey == "" {
 		return ""
 	}
-	if len(l.LicenseKey) < 8 {
-		return l.LicenseKey
+	key := l.LicenseKey
+	if len(key) <= 4 {
+		return key
 	}
-	// Show first 8 chars, mask the rest
-	return l.LicenseKey[:8] + "-****-****"
+	// For short keys, show first 4 chars and mask the rest
+	if len(key) < 12 {
+		return key[:4] + strings.Repeat("*", len(key)-4)
+	}
+	// For standard keys (ORB-XXXX-XXXX-XXXX), show prefix, mask middle, show last segment
+	// Preserve the dash structure
+	return key[:4] + "****-****-" + key[len(key)-4:]
 }

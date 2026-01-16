@@ -3,6 +3,7 @@ package workers
 import (
 	"context"
 	"log/slog"
+	"sync/atomic"
 	"time"
 
 	"github.com/felixgeelhaar/orbita/internal/calendar/application"
@@ -51,7 +52,7 @@ type CalendarImportWorker struct {
 	conflictHandler ConflictHandler
 	config          CalendarImportWorkerConfig
 	logger          *slog.Logger
-	running         bool
+	running         atomic.Bool
 	stopCh          chan struct{}
 }
 
@@ -72,7 +73,6 @@ func NewCalendarImportWorker(
 		conflictHandler: conflictHandler,
 		config:          config,
 		logger:          logger,
-		running:         false,
 		stopCh:          make(chan struct{}),
 	}
 }
@@ -84,7 +84,7 @@ func (w *CalendarImportWorker) Run(ctx context.Context) error {
 		return nil
 	}
 
-	w.running = true
+	w.running.Store(true)
 	w.logger.Info("calendar import worker started",
 		"interval", w.config.Interval,
 		"look_ahead_days", w.config.LookAheadDays,
@@ -99,11 +99,11 @@ func (w *CalendarImportWorker) Run(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
-			w.running = false
+			w.running.Store(false)
 			w.logger.Info("calendar import worker stopped (context cancelled)")
 			return ctx.Err()
 		case <-w.stopCh:
-			w.running = false
+			w.running.Store(false)
 			w.logger.Info("calendar import worker stopped (stop signal)")
 			return nil
 		case <-ticker.C:
@@ -114,14 +114,14 @@ func (w *CalendarImportWorker) Run(ctx context.Context) error {
 
 // Stop signals the worker to stop gracefully.
 func (w *CalendarImportWorker) Stop() {
-	if w.running {
+	if w.running.Load() {
 		close(w.stopCh)
 	}
 }
 
 // IsRunning returns true if the worker is currently running.
 func (w *CalendarImportWorker) IsRunning() bool {
-	return w.running
+	return w.running.Load()
 }
 
 // runImportCycle runs a single import cycle for all users needing sync.

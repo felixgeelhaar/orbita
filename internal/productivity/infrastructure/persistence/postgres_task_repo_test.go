@@ -47,7 +47,7 @@ func TestPostgresTaskRepository_SaveAndFindByID(t *testing.T) {
 	defer pool.Close()
 
 	ctx := context.Background()
-	repo := persistence.NewPostgresTaskRepository(pool)
+	repo := persistence.NewPostgresTaskRepositoryFromPool(pool)
 
 	// Create a test task
 	userID := uuid.New()
@@ -73,7 +73,7 @@ func TestPostgresTaskRepository_FindByUserID(t *testing.T) {
 	defer pool.Close()
 
 	ctx := context.Background()
-	repo := persistence.NewPostgresTaskRepository(pool)
+	repo := persistence.NewPostgresTaskRepositoryFromPool(pool)
 
 	userID := uuid.New()
 
@@ -99,7 +99,7 @@ func TestPostgresTaskRepository_FindPending(t *testing.T) {
 	defer pool.Close()
 
 	ctx := context.Background()
-	repo := persistence.NewPostgresTaskRepository(pool)
+	repo := persistence.NewPostgresTaskRepositoryFromPool(pool)
 
 	userID := uuid.New()
 
@@ -127,7 +127,7 @@ func TestPostgresTaskRepository_Delete(t *testing.T) {
 	defer pool.Close()
 
 	ctx := context.Background()
-	repo := persistence.NewPostgresTaskRepository(pool)
+	repo := persistence.NewPostgresTaskRepositoryFromPool(pool)
 
 	userID := uuid.New()
 
@@ -150,7 +150,7 @@ func TestPostgresTaskRepository_Update(t *testing.T) {
 	defer pool.Close()
 
 	ctx := context.Background()
-	repo := persistence.NewPostgresTaskRepository(pool)
+	repo := persistence.NewPostgresTaskRepositoryFromPool(pool)
 
 	userID := uuid.New()
 
@@ -180,7 +180,7 @@ func TestPostgresTaskRepository_FindPending_PriorityOrder(t *testing.T) {
 	defer pool.Close()
 
 	ctx := context.Background()
-	repo := persistence.NewPostgresTaskRepository(pool)
+	repo := persistence.NewPostgresTaskRepositoryFromPool(pool)
 
 	userID := uuid.New()
 

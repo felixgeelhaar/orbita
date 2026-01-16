@@ -9,9 +9,8 @@ import (
 	"github.com/felixgeelhaar/orbita/internal/productivity/domain/task"
 	"github.com/felixgeelhaar/orbita/internal/productivity/domain/value_objects"
 	sharedDomain "github.com/felixgeelhaar/orbita/internal/shared/domain"
-	sharedPersistence "github.com/felixgeelhaar/orbita/internal/shared/infrastructure/persistence"
+	"github.com/felixgeelhaar/orbita/internal/shared/infrastructure/database"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -22,13 +21,88 @@ var (
 
 // PostgresTaskRepository implements task.Repository using PostgreSQL.
 type PostgresTaskRepository struct {
-	pool *pgxpool.Pool
+	conn database.Connection
 }
 
 // NewPostgresTaskRepository creates a new PostgreSQL task repository.
-func NewPostgresTaskRepository(pool *pgxpool.Pool) *PostgresTaskRepository {
-	return &PostgresTaskRepository{pool: pool}
+func NewPostgresTaskRepository(conn database.Connection) *PostgresTaskRepository {
+	return &PostgresTaskRepository{conn: conn}
 }
+
+// NewPostgresTaskRepositoryFromPool creates a new PostgreSQL task repository from a pool.
+// Deprecated: Use NewPostgresTaskRepository with a database.Connection instead.
+func NewPostgresTaskRepositoryFromPool(pool *pgxpool.Pool) *PostgresTaskRepository {
+	// This is a temporary bridge for backward compatibility during migration.
+	// Once all code is migrated to use database.Connection, this can be removed.
+	return &PostgresTaskRepository{conn: &poolWrapper{pool: pool}}
+}
+
+// poolWrapper wraps a pgxpool.Pool to implement database.Connection.
+// This is temporary for backward compatibility.
+type poolWrapper struct {
+	pool *pgxpool.Pool
+}
+
+func (w *poolWrapper) Driver() database.Driver {
+	return database.DriverPostgres
+}
+
+func (w *poolWrapper) Close() error {
+	w.pool.Close()
+	return nil
+}
+
+func (w *poolWrapper) Ping(ctx context.Context) error {
+	return w.pool.Ping(ctx)
+}
+
+func (w *poolWrapper) BeginTx(ctx context.Context) (database.Transaction, error) {
+	// This is a simplified implementation - the postgres package has the full one
+	return nil, errors.New("use postgres.Connection for transactions")
+}
+
+func (w *poolWrapper) Exec(ctx context.Context, query string, args ...any) (database.Result, error) {
+	tag, err := w.pool.Exec(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	return &poolResult{rowsAffected: tag.RowsAffected()}, nil
+}
+
+func (w *poolWrapper) QueryRow(ctx context.Context, query string, args ...any) database.Row {
+	return w.pool.QueryRow(ctx, query, args...)
+}
+
+func (w *poolWrapper) Query(ctx context.Context, query string, args ...any) (database.Rows, error) {
+	rows, err := w.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	return &poolRows{rows: rows}, nil
+}
+
+type poolResult struct {
+	rowsAffected int64
+}
+
+func (r *poolResult) RowsAffected() (int64, error) { return r.rowsAffected, nil }
+func (r *poolResult) LastInsertId() (int64, error) {
+	return 0, errors.New("not supported")
+}
+
+type poolRows struct {
+	rows interface {
+		Next() bool
+		Scan(dest ...any) error
+		Close()
+		Err() error
+	}
+}
+
+func (r *poolRows) Next() bool         { return r.rows.Next() }
+func (r *poolRows) Scan(dest ...any) error { return r.rows.Scan(dest...) }
+func (r *poolRows) Close() error       { r.rows.Close(); return nil }
+func (r *poolRows) Err() error         { return r.rows.Err() }
 
 // taskRow represents a database row for tasks.
 type taskRow struct {
@@ -80,8 +154,8 @@ func (r *PostgresTaskRepository) Save(ctx context.Context, t *task.Task) error {
 	`
 
 	var newVersion int
-	execer := sharedPersistence.Executor(ctx, r.pool)
-	err := execer.QueryRow(ctx, query,
+	exec := database.ExecutorFromContext(ctx, r.conn)
+	err := exec.QueryRow(ctx, query,
 		t.ID(),
 		t.UserID(),
 		t.Title(),
@@ -97,7 +171,7 @@ func (r *PostgresTaskRepository) Save(ctx context.Context, t *task.Task) error {
 	).Scan(&newVersion)
 
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if database.IsNoRows(err) {
 			return ErrOptimisticLocking
 		}
 		return err
@@ -116,7 +190,8 @@ func (r *PostgresTaskRepository) FindByID(ctx context.Context, id uuid.UUID) (*t
 	`
 
 	var row taskRow
-	err := r.pool.QueryRow(ctx, query, id).Scan(
+	exec := database.ExecutorFromContext(ctx, r.conn)
+	err := exec.QueryRow(ctx, query, id).Scan(
 		&row.ID,
 		&row.UserID,
 		&row.Title,
@@ -132,7 +207,7 @@ func (r *PostgresTaskRepository) FindByID(ctx context.Context, id uuid.UUID) (*t
 	)
 
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if database.IsNoRows(err) {
 			return nil, ErrTaskNotFound
 		}
 		return nil, err
@@ -151,7 +226,8 @@ func (r *PostgresTaskRepository) FindByUserID(ctx context.Context, userID uuid.U
 		ORDER BY created_at DESC
 	`
 
-	rows, err := r.pool.Query(ctx, query, userID)
+	exec := database.ExecutorFromContext(ctx, r.conn)
+	rows, err := exec.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +255,8 @@ func (r *PostgresTaskRepository) FindPending(ctx context.Context, userID uuid.UU
 			created_at
 	`
 
-	rows, err := r.pool.Query(ctx, query, userID)
+	exec := database.ExecutorFromContext(ctx, r.conn)
+	rows, err := exec.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -191,17 +268,22 @@ func (r *PostgresTaskRepository) FindPending(ctx context.Context, userID uuid.UU
 // Delete removes a task from the database.
 func (r *PostgresTaskRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	query := `DELETE FROM tasks WHERE id = $1`
-	result, err := r.pool.Exec(ctx, query, id)
+	exec := database.ExecutorFromContext(ctx, r.conn)
+	result, err := exec.Exec(ctx, query, id)
 	if err != nil {
 		return err
 	}
-	if result.RowsAffected() == 0 {
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
 		return ErrTaskNotFound
 	}
 	return nil
 }
 
-func (r *PostgresTaskRepository) scanTasks(rows pgx.Rows) ([]*task.Task, error) {
+func (r *PostgresTaskRepository) scanTasks(rows database.Rows) ([]*task.Task, error) {
 	var tasks []*task.Task
 
 	for rows.Next() {

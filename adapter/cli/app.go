@@ -2,7 +2,7 @@ package cli
 
 import (
 	automationApp "github.com/felixgeelhaar/orbita/internal/automations/application"
-	billingApp "github.com/felixgeelhaar/orbita/internal/billing/application"
+	billingDomain "github.com/felixgeelhaar/orbita/internal/billing/domain"
 	calendarApp "github.com/felixgeelhaar/orbita/internal/calendar/application"
 	"github.com/felixgeelhaar/orbita/internal/engine/registry"
 	"github.com/felixgeelhaar/orbita/internal/engine/runtime"
@@ -80,7 +80,7 @@ type App struct {
 
 	// Settings
 	SettingsService *identitySettings.Service
-	BillingService  *billingApp.Service
+	BillingService  billingDomain.BillingService
 
 	// Engine SDK
 	EngineRegistry *registry.Registry
@@ -149,7 +149,7 @@ func NewApp(
 	captureInboxItemHandler *inboxCommands.CaptureInboxItemHandler,
 	promoteInboxItemHandler *inboxCommands.PromoteInboxItemHandler,
 	listInboxItemsHandler *inboxQueries.ListInboxItemsHandler,
-	billingService *billingApp.Service,
+	billingService billingDomain.BillingService,
 ) *App {
 	return &App{
 		CreateTaskHandler:             createTaskHandler,
@@ -201,7 +201,7 @@ func (a *App) SetSettingsService(service *identitySettings.Service) {
 }
 
 // SetBillingService updates the billing service.
-func (a *App) SetBillingService(service *billingApp.Service) {
+func (a *App) SetBillingService(service billingDomain.BillingService) {
 	a.BillingService = service
 }
 

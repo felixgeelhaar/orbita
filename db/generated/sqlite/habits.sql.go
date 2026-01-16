@@ -3,12 +3,11 @@
 //   sqlc v1.30.0
 // source: habits.sql
 
-package db
+package sqlite
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"database/sql"
 )
 
 const createHabit = `-- name: CreateHabit :exec
@@ -17,29 +16,29 @@ INSERT INTO habits (
     duration_minutes, preferred_time, streak, best_streak, total_done,
     archived, created_at, updated_at
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 )
 `
 
 type CreateHabitParams struct {
-	ID              pgtype.UUID        `json:"id"`
-	UserID          pgtype.UUID        `json:"user_id"`
-	Name            string             `json:"name"`
-	Description     pgtype.Text        `json:"description"`
-	Frequency       string             `json:"frequency"`
-	TimesPerWeek    int32              `json:"times_per_week"`
-	DurationMinutes int32              `json:"duration_minutes"`
-	PreferredTime   pgtype.Text        `json:"preferred_time"`
-	Streak          int32              `json:"streak"`
-	BestStreak      int32              `json:"best_streak"`
-	TotalDone       int32              `json:"total_done"`
-	Archived        bool               `json:"archived"`
-	CreatedAt       pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	ID              string         `json:"id"`
+	UserID          string         `json:"user_id"`
+	Name            string         `json:"name"`
+	Description     sql.NullString `json:"description"`
+	Frequency       string         `json:"frequency"`
+	TimesPerWeek    int64          `json:"times_per_week"`
+	DurationMinutes int64          `json:"duration_minutes"`
+	PreferredTime   sql.NullString `json:"preferred_time"`
+	Streak          int64          `json:"streak"`
+	BestStreak      int64          `json:"best_streak"`
+	TotalDone       int64          `json:"total_done"`
+	Archived        int64          `json:"archived"`
+	CreatedAt       string         `json:"created_at"`
+	UpdatedAt       string         `json:"updated_at"`
 }
 
 func (q *Queries) CreateHabit(ctx context.Context, arg CreateHabitParams) error {
-	_, err := q.db.Exec(ctx, createHabit,
+	_, err := q.db.ExecContext(ctx, createHabit,
 		arg.ID,
 		arg.UserID,
 		arg.Name,
@@ -60,19 +59,19 @@ func (q *Queries) CreateHabit(ctx context.Context, arg CreateHabitParams) error 
 
 const createHabitCompletion = `-- name: CreateHabitCompletion :exec
 INSERT INTO habit_completions (id, habit_id, completed_at, notes, created_at)
-VALUES ($1, $2, $3, $4, $5)
+VALUES (?, ?, ?, ?, ?)
 `
 
 type CreateHabitCompletionParams struct {
-	ID          pgtype.UUID        `json:"id"`
-	HabitID     pgtype.UUID        `json:"habit_id"`
-	CompletedAt pgtype.Timestamptz `json:"completed_at"`
-	Notes       pgtype.Text        `json:"notes"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	ID          string         `json:"id"`
+	HabitID     string         `json:"habit_id"`
+	CompletedAt string         `json:"completed_at"`
+	Notes       sql.NullString `json:"notes"`
+	CreatedAt   string         `json:"created_at"`
 }
 
 func (q *Queries) CreateHabitCompletion(ctx context.Context, arg CreateHabitCompletionParams) error {
-	_, err := q.db.Exec(ctx, createHabitCompletion,
+	_, err := q.db.ExecContext(ctx, createHabitCompletion,
 		arg.ID,
 		arg.HabitID,
 		arg.CompletedAt,
@@ -83,20 +82,20 @@ func (q *Queries) CreateHabitCompletion(ctx context.Context, arg CreateHabitComp
 }
 
 const deleteHabit = `-- name: DeleteHabit :exec
-DELETE FROM habits WHERE id = $1
+DELETE FROM habits WHERE id = ?
 `
 
-func (q *Queries) DeleteHabit(ctx context.Context, id pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, deleteHabit, id)
+func (q *Queries) DeleteHabit(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deleteHabit, id)
 	return err
 }
 
 const deleteHabitCompletionsByHabitID = `-- name: DeleteHabitCompletionsByHabitID :exec
-DELETE FROM habit_completions WHERE habit_id = $1
+DELETE FROM habit_completions WHERE habit_id = ?
 `
 
-func (q *Queries) DeleteHabitCompletionsByHabitID(ctx context.Context, habitID pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, deleteHabitCompletionsByHabitID, habitID)
+func (q *Queries) DeleteHabitCompletionsByHabitID(ctx context.Context, habitID string) error {
+	_, err := q.db.ExecContext(ctx, deleteHabitCompletionsByHabitID, habitID)
 	return err
 }
 
@@ -105,12 +104,12 @@ SELECT id, user_id, name, description, frequency, times_per_week,
        duration_minutes, preferred_time, streak, best_streak, total_done,
        archived, created_at, updated_at
 FROM habits
-WHERE user_id = $1 AND archived = FALSE
+WHERE user_id = ? AND archived = 0
 ORDER BY created_at DESC
 `
 
-func (q *Queries) GetActiveHabitsByUserID(ctx context.Context, userID pgtype.UUID) ([]Habit, error) {
-	rows, err := q.db.Query(ctx, getActiveHabitsByUserID, userID)
+func (q *Queries) GetActiveHabitsByUserID(ctx context.Context, userID string) ([]Habit, error) {
+	rows, err := q.db.QueryContext(ctx, getActiveHabitsByUserID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -138,6 +137,9 @@ func (q *Queries) GetActiveHabitsByUserID(ctx context.Context, userID pgtype.UUI
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -149,11 +151,11 @@ SELECT id, user_id, name, description, frequency, times_per_week,
        duration_minutes, preferred_time, streak, best_streak, total_done,
        archived, created_at, updated_at
 FROM habits
-WHERE id = $1
+WHERE id = ?
 `
 
-func (q *Queries) GetHabitByID(ctx context.Context, id pgtype.UUID) (Habit, error) {
-	row := q.db.QueryRow(ctx, getHabitByID, id)
+func (q *Queries) GetHabitByID(ctx context.Context, id string) (Habit, error) {
+	row := q.db.QueryRowContext(ctx, getHabitByID, id)
 	var i Habit
 	err := row.Scan(
 		&i.ID,
@@ -177,12 +179,12 @@ func (q *Queries) GetHabitByID(ctx context.Context, id pgtype.UUID) (Habit, erro
 const getHabitCompletionsByHabitID = `-- name: GetHabitCompletionsByHabitID :many
 SELECT id, habit_id, completed_at, notes, created_at
 FROM habit_completions
-WHERE habit_id = $1
+WHERE habit_id = ?
 ORDER BY completed_at DESC
 `
 
-func (q *Queries) GetHabitCompletionsByHabitID(ctx context.Context, habitID pgtype.UUID) ([]HabitCompletion, error) {
-	rows, err := q.db.Query(ctx, getHabitCompletionsByHabitID, habitID)
+func (q *Queries) GetHabitCompletionsByHabitID(ctx context.Context, habitID string) ([]HabitCompletion, error) {
+	rows, err := q.db.QueryContext(ctx, getHabitCompletionsByHabitID, habitID)
 	if err != nil {
 		return nil, err
 	}
@@ -200,6 +202,9 @@ func (q *Queries) GetHabitCompletionsByHabitID(ctx context.Context, habitID pgty
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -210,17 +215,17 @@ func (q *Queries) GetHabitCompletionsByHabitID(ctx context.Context, habitID pgty
 const getHabitCompletionsByHabitIDSince = `-- name: GetHabitCompletionsByHabitIDSince :many
 SELECT id, habit_id, completed_at, notes, created_at
 FROM habit_completions
-WHERE habit_id = $1 AND completed_at >= $2
+WHERE habit_id = ? AND completed_at >= ?
 ORDER BY completed_at DESC
 `
 
 type GetHabitCompletionsByHabitIDSinceParams struct {
-	HabitID     pgtype.UUID        `json:"habit_id"`
-	CompletedAt pgtype.Timestamptz `json:"completed_at"`
+	HabitID     string `json:"habit_id"`
+	CompletedAt string `json:"completed_at"`
 }
 
 func (q *Queries) GetHabitCompletionsByHabitIDSince(ctx context.Context, arg GetHabitCompletionsByHabitIDSinceParams) ([]HabitCompletion, error) {
-	rows, err := q.db.Query(ctx, getHabitCompletionsByHabitIDSince, arg.HabitID, arg.CompletedAt)
+	rows, err := q.db.QueryContext(ctx, getHabitCompletionsByHabitIDSince, arg.HabitID, arg.CompletedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -238,6 +243,9 @@ func (q *Queries) GetHabitCompletionsByHabitIDSince(ctx context.Context, arg Get
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -250,12 +258,12 @@ SELECT id, user_id, name, description, frequency, times_per_week,
        duration_minutes, preferred_time, streak, best_streak, total_done,
        archived, created_at, updated_at
 FROM habits
-WHERE user_id = $1
+WHERE user_id = ?
 ORDER BY created_at DESC
 `
 
-func (q *Queries) GetHabitsByUserID(ctx context.Context, userID pgtype.UUID) ([]Habit, error) {
-	rows, err := q.db.Query(ctx, getHabitsByUserID, userID)
+func (q *Queries) GetHabitsByUserID(ctx context.Context, userID string) ([]Habit, error) {
+	rows, err := q.db.QueryContext(ctx, getHabitsByUserID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -283,6 +291,9 @@ func (q *Queries) GetHabitsByUserID(ctx context.Context, userID pgtype.UUID) ([]
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -291,38 +302,37 @@ func (q *Queries) GetHabitsByUserID(ctx context.Context, userID pgtype.UUID) ([]
 
 const updateHabit = `-- name: UpdateHabit :exec
 UPDATE habits
-SET name = $2,
-    description = $3,
-    frequency = $4,
-    times_per_week = $5,
-    duration_minutes = $6,
-    preferred_time = $7,
-    streak = $8,
-    best_streak = $9,
-    total_done = $10,
-    archived = $11,
-    updated_at = $12
-WHERE id = $1
+SET name = ?,
+    description = ?,
+    frequency = ?,
+    times_per_week = ?,
+    duration_minutes = ?,
+    preferred_time = ?,
+    streak = ?,
+    best_streak = ?,
+    total_done = ?,
+    archived = ?,
+    updated_at = ?
+WHERE id = ?
 `
 
 type UpdateHabitParams struct {
-	ID              pgtype.UUID        `json:"id"`
-	Name            string             `json:"name"`
-	Description     pgtype.Text        `json:"description"`
-	Frequency       string             `json:"frequency"`
-	TimesPerWeek    int32              `json:"times_per_week"`
-	DurationMinutes int32              `json:"duration_minutes"`
-	PreferredTime   pgtype.Text        `json:"preferred_time"`
-	Streak          int32              `json:"streak"`
-	BestStreak      int32              `json:"best_streak"`
-	TotalDone       int32              `json:"total_done"`
-	Archived        bool               `json:"archived"`
-	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	Name            string         `json:"name"`
+	Description     sql.NullString `json:"description"`
+	Frequency       string         `json:"frequency"`
+	TimesPerWeek    int64          `json:"times_per_week"`
+	DurationMinutes int64          `json:"duration_minutes"`
+	PreferredTime   sql.NullString `json:"preferred_time"`
+	Streak          int64          `json:"streak"`
+	BestStreak      int64          `json:"best_streak"`
+	TotalDone       int64          `json:"total_done"`
+	Archived        int64          `json:"archived"`
+	UpdatedAt       string         `json:"updated_at"`
+	ID              string         `json:"id"`
 }
 
 func (q *Queries) UpdateHabit(ctx context.Context, arg UpdateHabitParams) error {
-	_, err := q.db.Exec(ctx, updateHabit,
-		arg.ID,
+	_, err := q.db.ExecContext(ctx, updateHabit,
 		arg.Name,
 		arg.Description,
 		arg.Frequency,
@@ -334,6 +344,7 @@ func (q *Queries) UpdateHabit(ctx context.Context, arg UpdateHabitParams) error 
 		arg.TotalDone,
 		arg.Archived,
 		arg.UpdatedAt,
+		arg.ID,
 	)
 	return err
 }

@@ -1,0 +1,35 @@
+-- Drop all triggers first
+DROP TRIGGER IF EXISTS update_productivity_goals_updated_at;
+DROP TRIGGER IF EXISTS update_time_sessions_updated_at;
+DROP TRIGGER IF EXISTS update_productivity_snapshots_updated_at;
+DROP TRIGGER IF EXISTS update_automation_rules_updated_at;
+DROP TRIGGER IF EXISTS update_time_blocks_updated_at;
+DROP TRIGGER IF EXISTS update_schedules_updated_at;
+DROP TRIGGER IF EXISTS update_habits_updated_at;
+DROP TRIGGER IF EXISTS update_tasks_updated_at;
+DROP TRIGGER IF EXISTS update_users_updated_at;
+
+-- Drop tables in reverse dependency order
+DROP TABLE IF EXISTS productivity_goals;
+DROP TABLE IF EXISTS weekly_summaries;
+DROP TABLE IF EXISTS time_sessions;
+DROP TABLE IF EXISTS productivity_snapshots;
+DROP TABLE IF EXISTS automation_pending_actions;
+DROP TABLE IF EXISTS automation_rule_executions;
+DROP TABLE IF EXISTS automation_rules;
+DROP TABLE IF EXISTS installed_packages;
+DROP TABLE IF EXISTS marketplace_packages;
+DROP TABLE IF EXISTS inbox_items;
+DROP TABLE IF EXISTS reschedule_attempts;
+DROP TABLE IF EXISTS user_entitlements;
+DROP TABLE IF EXISTS entitlements;
+DROP TABLE IF EXISTS meetings;
+DROP TABLE IF EXISTS user_settings;
+DROP TABLE IF EXISTS oauth_tokens;
+DROP TABLE IF EXISTS time_blocks;
+DROP TABLE IF EXISTS schedules;
+DROP TABLE IF EXISTS habit_completions;
+DROP TABLE IF EXISTS habits;
+DROP TABLE IF EXISTS outbox;
+DROP TABLE IF EXISTS tasks;
+DROP TABLE IF EXISTS users;

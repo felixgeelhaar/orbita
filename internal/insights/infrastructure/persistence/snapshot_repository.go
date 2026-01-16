@@ -7,7 +7,7 @@ import (
 	"errors"
 	"time"
 
-	db "github.com/felixgeelhaar/orbita/db/generated"
+	db "github.com/felixgeelhaar/orbita/db/generated/postgres"
 	"github.com/felixgeelhaar/orbita/internal/insights/domain"
 	"github.com/felixgeelhaar/orbita/internal/shared/infrastructure/convert"
 	"github.com/google/uuid"

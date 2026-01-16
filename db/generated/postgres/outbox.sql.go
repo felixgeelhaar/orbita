@@ -3,7 +3,7 @@
 //   sqlc v1.30.0
 // source: outbox.sql
 
-package db
+package postgres
 
 import (
 	"context"

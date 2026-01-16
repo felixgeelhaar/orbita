@@ -3,29 +3,28 @@
 //   sqlc v1.30.0
 // source: schedules.sql
 
-package db
+package sqlite
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"database/sql"
 )
 
 const createSchedule = `-- name: CreateSchedule :exec
 INSERT INTO schedules (id, user_id, schedule_date, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5)
+VALUES (?, ?, ?, ?, ?)
 `
 
 type CreateScheduleParams struct {
-	ID           pgtype.UUID        `json:"id"`
-	UserID       pgtype.UUID        `json:"user_id"`
-	ScheduleDate pgtype.Date        `json:"schedule_date"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	ID           string `json:"id"`
+	UserID       string `json:"user_id"`
+	ScheduleDate string `json:"schedule_date"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
 }
 
 func (q *Queries) CreateSchedule(ctx context.Context, arg CreateScheduleParams) error {
-	_, err := q.db.Exec(ctx, createSchedule,
+	_, err := q.db.ExecContext(ctx, createSchedule,
 		arg.ID,
 		arg.UserID,
 		arg.ScheduleDate,
@@ -39,26 +38,26 @@ const createTimeBlock = `-- name: CreateTimeBlock :exec
 INSERT INTO time_blocks (
     id, user_id, schedule_id, block_type, reference_id, title,
     start_time, end_time, completed, missed, created_at, updated_at
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateTimeBlockParams struct {
-	ID          pgtype.UUID        `json:"id"`
-	UserID      pgtype.UUID        `json:"user_id"`
-	ScheduleID  pgtype.UUID        `json:"schedule_id"`
-	BlockType   string             `json:"block_type"`
-	ReferenceID pgtype.UUID        `json:"reference_id"`
-	Title       string             `json:"title"`
-	StartTime   pgtype.Timestamptz `json:"start_time"`
-	EndTime     pgtype.Timestamptz `json:"end_time"`
-	Completed   bool               `json:"completed"`
-	Missed      bool               `json:"missed"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	ID          string         `json:"id"`
+	UserID      string         `json:"user_id"`
+	ScheduleID  string         `json:"schedule_id"`
+	BlockType   string         `json:"block_type"`
+	ReferenceID sql.NullString `json:"reference_id"`
+	Title       string         `json:"title"`
+	StartTime   string         `json:"start_time"`
+	EndTime     string         `json:"end_time"`
+	Completed   int64          `json:"completed"`
+	Missed      int64          `json:"missed"`
+	CreatedAt   string         `json:"created_at"`
+	UpdatedAt   string         `json:"updated_at"`
 }
 
 func (q *Queries) CreateTimeBlock(ctx context.Context, arg CreateTimeBlockParams) error {
-	_, err := q.db.Exec(ctx, createTimeBlock,
+	_, err := q.db.ExecContext(ctx, createTimeBlock,
 		arg.ID,
 		arg.UserID,
 		arg.ScheduleID,
@@ -76,40 +75,40 @@ func (q *Queries) CreateTimeBlock(ctx context.Context, arg CreateTimeBlockParams
 }
 
 const deleteSchedule = `-- name: DeleteSchedule :exec
-DELETE FROM schedules WHERE id = $1
+DELETE FROM schedules WHERE id = ?
 `
 
-func (q *Queries) DeleteSchedule(ctx context.Context, id pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, deleteSchedule, id)
+func (q *Queries) DeleteSchedule(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deleteSchedule, id)
 	return err
 }
 
 const deleteTimeBlock = `-- name: DeleteTimeBlock :exec
-DELETE FROM time_blocks WHERE id = $1
+DELETE FROM time_blocks WHERE id = ?
 `
 
-func (q *Queries) DeleteTimeBlock(ctx context.Context, id pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, deleteTimeBlock, id)
+func (q *Queries) DeleteTimeBlock(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deleteTimeBlock, id)
 	return err
 }
 
 const deleteTimeBlocksByScheduleID = `-- name: DeleteTimeBlocksByScheduleID :exec
-DELETE FROM time_blocks WHERE schedule_id = $1
+DELETE FROM time_blocks WHERE schedule_id = ?
 `
 
-func (q *Queries) DeleteTimeBlocksByScheduleID(ctx context.Context, scheduleID pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, deleteTimeBlocksByScheduleID, scheduleID)
+func (q *Queries) DeleteTimeBlocksByScheduleID(ctx context.Context, scheduleID string) error {
+	_, err := q.db.ExecContext(ctx, deleteTimeBlocksByScheduleID, scheduleID)
 	return err
 }
 
 const getScheduleByID = `-- name: GetScheduleByID :one
 SELECT id, user_id, schedule_date, created_at, updated_at
 FROM schedules
-WHERE id = $1
+WHERE id = ?
 `
 
-func (q *Queries) GetScheduleByID(ctx context.Context, id pgtype.UUID) (Schedule, error) {
-	row := q.db.QueryRow(ctx, getScheduleByID, id)
+func (q *Queries) GetScheduleByID(ctx context.Context, id string) (Schedule, error) {
+	row := q.db.QueryRowContext(ctx, getScheduleByID, id)
 	var i Schedule
 	err := row.Scan(
 		&i.ID,
@@ -124,16 +123,16 @@ func (q *Queries) GetScheduleByID(ctx context.Context, id pgtype.UUID) (Schedule
 const getScheduleByUserAndDate = `-- name: GetScheduleByUserAndDate :one
 SELECT id, user_id, schedule_date, created_at, updated_at
 FROM schedules
-WHERE user_id = $1 AND schedule_date = $2
+WHERE user_id = ? AND schedule_date = ?
 `
 
 type GetScheduleByUserAndDateParams struct {
-	UserID       pgtype.UUID `json:"user_id"`
-	ScheduleDate pgtype.Date `json:"schedule_date"`
+	UserID       string `json:"user_id"`
+	ScheduleDate string `json:"schedule_date"`
 }
 
 func (q *Queries) GetScheduleByUserAndDate(ctx context.Context, arg GetScheduleByUserAndDateParams) (Schedule, error) {
-	row := q.db.QueryRow(ctx, getScheduleByUserAndDate, arg.UserID, arg.ScheduleDate)
+	row := q.db.QueryRowContext(ctx, getScheduleByUserAndDate, arg.UserID, arg.ScheduleDate)
 	var i Schedule
 	err := row.Scan(
 		&i.ID,
@@ -148,18 +147,18 @@ func (q *Queries) GetScheduleByUserAndDate(ctx context.Context, arg GetScheduleB
 const getSchedulesByUserDateRange = `-- name: GetSchedulesByUserDateRange :many
 SELECT id, user_id, schedule_date, created_at, updated_at
 FROM schedules
-WHERE user_id = $1 AND schedule_date >= $2 AND schedule_date <= $3
+WHERE user_id = ? AND schedule_date >= ? AND schedule_date <= ?
 ORDER BY schedule_date
 `
 
 type GetSchedulesByUserDateRangeParams struct {
-	UserID         pgtype.UUID `json:"user_id"`
-	ScheduleDate   pgtype.Date `json:"schedule_date"`
-	ScheduleDate_2 pgtype.Date `json:"schedule_date_2"`
+	UserID         string `json:"user_id"`
+	ScheduleDate   string `json:"schedule_date"`
+	ScheduleDate_2 string `json:"schedule_date_2"`
 }
 
 func (q *Queries) GetSchedulesByUserDateRange(ctx context.Context, arg GetSchedulesByUserDateRangeParams) ([]Schedule, error) {
-	rows, err := q.db.Query(ctx, getSchedulesByUserDateRange, arg.UserID, arg.ScheduleDate, arg.ScheduleDate_2)
+	rows, err := q.db.QueryContext(ctx, getSchedulesByUserDateRange, arg.UserID, arg.ScheduleDate, arg.ScheduleDate_2)
 	if err != nil {
 		return nil, err
 	}
@@ -178,6 +177,9 @@ func (q *Queries) GetSchedulesByUserDateRange(ctx context.Context, arg GetSchedu
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -188,11 +190,11 @@ const getTimeBlockByID = `-- name: GetTimeBlockByID :one
 SELECT id, user_id, schedule_id, block_type, reference_id, title,
        start_time, end_time, completed, missed, created_at, updated_at
 FROM time_blocks
-WHERE id = $1
+WHERE id = ?
 `
 
-func (q *Queries) GetTimeBlockByID(ctx context.Context, id pgtype.UUID) (TimeBlock, error) {
-	row := q.db.QueryRow(ctx, getTimeBlockByID, id)
+func (q *Queries) GetTimeBlockByID(ctx context.Context, id string) (TimeBlock, error) {
+	row := q.db.QueryRowContext(ctx, getTimeBlockByID, id)
 	var i TimeBlock
 	err := row.Scan(
 		&i.ID,
@@ -215,12 +217,12 @@ const getTimeBlocksByScheduleID = `-- name: GetTimeBlocksByScheduleID :many
 SELECT id, user_id, schedule_id, block_type, reference_id, title,
        start_time, end_time, completed, missed, created_at, updated_at
 FROM time_blocks
-WHERE schedule_id = $1
+WHERE schedule_id = ?
 ORDER BY start_time
 `
 
-func (q *Queries) GetTimeBlocksByScheduleID(ctx context.Context, scheduleID pgtype.UUID) ([]TimeBlock, error) {
-	rows, err := q.db.Query(ctx, getTimeBlocksByScheduleID, scheduleID)
+func (q *Queries) GetTimeBlocksByScheduleID(ctx context.Context, scheduleID string) ([]TimeBlock, error) {
+	rows, err := q.db.QueryContext(ctx, getTimeBlocksByScheduleID, scheduleID)
 	if err != nil {
 		return nil, err
 	}
@@ -246,6 +248,9 @@ func (q *Queries) GetTimeBlocksByScheduleID(ctx context.Context, scheduleID pgty
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -254,48 +259,47 @@ func (q *Queries) GetTimeBlocksByScheduleID(ctx context.Context, scheduleID pgty
 
 const updateSchedule = `-- name: UpdateSchedule :exec
 UPDATE schedules
-SET updated_at = $2
-WHERE id = $1
+SET updated_at = ?
+WHERE id = ?
 `
 
 type UpdateScheduleParams struct {
-	ID        pgtype.UUID        `json:"id"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	UpdatedAt string `json:"updated_at"`
+	ID        string `json:"id"`
 }
 
 func (q *Queries) UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) error {
-	_, err := q.db.Exec(ctx, updateSchedule, arg.ID, arg.UpdatedAt)
+	_, err := q.db.ExecContext(ctx, updateSchedule, arg.UpdatedAt, arg.ID)
 	return err
 }
 
 const updateTimeBlock = `-- name: UpdateTimeBlock :exec
 UPDATE time_blocks
-SET block_type = $2,
-    reference_id = $3,
-    title = $4,
-    start_time = $5,
-    end_time = $6,
-    completed = $7,
-    missed = $8,
-    updated_at = $9
-WHERE id = $1
+SET block_type = ?,
+    reference_id = ?,
+    title = ?,
+    start_time = ?,
+    end_time = ?,
+    completed = ?,
+    missed = ?,
+    updated_at = ?
+WHERE id = ?
 `
 
 type UpdateTimeBlockParams struct {
-	ID          pgtype.UUID        `json:"id"`
-	BlockType   string             `json:"block_type"`
-	ReferenceID pgtype.UUID        `json:"reference_id"`
-	Title       string             `json:"title"`
-	StartTime   pgtype.Timestamptz `json:"start_time"`
-	EndTime     pgtype.Timestamptz `json:"end_time"`
-	Completed   bool               `json:"completed"`
-	Missed      bool               `json:"missed"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	BlockType   string         `json:"block_type"`
+	ReferenceID sql.NullString `json:"reference_id"`
+	Title       string         `json:"title"`
+	StartTime   string         `json:"start_time"`
+	EndTime     string         `json:"end_time"`
+	Completed   int64          `json:"completed"`
+	Missed      int64          `json:"missed"`
+	UpdatedAt   string         `json:"updated_at"`
+	ID          string         `json:"id"`
 }
 
 func (q *Queries) UpdateTimeBlock(ctx context.Context, arg UpdateTimeBlockParams) error {
-	_, err := q.db.Exec(ctx, updateTimeBlock,
-		arg.ID,
+	_, err := q.db.ExecContext(ctx, updateTimeBlock,
 		arg.BlockType,
 		arg.ReferenceID,
 		arg.Title,
@@ -304,6 +308,7 @@ func (q *Queries) UpdateTimeBlock(ctx context.Context, arg UpdateTimeBlockParams
 		arg.Completed,
 		arg.Missed,
 		arg.UpdatedAt,
+		arg.ID,
 	)
 	return err
 }

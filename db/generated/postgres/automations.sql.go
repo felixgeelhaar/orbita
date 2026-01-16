@@ -3,7 +3,7 @@
 //   sqlc v1.30.0
 // source: automations.sql
 
-package db
+package postgres
 
 import (
 	"context"

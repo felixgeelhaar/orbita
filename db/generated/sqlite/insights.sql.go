@@ -3,40 +3,40 @@
 //   sqlc v1.30.0
 // source: insights.sql
 
-package db
+package sqlite
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"database/sql"
 )
 
 const createProductivityGoal = `-- name: CreateProductivityGoal :exec
+
 INSERT INTO productivity_goals (
     id, user_id, goal_type, target_value, current_value,
     period_type, period_start, period_end, achieved, achieved_at
 ) VALUES (
-    $1, $2, $3, $4, $5,
-    $6, $7, $8, $9, $10
+    ?, ?, ?, ?, ?,
+    ?, ?, ?, ?, ?
 )
 `
 
 type CreateProductivityGoalParams struct {
-	ID           pgtype.UUID        `json:"id"`
-	UserID       pgtype.UUID        `json:"user_id"`
-	GoalType     string             `json:"goal_type"`
-	TargetValue  int32              `json:"target_value"`
-	CurrentValue int32              `json:"current_value"`
-	PeriodType   string             `json:"period_type"`
-	PeriodStart  pgtype.Date        `json:"period_start"`
-	PeriodEnd    pgtype.Date        `json:"period_end"`
-	Achieved     bool               `json:"achieved"`
-	AchievedAt   pgtype.Timestamptz `json:"achieved_at"`
+	ID           string         `json:"id"`
+	UserID       string         `json:"user_id"`
+	GoalType     string         `json:"goal_type"`
+	TargetValue  int64          `json:"target_value"`
+	CurrentValue int64          `json:"current_value"`
+	PeriodType   string         `json:"period_type"`
+	PeriodStart  string         `json:"period_start"`
+	PeriodEnd    string         `json:"period_end"`
+	Achieved     int64          `json:"achieved"`
+	AchievedAt   sql.NullString `json:"achieved_at"`
 }
 
 // Productivity Goals
 func (q *Queries) CreateProductivityGoal(ctx context.Context, arg CreateProductivityGoalParams) error {
-	_, err := q.db.Exec(ctx, createProductivityGoal,
+	_, err := q.db.ExecContext(ctx, createProductivityGoal,
 		arg.ID,
 		arg.UserID,
 		arg.GoalType,
@@ -52,6 +52,7 @@ func (q *Queries) CreateProductivityGoal(ctx context.Context, arg CreateProducti
 }
 
 const createProductivitySnapshot = `-- name: CreateProductivitySnapshot :exec
+
 INSERT INTO productivity_snapshots (
     id, user_id, snapshot_date,
     tasks_created, tasks_completed, tasks_overdue, task_completion_rate, avg_task_duration_minutes,
@@ -60,45 +61,46 @@ INSERT INTO productivity_snapshots (
     focus_sessions, total_focus_minutes, avg_focus_session_minutes,
     productivity_score, peak_hours, time_by_category, computed_at
 ) VALUES (
-    $1, $2, $3,
-    $4, $5, $6, $7, $8,
-    $9, $10, $11, $12, $13, $14,
-    $15, $16, $17, $18,
-    $19, $20, $21,
-    $22, $23, $24, $25
+    ?, ?, ?,
+    ?, ?, ?, ?, ?,
+    ?, ?, ?, ?, ?, ?,
+    ?, ?, ?, ?,
+    ?, ?, ?,
+    ?, ?, ?, ?
 )
 `
 
 type CreateProductivitySnapshotParams struct {
-	ID                     pgtype.UUID        `json:"id"`
-	UserID                 pgtype.UUID        `json:"user_id"`
-	SnapshotDate           pgtype.Date        `json:"snapshot_date"`
-	TasksCreated           int32              `json:"tasks_created"`
-	TasksCompleted         int32              `json:"tasks_completed"`
-	TasksOverdue           int32              `json:"tasks_overdue"`
-	TaskCompletionRate     pgtype.Numeric     `json:"task_completion_rate"`
-	AvgTaskDurationMinutes pgtype.Int4        `json:"avg_task_duration_minutes"`
-	BlocksScheduled        int32              `json:"blocks_scheduled"`
-	BlocksCompleted        int32              `json:"blocks_completed"`
-	BlocksMissed           int32              `json:"blocks_missed"`
-	ScheduledMinutes       int32              `json:"scheduled_minutes"`
-	CompletedMinutes       int32              `json:"completed_minutes"`
-	BlockCompletionRate    pgtype.Numeric     `json:"block_completion_rate"`
-	HabitsDue              int32              `json:"habits_due"`
-	HabitsCompleted        int32              `json:"habits_completed"`
-	HabitCompletionRate    pgtype.Numeric     `json:"habit_completion_rate"`
-	LongestStreak          int32              `json:"longest_streak"`
-	FocusSessions          int32              `json:"focus_sessions"`
-	TotalFocusMinutes      int32              `json:"total_focus_minutes"`
-	AvgFocusSessionMinutes pgtype.Int4        `json:"avg_focus_session_minutes"`
-	ProductivityScore      int32              `json:"productivity_score"`
-	PeakHours              []byte             `json:"peak_hours"`
-	TimeByCategory         []byte             `json:"time_by_category"`
-	ComputedAt             pgtype.Timestamptz `json:"computed_at"`
+	ID                     string          `json:"id"`
+	UserID                 string          `json:"user_id"`
+	SnapshotDate           string          `json:"snapshot_date"`
+	TasksCreated           int64           `json:"tasks_created"`
+	TasksCompleted         int64           `json:"tasks_completed"`
+	TasksOverdue           int64           `json:"tasks_overdue"`
+	TaskCompletionRate     sql.NullFloat64 `json:"task_completion_rate"`
+	AvgTaskDurationMinutes sql.NullInt64   `json:"avg_task_duration_minutes"`
+	BlocksScheduled        int64           `json:"blocks_scheduled"`
+	BlocksCompleted        int64           `json:"blocks_completed"`
+	BlocksMissed           int64           `json:"blocks_missed"`
+	ScheduledMinutes       int64           `json:"scheduled_minutes"`
+	CompletedMinutes       int64           `json:"completed_minutes"`
+	BlockCompletionRate    sql.NullFloat64 `json:"block_completion_rate"`
+	HabitsDue              int64           `json:"habits_due"`
+	HabitsCompleted        int64           `json:"habits_completed"`
+	HabitCompletionRate    sql.NullFloat64 `json:"habit_completion_rate"`
+	LongestStreak          int64           `json:"longest_streak"`
+	FocusSessions          int64           `json:"focus_sessions"`
+	TotalFocusMinutes      int64           `json:"total_focus_minutes"`
+	AvgFocusSessionMinutes sql.NullInt64   `json:"avg_focus_session_minutes"`
+	ProductivityScore      int64           `json:"productivity_score"`
+	PeakHours              sql.NullString  `json:"peak_hours"`
+	TimeByCategory         sql.NullString  `json:"time_by_category"`
+	ComputedAt             string          `json:"computed_at"`
 }
 
+// Productivity Snapshots
 func (q *Queries) CreateProductivitySnapshot(ctx context.Context, arg CreateProductivitySnapshotParams) error {
-	_, err := q.db.Exec(ctx, createProductivitySnapshot,
+	_, err := q.db.ExecContext(ctx, createProductivitySnapshot,
 		arg.ID,
 		arg.UserID,
 		arg.SnapshotDate,
@@ -129,33 +131,34 @@ func (q *Queries) CreateProductivitySnapshot(ctx context.Context, arg CreateProd
 }
 
 const createTimeSession = `-- name: CreateTimeSession :exec
+
 INSERT INTO time_sessions (
     id, user_id, session_type, reference_id, title, category,
     started_at, ended_at, duration_minutes, status, interruptions, notes
 ) VALUES (
-    $1, $2, $3, $4, $5, $6,
-    $7, $8, $9, $10, $11, $12
+    ?, ?, ?, ?, ?, ?,
+    ?, ?, ?, ?, ?, ?
 )
 `
 
 type CreateTimeSessionParams struct {
-	ID              pgtype.UUID        `json:"id"`
-	UserID          pgtype.UUID        `json:"user_id"`
-	SessionType     string             `json:"session_type"`
-	ReferenceID     pgtype.UUID        `json:"reference_id"`
-	Title           string             `json:"title"`
-	Category        pgtype.Text        `json:"category"`
-	StartedAt       pgtype.Timestamptz `json:"started_at"`
-	EndedAt         pgtype.Timestamptz `json:"ended_at"`
-	DurationMinutes pgtype.Int4        `json:"duration_minutes"`
-	Status          string             `json:"status"`
-	Interruptions   int32              `json:"interruptions"`
-	Notes           pgtype.Text        `json:"notes"`
+	ID              string         `json:"id"`
+	UserID          string         `json:"user_id"`
+	SessionType     string         `json:"session_type"`
+	ReferenceID     sql.NullString `json:"reference_id"`
+	Title           string         `json:"title"`
+	Category        sql.NullString `json:"category"`
+	StartedAt       string         `json:"started_at"`
+	EndedAt         sql.NullString `json:"ended_at"`
+	DurationMinutes sql.NullInt64  `json:"duration_minutes"`
+	Status          string         `json:"status"`
+	Interruptions   int64          `json:"interruptions"`
+	Notes           sql.NullString `json:"notes"`
 }
 
 // Time Sessions
 func (q *Queries) CreateTimeSession(ctx context.Context, arg CreateTimeSessionParams) error {
-	_, err := q.db.Exec(ctx, createTimeSession,
+	_, err := q.db.ExecContext(ctx, createTimeSession,
 		arg.ID,
 		arg.UserID,
 		arg.SessionType,
@@ -173,6 +176,7 @@ func (q *Queries) CreateTimeSession(ctx context.Context, arg CreateTimeSessionPa
 }
 
 const createWeeklySummary = `-- name: CreateWeeklySummary :exec
+
 INSERT INTO weekly_summaries (
     id, user_id, week_start, week_end,
     total_tasks_completed, total_habits_completed, total_blocks_completed, total_focus_minutes,
@@ -181,38 +185,38 @@ INSERT INTO weekly_summaries (
     most_productive_day, least_productive_day,
     habits_with_streak, longest_streak, computed_at
 ) VALUES (
-    $1, $2, $3, $4,
-    $5, $6, $7, $8,
-    $9, $10,
-    $11, $12,
-    $13, $14,
-    $15, $16, $17
+    ?, ?, ?, ?,
+    ?, ?, ?, ?,
+    ?, ?,
+    ?, ?,
+    ?, ?,
+    ?, ?, ?
 )
 `
 
 type CreateWeeklySummaryParams struct {
-	ID                        pgtype.UUID        `json:"id"`
-	UserID                    pgtype.UUID        `json:"user_id"`
-	WeekStart                 pgtype.Date        `json:"week_start"`
-	WeekEnd                   pgtype.Date        `json:"week_end"`
-	TotalTasksCompleted       int32              `json:"total_tasks_completed"`
-	TotalHabitsCompleted      int32              `json:"total_habits_completed"`
-	TotalBlocksCompleted      int32              `json:"total_blocks_completed"`
-	TotalFocusMinutes         int32              `json:"total_focus_minutes"`
-	AvgDailyProductivityScore pgtype.Numeric     `json:"avg_daily_productivity_score"`
-	AvgDailyFocusMinutes      pgtype.Int4        `json:"avg_daily_focus_minutes"`
-	ProductivityTrend         pgtype.Numeric     `json:"productivity_trend"`
-	FocusTrend                pgtype.Numeric     `json:"focus_trend"`
-	MostProductiveDay         pgtype.Date        `json:"most_productive_day"`
-	LeastProductiveDay        pgtype.Date        `json:"least_productive_day"`
-	HabitsWithStreak          int32              `json:"habits_with_streak"`
-	LongestStreak             int32              `json:"longest_streak"`
-	ComputedAt                pgtype.Timestamptz `json:"computed_at"`
+	ID                        string          `json:"id"`
+	UserID                    string          `json:"user_id"`
+	WeekStart                 string          `json:"week_start"`
+	WeekEnd                   string          `json:"week_end"`
+	TotalTasksCompleted       int64           `json:"total_tasks_completed"`
+	TotalHabitsCompleted      int64           `json:"total_habits_completed"`
+	TotalBlocksCompleted      int64           `json:"total_blocks_completed"`
+	TotalFocusMinutes         int64           `json:"total_focus_minutes"`
+	AvgDailyProductivityScore sql.NullFloat64 `json:"avg_daily_productivity_score"`
+	AvgDailyFocusMinutes      sql.NullInt64   `json:"avg_daily_focus_minutes"`
+	ProductivityTrend         sql.NullFloat64 `json:"productivity_trend"`
+	FocusTrend                sql.NullFloat64 `json:"focus_trend"`
+	MostProductiveDay         sql.NullString  `json:"most_productive_day"`
+	LeastProductiveDay        sql.NullString  `json:"least_productive_day"`
+	HabitsWithStreak          int64           `json:"habits_with_streak"`
+	LongestStreak             int64           `json:"longest_streak"`
+	ComputedAt                string          `json:"computed_at"`
 }
 
 // Weekly Summaries
 func (q *Queries) CreateWeeklySummary(ctx context.Context, arg CreateWeeklySummaryParams) error {
-	_, err := q.db.Exec(ctx, createWeeklySummary,
+	_, err := q.db.ExecContext(ctx, createWeeklySummary,
 		arg.ID,
 		arg.UserID,
 		arg.WeekStart,
@@ -235,38 +239,38 @@ func (q *Queries) CreateWeeklySummary(ctx context.Context, arg CreateWeeklySumma
 }
 
 const deleteProductivityGoal = `-- name: DeleteProductivityGoal :exec
-DELETE FROM productivity_goals WHERE id = $1
+DELETE FROM productivity_goals WHERE id = ?
 `
 
-func (q *Queries) DeleteProductivityGoal(ctx context.Context, id pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, deleteProductivityGoal, id)
+func (q *Queries) DeleteProductivityGoal(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deleteProductivityGoal, id)
 	return err
 }
 
 const deleteTimeSession = `-- name: DeleteTimeSession :exec
-DELETE FROM time_sessions WHERE id = $1
+DELETE FROM time_sessions WHERE id = ?
 `
 
-func (q *Queries) DeleteTimeSession(ctx context.Context, id pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, deleteTimeSession, id)
+func (q *Queries) DeleteTimeSession(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deleteTimeSession, id)
 	return err
 }
 
 const getAchievedProductivityGoals = `-- name: GetAchievedProductivityGoals :many
 SELECT id, user_id, goal_type, target_value, current_value, period_type, period_start, period_end, achieved, achieved_at, created_at, updated_at FROM productivity_goals
-WHERE user_id = $1
-  AND achieved = true
+WHERE user_id = ?
+  AND achieved = 1
 ORDER BY achieved_at DESC
-LIMIT $2
+LIMIT ?
 `
 
 type GetAchievedProductivityGoalsParams struct {
-	UserID pgtype.UUID `json:"user_id"`
-	Limit  int32       `json:"limit"`
+	UserID string `json:"user_id"`
+	Limit  int64  `json:"limit"`
 }
 
 func (q *Queries) GetAchievedProductivityGoals(ctx context.Context, arg GetAchievedProductivityGoalsParams) ([]ProductivityGoal, error) {
-	rows, err := q.db.Query(ctx, getAchievedProductivityGoals, arg.UserID, arg.Limit)
+	rows, err := q.db.QueryContext(ctx, getAchievedProductivityGoals, arg.UserID, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -291,6 +295,9 @@ func (q *Queries) GetAchievedProductivityGoals(ctx context.Context, arg GetAchie
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -300,14 +307,14 @@ func (q *Queries) GetAchievedProductivityGoals(ctx context.Context, arg GetAchie
 
 const getActiveProductivityGoals = `-- name: GetActiveProductivityGoals :many
 SELECT id, user_id, goal_type, target_value, current_value, period_type, period_start, period_end, achieved, achieved_at, created_at, updated_at FROM productivity_goals
-WHERE user_id = $1
-  AND period_end >= CURRENT_DATE
+WHERE user_id = ?
+  AND period_end >= date('now')
   AND NOT achieved
 ORDER BY period_end ASC
 `
 
-func (q *Queries) GetActiveProductivityGoals(ctx context.Context, userID pgtype.UUID) ([]ProductivityGoal, error) {
-	rows, err := q.db.Query(ctx, getActiveProductivityGoals, userID)
+func (q *Queries) GetActiveProductivityGoals(ctx context.Context, userID string) ([]ProductivityGoal, error) {
+	rows, err := q.db.QueryContext(ctx, getActiveProductivityGoals, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -333,6 +340,9 @@ func (q *Queries) GetActiveProductivityGoals(ctx context.Context, userID pgtype.
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -341,13 +351,13 @@ func (q *Queries) GetActiveProductivityGoals(ctx context.Context, userID pgtype.
 
 const getActiveTimeSession = `-- name: GetActiveTimeSession :one
 SELECT id, user_id, session_type, reference_id, title, category, started_at, ended_at, duration_minutes, status, interruptions, notes, created_at, updated_at FROM time_sessions
-WHERE user_id = $1 AND status = 'active'
+WHERE user_id = ? AND status = 'active'
 ORDER BY started_at DESC
 LIMIT 1
 `
 
-func (q *Queries) GetActiveTimeSession(ctx context.Context, userID pgtype.UUID) (TimeSession, error) {
-	row := q.db.QueryRow(ctx, getActiveTimeSession, userID)
+func (q *Queries) GetActiveTimeSession(ctx context.Context, userID string) (TimeSession, error) {
+	row := q.db.QueryRowContext(ctx, getActiveTimeSession, userID)
 	var i TimeSession
 	err := row.Scan(
 		&i.ID,
@@ -369,22 +379,22 @@ func (q *Queries) GetActiveTimeSession(ctx context.Context, userID pgtype.UUID) 
 }
 
 const getAverageProductivityScore = `-- name: GetAverageProductivityScore :one
-SELECT COALESCE(AVG(productivity_score), 0)::INTEGER as avg_score
+SELECT CAST(COALESCE(AVG(productivity_score), 0) AS INTEGER) as avg_score
 FROM productivity_snapshots
-WHERE user_id = $1
-  AND snapshot_date >= $2
-  AND snapshot_date <= $3
+WHERE user_id = ?
+  AND snapshot_date >= ?
+  AND snapshot_date <= ?
 `
 
 type GetAverageProductivityScoreParams struct {
-	UserID         pgtype.UUID `json:"user_id"`
-	SnapshotDate   pgtype.Date `json:"snapshot_date"`
-	SnapshotDate_2 pgtype.Date `json:"snapshot_date_2"`
+	UserID         string `json:"user_id"`
+	SnapshotDate   string `json:"snapshot_date"`
+	SnapshotDate_2 string `json:"snapshot_date_2"`
 }
 
-func (q *Queries) GetAverageProductivityScore(ctx context.Context, arg GetAverageProductivityScoreParams) (int32, error) {
-	row := q.db.QueryRow(ctx, getAverageProductivityScore, arg.UserID, arg.SnapshotDate, arg.SnapshotDate_2)
-	var avg_score int32
+func (q *Queries) GetAverageProductivityScore(ctx context.Context, arg GetAverageProductivityScoreParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getAverageProductivityScore, arg.UserID, arg.SnapshotDate, arg.SnapshotDate_2)
+	var avg_score int64
 	err := row.Scan(&avg_score)
 	return avg_score, err
 }
@@ -393,19 +403,19 @@ const getHabitCompletionsByDateRange = `-- name: GetHabitCompletionsByDateRange 
 SELECT COUNT(*) as completions
 FROM habit_completions hc
 JOIN habits h ON h.id = hc.habit_id
-WHERE h.user_id = $1
-  AND hc.completed_at >= $2
-  AND hc.completed_at < $3
+WHERE h.user_id = ?
+  AND hc.completed_at >= ?
+  AND hc.completed_at < ?
 `
 
 type GetHabitCompletionsByDateRangeParams struct {
-	UserID        pgtype.UUID        `json:"user_id"`
-	CompletedAt   pgtype.Timestamptz `json:"completed_at"`
-	CompletedAt_2 pgtype.Timestamptz `json:"completed_at_2"`
+	UserID        string `json:"user_id"`
+	CompletedAt   string `json:"completed_at"`
+	CompletedAt_2 string `json:"completed_at_2"`
 }
 
 func (q *Queries) GetHabitCompletionsByDateRange(ctx context.Context, arg GetHabitCompletionsByDateRangeParams) (int64, error) {
-	row := q.db.QueryRow(ctx, getHabitCompletionsByDateRange, arg.UserID, arg.CompletedAt, arg.CompletedAt_2)
+	row := q.db.QueryRowContext(ctx, getHabitCompletionsByDateRange, arg.UserID, arg.CompletedAt, arg.CompletedAt_2)
 	var completions int64
 	err := row.Scan(&completions)
 	return completions, err
@@ -414,12 +424,12 @@ func (q *Queries) GetHabitCompletionsByDateRange(ctx context.Context, arg GetHab
 const getHabitsDueCount = `-- name: GetHabitsDueCount :one
 SELECT COUNT(*) as due_count
 FROM habits
-WHERE user_id = $1
-  AND archived = false
+WHERE user_id = ?
+  AND archived = 0
 `
 
-func (q *Queries) GetHabitsDueCount(ctx context.Context, userID pgtype.UUID) (int64, error) {
-	row := q.db.QueryRow(ctx, getHabitsDueCount, userID)
+func (q *Queries) GetHabitsDueCount(ctx context.Context, userID string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getHabitsDueCount, userID)
 	var due_count int64
 	err := row.Scan(&due_count)
 	return due_count, err
@@ -427,13 +437,13 @@ func (q *Queries) GetHabitsDueCount(ctx context.Context, userID pgtype.UUID) (in
 
 const getLatestProductivitySnapshot = `-- name: GetLatestProductivitySnapshot :one
 SELECT id, user_id, snapshot_date, tasks_created, tasks_completed, tasks_overdue, task_completion_rate, avg_task_duration_minutes, blocks_scheduled, blocks_completed, blocks_missed, scheduled_minutes, completed_minutes, block_completion_rate, habits_due, habits_completed, habit_completion_rate, longest_streak, focus_sessions, total_focus_minutes, avg_focus_session_minutes, productivity_score, peak_hours, time_by_category, computed_at, created_at, updated_at FROM productivity_snapshots
-WHERE user_id = $1
+WHERE user_id = ?
 ORDER BY snapshot_date DESC
 LIMIT 1
 `
 
-func (q *Queries) GetLatestProductivitySnapshot(ctx context.Context, userID pgtype.UUID) (ProductivitySnapshot, error) {
-	row := q.db.QueryRow(ctx, getLatestProductivitySnapshot, userID)
+func (q *Queries) GetLatestProductivitySnapshot(ctx context.Context, userID string) (ProductivitySnapshot, error) {
+	row := q.db.QueryRowContext(ctx, getLatestProductivitySnapshot, userID)
 	var i ProductivitySnapshot
 	err := row.Scan(
 		&i.ID,
@@ -469,13 +479,13 @@ func (q *Queries) GetLatestProductivitySnapshot(ctx context.Context, userID pgty
 
 const getLatestWeeklySummary = `-- name: GetLatestWeeklySummary :one
 SELECT id, user_id, week_start, week_end, total_tasks_completed, total_habits_completed, total_blocks_completed, total_focus_minutes, avg_daily_productivity_score, avg_daily_focus_minutes, productivity_trend, focus_trend, most_productive_day, least_productive_day, habits_with_streak, longest_streak, computed_at, created_at FROM weekly_summaries
-WHERE user_id = $1
+WHERE user_id = ?
 ORDER BY week_start DESC
 LIMIT 1
 `
 
-func (q *Queries) GetLatestWeeklySummary(ctx context.Context, userID pgtype.UUID) (WeeklySummary, error) {
-	row := q.db.QueryRow(ctx, getLatestWeeklySummary, userID)
+func (q *Queries) GetLatestWeeklySummary(ctx context.Context, userID string) (WeeklySummary, error) {
+	row := q.db.QueryRowContext(ctx, getLatestWeeklySummary, userID)
 	var i WeeklySummary
 	err := row.Scan(
 		&i.ID,
@@ -501,46 +511,46 @@ func (q *Queries) GetLatestWeeklySummary(ctx context.Context, userID pgtype.UUID
 }
 
 const getLongestActiveStreak = `-- name: GetLongestActiveStreak :one
-SELECT COALESCE(MAX(streak), 0)::INTEGER as longest_streak
+SELECT CAST(COALESCE(MAX(streak), 0) AS INTEGER) as longest_streak
 FROM habits
-WHERE user_id = $1
-  AND archived = false
+WHERE user_id = ?
+  AND archived = 0
 `
 
-func (q *Queries) GetLongestActiveStreak(ctx context.Context, userID pgtype.UUID) (int32, error) {
-	row := q.db.QueryRow(ctx, getLongestActiveStreak, userID)
-	var longest_streak int32
+func (q *Queries) GetLongestActiveStreak(ctx context.Context, userID string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getLongestActiveStreak, userID)
+	var longest_streak int64
 	err := row.Scan(&longest_streak)
 	return longest_streak, err
 }
 
 const getPeakProductivityHours = `-- name: GetPeakProductivityHours :many
 SELECT
-    EXTRACT(HOUR FROM completed_at)::INTEGER as hour,
+    CAST(strftime('%H', completed_at) AS INTEGER) as hour,
     COUNT(*) as completions
 FROM tasks
-WHERE user_id = $1
-  AND completed_at >= $2
-  AND completed_at < $3
+WHERE user_id = ?
+  AND completed_at >= ?
+  AND completed_at < ?
   AND completed_at IS NOT NULL
-GROUP BY EXTRACT(HOUR FROM completed_at)
+GROUP BY strftime('%H', completed_at)
 ORDER BY completions DESC
 LIMIT 5
 `
 
 type GetPeakProductivityHoursParams struct {
-	UserID        pgtype.UUID        `json:"user_id"`
-	CompletedAt   pgtype.Timestamptz `json:"completed_at"`
-	CompletedAt_2 pgtype.Timestamptz `json:"completed_at_2"`
+	UserID        string         `json:"user_id"`
+	CompletedAt   sql.NullString `json:"completed_at"`
+	CompletedAt_2 sql.NullString `json:"completed_at_2"`
 }
 
 type GetPeakProductivityHoursRow struct {
-	Hour        int32 `json:"hour"`
+	Hour        int64 `json:"hour"`
 	Completions int64 `json:"completions"`
 }
 
 func (q *Queries) GetPeakProductivityHours(ctx context.Context, arg GetPeakProductivityHoursParams) ([]GetPeakProductivityHoursRow, error) {
-	rows, err := q.db.Query(ctx, getPeakProductivityHours, arg.UserID, arg.CompletedAt, arg.CompletedAt_2)
+	rows, err := q.db.QueryContext(ctx, getPeakProductivityHours, arg.UserID, arg.CompletedAt, arg.CompletedAt_2)
 	if err != nil {
 		return nil, err
 	}
@@ -553,6 +563,9 @@ func (q *Queries) GetPeakProductivityHours(ctx context.Context, arg GetPeakProdu
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -560,11 +573,11 @@ func (q *Queries) GetPeakProductivityHours(ctx context.Context, arg GetPeakProdu
 }
 
 const getProductivityGoal = `-- name: GetProductivityGoal :one
-SELECT id, user_id, goal_type, target_value, current_value, period_type, period_start, period_end, achieved, achieved_at, created_at, updated_at FROM productivity_goals WHERE id = $1
+SELECT id, user_id, goal_type, target_value, current_value, period_type, period_start, period_end, achieved, achieved_at, created_at, updated_at FROM productivity_goals WHERE id = ?
 `
 
-func (q *Queries) GetProductivityGoal(ctx context.Context, id pgtype.UUID) (ProductivityGoal, error) {
-	row := q.db.QueryRow(ctx, getProductivityGoal, id)
+func (q *Queries) GetProductivityGoal(ctx context.Context, id string) (ProductivityGoal, error) {
+	row := q.db.QueryRowContext(ctx, getProductivityGoal, id)
 	var i ProductivityGoal
 	err := row.Scan(
 		&i.ID,
@@ -585,20 +598,20 @@ func (q *Queries) GetProductivityGoal(ctx context.Context, id pgtype.UUID) (Prod
 
 const getProductivityGoalsByPeriod = `-- name: GetProductivityGoalsByPeriod :many
 SELECT id, user_id, goal_type, target_value, current_value, period_type, period_start, period_end, achieved, achieved_at, created_at, updated_at FROM productivity_goals
-WHERE user_id = $1
-  AND period_start >= $2
-  AND period_end <= $3
+WHERE user_id = ?
+  AND period_start >= ?
+  AND period_end <= ?
 ORDER BY period_start ASC
 `
 
 type GetProductivityGoalsByPeriodParams struct {
-	UserID      pgtype.UUID `json:"user_id"`
-	PeriodStart pgtype.Date `json:"period_start"`
-	PeriodEnd   pgtype.Date `json:"period_end"`
+	UserID      string `json:"user_id"`
+	PeriodStart string `json:"period_start"`
+	PeriodEnd   string `json:"period_end"`
 }
 
 func (q *Queries) GetProductivityGoalsByPeriod(ctx context.Context, arg GetProductivityGoalsByPeriodParams) ([]ProductivityGoal, error) {
-	rows, err := q.db.Query(ctx, getProductivityGoalsByPeriod, arg.UserID, arg.PeriodStart, arg.PeriodEnd)
+	rows, err := q.db.QueryContext(ctx, getProductivityGoalsByPeriod, arg.UserID, arg.PeriodStart, arg.PeriodEnd)
 	if err != nil {
 		return nil, err
 	}
@@ -623,6 +636,9 @@ func (q *Queries) GetProductivityGoalsByPeriod(ctx context.Context, arg GetProdu
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -632,17 +648,17 @@ func (q *Queries) GetProductivityGoalsByPeriod(ctx context.Context, arg GetProdu
 
 const getProductivityGoalsByType = `-- name: GetProductivityGoalsByType :many
 SELECT id, user_id, goal_type, target_value, current_value, period_type, period_start, period_end, achieved, achieved_at, created_at, updated_at FROM productivity_goals
-WHERE user_id = $1 AND goal_type = $2
+WHERE user_id = ? AND goal_type = ?
 ORDER BY period_start DESC
 `
 
 type GetProductivityGoalsByTypeParams struct {
-	UserID   pgtype.UUID `json:"user_id"`
-	GoalType string      `json:"goal_type"`
+	UserID   string `json:"user_id"`
+	GoalType string `json:"goal_type"`
 }
 
 func (q *Queries) GetProductivityGoalsByType(ctx context.Context, arg GetProductivityGoalsByTypeParams) ([]ProductivityGoal, error) {
-	rows, err := q.db.Query(ctx, getProductivityGoalsByType, arg.UserID, arg.GoalType)
+	rows, err := q.db.QueryContext(ctx, getProductivityGoalsByType, arg.UserID, arg.GoalType)
 	if err != nil {
 		return nil, err
 	}
@@ -668,6 +684,9 @@ func (q *Queries) GetProductivityGoalsByType(ctx context.Context, arg GetProduct
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -676,16 +695,16 @@ func (q *Queries) GetProductivityGoalsByType(ctx context.Context, arg GetProduct
 
 const getProductivitySnapshot = `-- name: GetProductivitySnapshot :one
 SELECT id, user_id, snapshot_date, tasks_created, tasks_completed, tasks_overdue, task_completion_rate, avg_task_duration_minutes, blocks_scheduled, blocks_completed, blocks_missed, scheduled_minutes, completed_minutes, block_completion_rate, habits_due, habits_completed, habit_completion_rate, longest_streak, focus_sessions, total_focus_minutes, avg_focus_session_minutes, productivity_score, peak_hours, time_by_category, computed_at, created_at, updated_at FROM productivity_snapshots
-WHERE user_id = $1 AND snapshot_date = $2
+WHERE user_id = ? AND snapshot_date = ?
 `
 
 type GetProductivitySnapshotParams struct {
-	UserID       pgtype.UUID `json:"user_id"`
-	SnapshotDate pgtype.Date `json:"snapshot_date"`
+	UserID       string `json:"user_id"`
+	SnapshotDate string `json:"snapshot_date"`
 }
 
 func (q *Queries) GetProductivitySnapshot(ctx context.Context, arg GetProductivitySnapshotParams) (ProductivitySnapshot, error) {
-	row := q.db.QueryRow(ctx, getProductivitySnapshot, arg.UserID, arg.SnapshotDate)
+	row := q.db.QueryRowContext(ctx, getProductivitySnapshot, arg.UserID, arg.SnapshotDate)
 	var i ProductivitySnapshot
 	err := row.Scan(
 		&i.ID,
@@ -721,20 +740,20 @@ func (q *Queries) GetProductivitySnapshot(ctx context.Context, arg GetProductivi
 
 const getProductivitySnapshotRange = `-- name: GetProductivitySnapshotRange :many
 SELECT id, user_id, snapshot_date, tasks_created, tasks_completed, tasks_overdue, task_completion_rate, avg_task_duration_minutes, blocks_scheduled, blocks_completed, blocks_missed, scheduled_minutes, completed_minutes, block_completion_rate, habits_due, habits_completed, habit_completion_rate, longest_streak, focus_sessions, total_focus_minutes, avg_focus_session_minutes, productivity_score, peak_hours, time_by_category, computed_at, created_at, updated_at FROM productivity_snapshots
-WHERE user_id = $1
-  AND snapshot_date >= $2
-  AND snapshot_date <= $3
+WHERE user_id = ?
+  AND snapshot_date >= ?
+  AND snapshot_date <= ?
 ORDER BY snapshot_date DESC
 `
 
 type GetProductivitySnapshotRangeParams struct {
-	UserID         pgtype.UUID `json:"user_id"`
-	SnapshotDate   pgtype.Date `json:"snapshot_date"`
-	SnapshotDate_2 pgtype.Date `json:"snapshot_date_2"`
+	UserID         string `json:"user_id"`
+	SnapshotDate   string `json:"snapshot_date"`
+	SnapshotDate_2 string `json:"snapshot_date_2"`
 }
 
 func (q *Queries) GetProductivitySnapshotRange(ctx context.Context, arg GetProductivitySnapshotRangeParams) ([]ProductivitySnapshot, error) {
-	rows, err := q.db.Query(ctx, getProductivitySnapshotRange, arg.UserID, arg.SnapshotDate, arg.SnapshotDate_2)
+	rows, err := q.db.QueryContext(ctx, getProductivitySnapshotRange, arg.UserID, arg.SnapshotDate, arg.SnapshotDate_2)
 	if err != nil {
 		return nil, err
 	}
@@ -774,6 +793,9 @@ func (q *Queries) GetProductivitySnapshotRange(ctx context.Context, arg GetProdu
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -783,18 +805,18 @@ func (q *Queries) GetProductivitySnapshotRange(ctx context.Context, arg GetProdu
 
 const getProductivitySnapshots = `-- name: GetProductivitySnapshots :many
 SELECT id, user_id, snapshot_date, tasks_created, tasks_completed, tasks_overdue, task_completion_rate, avg_task_duration_minutes, blocks_scheduled, blocks_completed, blocks_missed, scheduled_minutes, completed_minutes, block_completion_rate, habits_due, habits_completed, habit_completion_rate, longest_streak, focus_sessions, total_focus_minutes, avg_focus_session_minutes, productivity_score, peak_hours, time_by_category, computed_at, created_at, updated_at FROM productivity_snapshots
-WHERE user_id = $1
+WHERE user_id = ?
 ORDER BY snapshot_date DESC
-LIMIT $2
+LIMIT ?
 `
 
 type GetProductivitySnapshotsParams struct {
-	UserID pgtype.UUID `json:"user_id"`
-	Limit  int32       `json:"limit"`
+	UserID string `json:"user_id"`
+	Limit  int64  `json:"limit"`
 }
 
 func (q *Queries) GetProductivitySnapshots(ctx context.Context, arg GetProductivitySnapshotsParams) ([]ProductivitySnapshot, error) {
-	rows, err := q.db.Query(ctx, getProductivitySnapshots, arg.UserID, arg.Limit)
+	rows, err := q.db.QueryContext(ctx, getProductivitySnapshots, arg.UserID, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -835,6 +857,9 @@ func (q *Queries) GetProductivitySnapshots(ctx context.Context, arg GetProductiv
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -842,31 +867,32 @@ func (q *Queries) GetProductivitySnapshots(ctx context.Context, arg GetProductiv
 }
 
 const getTaskCompletionsByDateRange = `-- name: GetTaskCompletionsByDateRange :one
+
 SELECT
-    COUNT(*) FILTER (WHERE status = 'completed') as completed,
-    COUNT(*) FILTER (WHERE status = 'pending' AND due_date < NOW()) as overdue,
+    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+    SUM(CASE WHEN status = 'pending' AND due_date < datetime('now') THEN 1 ELSE 0 END) as overdue,
     COUNT(*) as total
 FROM tasks
-WHERE user_id = $1
-  AND created_at >= $2
-  AND created_at < $3
+WHERE user_id = ?
+  AND created_at >= ?
+  AND created_at < ?
 `
 
 type GetTaskCompletionsByDateRangeParams struct {
-	UserID      pgtype.UUID        `json:"user_id"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	CreatedAt_2 pgtype.Timestamptz `json:"created_at_2"`
+	UserID      string `json:"user_id"`
+	CreatedAt   string `json:"created_at"`
+	CreatedAt_2 string `json:"created_at_2"`
 }
 
 type GetTaskCompletionsByDateRangeRow struct {
-	Completed int64 `json:"completed"`
-	Overdue   int64 `json:"overdue"`
-	Total     int64 `json:"total"`
+	Completed sql.NullFloat64 `json:"completed"`
+	Overdue   sql.NullFloat64 `json:"overdue"`
+	Total     int64           `json:"total"`
 }
 
 // Analytics queries using existing tables
 func (q *Queries) GetTaskCompletionsByDateRange(ctx context.Context, arg GetTaskCompletionsByDateRangeParams) (GetTaskCompletionsByDateRangeRow, error) {
-	row := q.db.QueryRow(ctx, getTaskCompletionsByDateRange, arg.UserID, arg.CreatedAt, arg.CreatedAt_2)
+	row := q.db.QueryRowContext(ctx, getTaskCompletionsByDateRange, arg.UserID, arg.CreatedAt, arg.CreatedAt_2)
 	var i GetTaskCompletionsByDateRangeRow
 	err := row.Scan(&i.Completed, &i.Overdue, &i.Total)
 	return i, err
@@ -875,32 +901,32 @@ func (q *Queries) GetTaskCompletionsByDateRange(ctx context.Context, arg GetTask
 const getTimeBlockStatsByDateRange = `-- name: GetTimeBlockStatsByDateRange :one
 SELECT
     COUNT(*) as total_blocks,
-    COUNT(*) FILTER (WHERE completed = true) as completed_blocks,
-    COUNT(*) FILTER (WHERE missed = true) as missed_blocks,
-    COALESCE(SUM(EXTRACT(EPOCH FROM (end_time - start_time)) / 60), 0)::INTEGER as scheduled_minutes,
-    COALESCE(SUM(CASE WHEN completed THEN EXTRACT(EPOCH FROM (end_time - start_time)) / 60 ELSE 0 END), 0)::INTEGER as completed_minutes
+    SUM(CASE WHEN completed = 1 THEN 1 ELSE 0 END) as completed_blocks,
+    SUM(CASE WHEN missed = 1 THEN 1 ELSE 0 END) as missed_blocks,
+    CAST(COALESCE(SUM((julianday(end_time) - julianday(start_time)) * 24 * 60), 0) AS INTEGER) as scheduled_minutes,
+    CAST(COALESCE(SUM(CASE WHEN completed = 1 THEN (julianday(end_time) - julianday(start_time)) * 24 * 60 ELSE 0 END), 0) AS INTEGER) as completed_minutes
 FROM time_blocks
-WHERE user_id = $1
-  AND start_time >= $2
-  AND start_time < $3
+WHERE user_id = ?
+  AND start_time >= ?
+  AND start_time < ?
 `
 
 type GetTimeBlockStatsByDateRangeParams struct {
-	UserID      pgtype.UUID        `json:"user_id"`
-	StartTime   pgtype.Timestamptz `json:"start_time"`
-	StartTime_2 pgtype.Timestamptz `json:"start_time_2"`
+	UserID      string `json:"user_id"`
+	StartTime   string `json:"start_time"`
+	StartTime_2 string `json:"start_time_2"`
 }
 
 type GetTimeBlockStatsByDateRangeRow struct {
-	TotalBlocks      int64 `json:"total_blocks"`
-	CompletedBlocks  int64 `json:"completed_blocks"`
-	MissedBlocks     int64 `json:"missed_blocks"`
-	ScheduledMinutes int32 `json:"scheduled_minutes"`
-	CompletedMinutes int32 `json:"completed_minutes"`
+	TotalBlocks      int64           `json:"total_blocks"`
+	CompletedBlocks  sql.NullFloat64 `json:"completed_blocks"`
+	MissedBlocks     sql.NullFloat64 `json:"missed_blocks"`
+	ScheduledMinutes int64           `json:"scheduled_minutes"`
+	CompletedMinutes int64           `json:"completed_minutes"`
 }
 
 func (q *Queries) GetTimeBlockStatsByDateRange(ctx context.Context, arg GetTimeBlockStatsByDateRangeParams) (GetTimeBlockStatsByDateRangeRow, error) {
-	row := q.db.QueryRow(ctx, getTimeBlockStatsByDateRange, arg.UserID, arg.StartTime, arg.StartTime_2)
+	row := q.db.QueryRowContext(ctx, getTimeBlockStatsByDateRange, arg.UserID, arg.StartTime, arg.StartTime_2)
 	var i GetTimeBlockStatsByDateRangeRow
 	err := row.Scan(
 		&i.TotalBlocks,
@@ -915,29 +941,29 @@ func (q *Queries) GetTimeBlockStatsByDateRange(ctx context.Context, arg GetTimeB
 const getTimeByBlockType = `-- name: GetTimeByBlockType :many
 SELECT
     block_type as category,
-    COALESCE(SUM(EXTRACT(EPOCH FROM (end_time - start_time)) / 60), 0)::INTEGER as minutes
+    CAST(COALESCE(SUM((julianday(end_time) - julianday(start_time)) * 24 * 60), 0) AS INTEGER) as minutes
 FROM time_blocks
-WHERE user_id = $1
-  AND start_time >= $2
-  AND start_time < $3
-  AND completed = true
+WHERE user_id = ?
+  AND start_time >= ?
+  AND start_time < ?
+  AND completed = 1
 GROUP BY block_type
 ORDER BY minutes DESC
 `
 
 type GetTimeByBlockTypeParams struct {
-	UserID      pgtype.UUID        `json:"user_id"`
-	StartTime   pgtype.Timestamptz `json:"start_time"`
-	StartTime_2 pgtype.Timestamptz `json:"start_time_2"`
+	UserID      string `json:"user_id"`
+	StartTime   string `json:"start_time"`
+	StartTime_2 string `json:"start_time_2"`
 }
 
 type GetTimeByBlockTypeRow struct {
 	Category string `json:"category"`
-	Minutes  int32  `json:"minutes"`
+	Minutes  int64  `json:"minutes"`
 }
 
 func (q *Queries) GetTimeByBlockType(ctx context.Context, arg GetTimeByBlockTypeParams) ([]GetTimeByBlockTypeRow, error) {
-	rows, err := q.db.Query(ctx, getTimeByBlockType, arg.UserID, arg.StartTime, arg.StartTime_2)
+	rows, err := q.db.QueryContext(ctx, getTimeByBlockType, arg.UserID, arg.StartTime, arg.StartTime_2)
 	if err != nil {
 		return nil, err
 	}
@@ -950,6 +976,9 @@ func (q *Queries) GetTimeByBlockType(ctx context.Context, arg GetTimeByBlockType
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -957,11 +986,11 @@ func (q *Queries) GetTimeByBlockType(ctx context.Context, arg GetTimeByBlockType
 }
 
 const getTimeSession = `-- name: GetTimeSession :one
-SELECT id, user_id, session_type, reference_id, title, category, started_at, ended_at, duration_minutes, status, interruptions, notes, created_at, updated_at FROM time_sessions WHERE id = $1
+SELECT id, user_id, session_type, reference_id, title, category, started_at, ended_at, duration_minutes, status, interruptions, notes, created_at, updated_at FROM time_sessions WHERE id = ?
 `
 
-func (q *Queries) GetTimeSession(ctx context.Context, id pgtype.UUID) (TimeSession, error) {
-	row := q.db.QueryRow(ctx, getTimeSession, id)
+func (q *Queries) GetTimeSession(ctx context.Context, id string) (TimeSession, error) {
+	row := q.db.QueryRowContext(ctx, getTimeSession, id)
 	var i TimeSession
 	err := row.Scan(
 		&i.ID,
@@ -984,20 +1013,20 @@ func (q *Queries) GetTimeSession(ctx context.Context, id pgtype.UUID) (TimeSessi
 
 const getTimeSessionsByDateRange = `-- name: GetTimeSessionsByDateRange :many
 SELECT id, user_id, session_type, reference_id, title, category, started_at, ended_at, duration_minutes, status, interruptions, notes, created_at, updated_at FROM time_sessions
-WHERE user_id = $1
-  AND started_at >= $2
-  AND started_at < $3
+WHERE user_id = ?
+  AND started_at >= ?
+  AND started_at < ?
 ORDER BY started_at DESC
 `
 
 type GetTimeSessionsByDateRangeParams struct {
-	UserID      pgtype.UUID        `json:"user_id"`
-	StartedAt   pgtype.Timestamptz `json:"started_at"`
-	StartedAt_2 pgtype.Timestamptz `json:"started_at_2"`
+	UserID      string `json:"user_id"`
+	StartedAt   string `json:"started_at"`
+	StartedAt_2 string `json:"started_at_2"`
 }
 
 func (q *Queries) GetTimeSessionsByDateRange(ctx context.Context, arg GetTimeSessionsByDateRangeParams) ([]TimeSession, error) {
-	rows, err := q.db.Query(ctx, getTimeSessionsByDateRange, arg.UserID, arg.StartedAt, arg.StartedAt_2)
+	rows, err := q.db.QueryContext(ctx, getTimeSessionsByDateRange, arg.UserID, arg.StartedAt, arg.StartedAt_2)
 	if err != nil {
 		return nil, err
 	}
@@ -1024,6 +1053,9 @@ func (q *Queries) GetTimeSessionsByDateRange(ctx context.Context, arg GetTimeSes
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -1033,19 +1065,19 @@ func (q *Queries) GetTimeSessionsByDateRange(ctx context.Context, arg GetTimeSes
 
 const getTimeSessionsByType = `-- name: GetTimeSessionsByType :many
 SELECT id, user_id, session_type, reference_id, title, category, started_at, ended_at, duration_minutes, status, interruptions, notes, created_at, updated_at FROM time_sessions
-WHERE user_id = $1 AND session_type = $2
+WHERE user_id = ? AND session_type = ?
 ORDER BY started_at DESC
-LIMIT $3
+LIMIT ?
 `
 
 type GetTimeSessionsByTypeParams struct {
-	UserID      pgtype.UUID `json:"user_id"`
-	SessionType string      `json:"session_type"`
-	Limit       int32       `json:"limit"`
+	UserID      string `json:"user_id"`
+	SessionType string `json:"session_type"`
+	Limit       int64  `json:"limit"`
 }
 
 func (q *Queries) GetTimeSessionsByType(ctx context.Context, arg GetTimeSessionsByTypeParams) ([]TimeSession, error) {
-	rows, err := q.db.Query(ctx, getTimeSessionsByType, arg.UserID, arg.SessionType, arg.Limit)
+	rows, err := q.db.QueryContext(ctx, getTimeSessionsByType, arg.UserID, arg.SessionType, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -1073,6 +1105,9 @@ func (q *Queries) GetTimeSessionsByType(ctx context.Context, arg GetTimeSessions
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -1080,42 +1115,42 @@ func (q *Queries) GetTimeSessionsByType(ctx context.Context, arg GetTimeSessions
 }
 
 const getTotalFocusMinutesByDateRange = `-- name: GetTotalFocusMinutesByDateRange :one
-SELECT COALESCE(SUM(duration_minutes), 0)::INTEGER as total_minutes
+SELECT CAST(COALESCE(SUM(duration_minutes), 0) AS INTEGER) as total_minutes
 FROM time_sessions
-WHERE user_id = $1
+WHERE user_id = ?
   AND session_type = 'focus'
   AND status = 'completed'
-  AND started_at >= $2
-  AND started_at < $3
+  AND started_at >= ?
+  AND started_at < ?
 `
 
 type GetTotalFocusMinutesByDateRangeParams struct {
-	UserID      pgtype.UUID        `json:"user_id"`
-	StartedAt   pgtype.Timestamptz `json:"started_at"`
-	StartedAt_2 pgtype.Timestamptz `json:"started_at_2"`
+	UserID      string `json:"user_id"`
+	StartedAt   string `json:"started_at"`
+	StartedAt_2 string `json:"started_at_2"`
 }
 
-func (q *Queries) GetTotalFocusMinutesByDateRange(ctx context.Context, arg GetTotalFocusMinutesByDateRangeParams) (int32, error) {
-	row := q.db.QueryRow(ctx, getTotalFocusMinutesByDateRange, arg.UserID, arg.StartedAt, arg.StartedAt_2)
-	var total_minutes int32
+func (q *Queries) GetTotalFocusMinutesByDateRange(ctx context.Context, arg GetTotalFocusMinutesByDateRangeParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getTotalFocusMinutesByDateRange, arg.UserID, arg.StartedAt, arg.StartedAt_2)
+	var total_minutes int64
 	err := row.Scan(&total_minutes)
 	return total_minutes, err
 }
 
 const getWeeklySummaries = `-- name: GetWeeklySummaries :many
 SELECT id, user_id, week_start, week_end, total_tasks_completed, total_habits_completed, total_blocks_completed, total_focus_minutes, avg_daily_productivity_score, avg_daily_focus_minutes, productivity_trend, focus_trend, most_productive_day, least_productive_day, habits_with_streak, longest_streak, computed_at, created_at FROM weekly_summaries
-WHERE user_id = $1
+WHERE user_id = ?
 ORDER BY week_start DESC
-LIMIT $2
+LIMIT ?
 `
 
 type GetWeeklySummariesParams struct {
-	UserID pgtype.UUID `json:"user_id"`
-	Limit  int32       `json:"limit"`
+	UserID string `json:"user_id"`
+	Limit  int64  `json:"limit"`
 }
 
 func (q *Queries) GetWeeklySummaries(ctx context.Context, arg GetWeeklySummariesParams) ([]WeeklySummary, error) {
-	rows, err := q.db.Query(ctx, getWeeklySummaries, arg.UserID, arg.Limit)
+	rows, err := q.db.QueryContext(ctx, getWeeklySummaries, arg.UserID, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -1147,6 +1182,9 @@ func (q *Queries) GetWeeklySummaries(ctx context.Context, arg GetWeeklySummaries
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -1155,16 +1193,16 @@ func (q *Queries) GetWeeklySummaries(ctx context.Context, arg GetWeeklySummaries
 
 const getWeeklySummary = `-- name: GetWeeklySummary :one
 SELECT id, user_id, week_start, week_end, total_tasks_completed, total_habits_completed, total_blocks_completed, total_focus_minutes, avg_daily_productivity_score, avg_daily_focus_minutes, productivity_trend, focus_trend, most_productive_day, least_productive_day, habits_with_streak, longest_streak, computed_at, created_at FROM weekly_summaries
-WHERE user_id = $1 AND week_start = $2
+WHERE user_id = ? AND week_start = ?
 `
 
 type GetWeeklySummaryParams struct {
-	UserID    pgtype.UUID `json:"user_id"`
-	WeekStart pgtype.Date `json:"week_start"`
+	UserID    string `json:"user_id"`
+	WeekStart string `json:"week_start"`
 }
 
 func (q *Queries) GetWeeklySummary(ctx context.Context, arg GetWeeklySummaryParams) (WeeklySummary, error) {
-	row := q.db.QueryRow(ctx, getWeeklySummary, arg.UserID, arg.WeekStart)
+	row := q.db.QueryRowContext(ctx, getWeeklySummary, arg.UserID, arg.WeekStart)
 	var i WeeklySummary
 	err := row.Scan(
 		&i.ID,
@@ -1191,56 +1229,56 @@ func (q *Queries) GetWeeklySummary(ctx context.Context, arg GetWeeklySummaryPara
 
 const updateProductivityGoal = `-- name: UpdateProductivityGoal :exec
 UPDATE productivity_goals SET
-    current_value = $2,
-    achieved = $3,
-    achieved_at = $4
-WHERE id = $1
+    current_value = ?,
+    achieved = ?,
+    achieved_at = ?
+WHERE id = ?
 `
 
 type UpdateProductivityGoalParams struct {
-	ID           pgtype.UUID        `json:"id"`
-	CurrentValue int32              `json:"current_value"`
-	Achieved     bool               `json:"achieved"`
-	AchievedAt   pgtype.Timestamptz `json:"achieved_at"`
+	CurrentValue int64          `json:"current_value"`
+	Achieved     int64          `json:"achieved"`
+	AchievedAt   sql.NullString `json:"achieved_at"`
+	ID           string         `json:"id"`
 }
 
 func (q *Queries) UpdateProductivityGoal(ctx context.Context, arg UpdateProductivityGoalParams) error {
-	_, err := q.db.Exec(ctx, updateProductivityGoal,
-		arg.ID,
+	_, err := q.db.ExecContext(ctx, updateProductivityGoal,
 		arg.CurrentValue,
 		arg.Achieved,
 		arg.AchievedAt,
+		arg.ID,
 	)
 	return err
 }
 
 const updateTimeSession = `-- name: UpdateTimeSession :exec
 UPDATE time_sessions SET
-    ended_at = $2,
-    duration_minutes = $3,
-    status = $4,
-    interruptions = $5,
-    notes = $6
-WHERE id = $1
+    ended_at = ?,
+    duration_minutes = ?,
+    status = ?,
+    interruptions = ?,
+    notes = ?
+WHERE id = ?
 `
 
 type UpdateTimeSessionParams struct {
-	ID              pgtype.UUID        `json:"id"`
-	EndedAt         pgtype.Timestamptz `json:"ended_at"`
-	DurationMinutes pgtype.Int4        `json:"duration_minutes"`
-	Status          string             `json:"status"`
-	Interruptions   int32              `json:"interruptions"`
-	Notes           pgtype.Text        `json:"notes"`
+	EndedAt         sql.NullString `json:"ended_at"`
+	DurationMinutes sql.NullInt64  `json:"duration_minutes"`
+	Status          string         `json:"status"`
+	Interruptions   int64          `json:"interruptions"`
+	Notes           sql.NullString `json:"notes"`
+	ID              string         `json:"id"`
 }
 
 func (q *Queries) UpdateTimeSession(ctx context.Context, arg UpdateTimeSessionParams) error {
-	_, err := q.db.Exec(ctx, updateTimeSession,
-		arg.ID,
+	_, err := q.db.ExecContext(ctx, updateTimeSession,
 		arg.EndedAt,
 		arg.DurationMinutes,
 		arg.Status,
 		arg.Interruptions,
 		arg.Notes,
+		arg.ID,
 	)
 	return err
 }
@@ -1254,70 +1292,70 @@ INSERT INTO productivity_snapshots (
     focus_sessions, total_focus_minutes, avg_focus_session_minutes,
     productivity_score, peak_hours, time_by_category, computed_at
 ) VALUES (
-    $1, $2, $3,
-    $4, $5, $6, $7, $8,
-    $9, $10, $11, $12, $13, $14,
-    $15, $16, $17, $18,
-    $19, $20, $21,
-    $22, $23, $24, $25
+    ?, ?, ?,
+    ?, ?, ?, ?, ?,
+    ?, ?, ?, ?, ?, ?,
+    ?, ?, ?, ?,
+    ?, ?, ?,
+    ?, ?, ?, ?
 )
 ON CONFLICT (user_id, snapshot_date)
 DO UPDATE SET
-    tasks_created = EXCLUDED.tasks_created,
-    tasks_completed = EXCLUDED.tasks_completed,
-    tasks_overdue = EXCLUDED.tasks_overdue,
-    task_completion_rate = EXCLUDED.task_completion_rate,
-    avg_task_duration_minutes = EXCLUDED.avg_task_duration_minutes,
-    blocks_scheduled = EXCLUDED.blocks_scheduled,
-    blocks_completed = EXCLUDED.blocks_completed,
-    blocks_missed = EXCLUDED.blocks_missed,
-    scheduled_minutes = EXCLUDED.scheduled_minutes,
-    completed_minutes = EXCLUDED.completed_minutes,
-    block_completion_rate = EXCLUDED.block_completion_rate,
-    habits_due = EXCLUDED.habits_due,
-    habits_completed = EXCLUDED.habits_completed,
-    habit_completion_rate = EXCLUDED.habit_completion_rate,
-    longest_streak = EXCLUDED.longest_streak,
-    focus_sessions = EXCLUDED.focus_sessions,
-    total_focus_minutes = EXCLUDED.total_focus_minutes,
-    avg_focus_session_minutes = EXCLUDED.avg_focus_session_minutes,
-    productivity_score = EXCLUDED.productivity_score,
-    peak_hours = EXCLUDED.peak_hours,
-    time_by_category = EXCLUDED.time_by_category,
-    computed_at = EXCLUDED.computed_at,
-    updated_at = NOW()
+    tasks_created = excluded.tasks_created,
+    tasks_completed = excluded.tasks_completed,
+    tasks_overdue = excluded.tasks_overdue,
+    task_completion_rate = excluded.task_completion_rate,
+    avg_task_duration_minutes = excluded.avg_task_duration_minutes,
+    blocks_scheduled = excluded.blocks_scheduled,
+    blocks_completed = excluded.blocks_completed,
+    blocks_missed = excluded.blocks_missed,
+    scheduled_minutes = excluded.scheduled_minutes,
+    completed_minutes = excluded.completed_minutes,
+    block_completion_rate = excluded.block_completion_rate,
+    habits_due = excluded.habits_due,
+    habits_completed = excluded.habits_completed,
+    habit_completion_rate = excluded.habit_completion_rate,
+    longest_streak = excluded.longest_streak,
+    focus_sessions = excluded.focus_sessions,
+    total_focus_minutes = excluded.total_focus_minutes,
+    avg_focus_session_minutes = excluded.avg_focus_session_minutes,
+    productivity_score = excluded.productivity_score,
+    peak_hours = excluded.peak_hours,
+    time_by_category = excluded.time_by_category,
+    computed_at = excluded.computed_at,
+    updated_at = datetime('now')
 `
 
 type UpsertProductivitySnapshotParams struct {
-	ID                     pgtype.UUID        `json:"id"`
-	UserID                 pgtype.UUID        `json:"user_id"`
-	SnapshotDate           pgtype.Date        `json:"snapshot_date"`
-	TasksCreated           int32              `json:"tasks_created"`
-	TasksCompleted         int32              `json:"tasks_completed"`
-	TasksOverdue           int32              `json:"tasks_overdue"`
-	TaskCompletionRate     pgtype.Numeric     `json:"task_completion_rate"`
-	AvgTaskDurationMinutes pgtype.Int4        `json:"avg_task_duration_minutes"`
-	BlocksScheduled        int32              `json:"blocks_scheduled"`
-	BlocksCompleted        int32              `json:"blocks_completed"`
-	BlocksMissed           int32              `json:"blocks_missed"`
-	ScheduledMinutes       int32              `json:"scheduled_minutes"`
-	CompletedMinutes       int32              `json:"completed_minutes"`
-	BlockCompletionRate    pgtype.Numeric     `json:"block_completion_rate"`
-	HabitsDue              int32              `json:"habits_due"`
-	HabitsCompleted        int32              `json:"habits_completed"`
-	HabitCompletionRate    pgtype.Numeric     `json:"habit_completion_rate"`
-	LongestStreak          int32              `json:"longest_streak"`
-	FocusSessions          int32              `json:"focus_sessions"`
-	TotalFocusMinutes      int32              `json:"total_focus_minutes"`
-	AvgFocusSessionMinutes pgtype.Int4        `json:"avg_focus_session_minutes"`
-	ProductivityScore      int32              `json:"productivity_score"`
-	PeakHours              []byte             `json:"peak_hours"`
-	TimeByCategory         []byte             `json:"time_by_category"`
-	ComputedAt             pgtype.Timestamptz `json:"computed_at"`
+	ID                     string          `json:"id"`
+	UserID                 string          `json:"user_id"`
+	SnapshotDate           string          `json:"snapshot_date"`
+	TasksCreated           int64           `json:"tasks_created"`
+	TasksCompleted         int64           `json:"tasks_completed"`
+	TasksOverdue           int64           `json:"tasks_overdue"`
+	TaskCompletionRate     sql.NullFloat64 `json:"task_completion_rate"`
+	AvgTaskDurationMinutes sql.NullInt64   `json:"avg_task_duration_minutes"`
+	BlocksScheduled        int64           `json:"blocks_scheduled"`
+	BlocksCompleted        int64           `json:"blocks_completed"`
+	BlocksMissed           int64           `json:"blocks_missed"`
+	ScheduledMinutes       int64           `json:"scheduled_minutes"`
+	CompletedMinutes       int64           `json:"completed_minutes"`
+	BlockCompletionRate    sql.NullFloat64 `json:"block_completion_rate"`
+	HabitsDue              int64           `json:"habits_due"`
+	HabitsCompleted        int64           `json:"habits_completed"`
+	HabitCompletionRate    sql.NullFloat64 `json:"habit_completion_rate"`
+	LongestStreak          int64           `json:"longest_streak"`
+	FocusSessions          int64           `json:"focus_sessions"`
+	TotalFocusMinutes      int64           `json:"total_focus_minutes"`
+	AvgFocusSessionMinutes sql.NullInt64   `json:"avg_focus_session_minutes"`
+	ProductivityScore      int64           `json:"productivity_score"`
+	PeakHours              sql.NullString  `json:"peak_hours"`
+	TimeByCategory         sql.NullString  `json:"time_by_category"`
+	ComputedAt             string          `json:"computed_at"`
 }
 
 func (q *Queries) UpsertProductivitySnapshot(ctx context.Context, arg UpsertProductivitySnapshotParams) error {
-	_, err := q.db.Exec(ctx, upsertProductivitySnapshot,
+	_, err := q.db.ExecContext(ctx, upsertProductivitySnapshot,
 		arg.ID,
 		arg.UserID,
 		arg.SnapshotDate,
@@ -1356,52 +1394,52 @@ INSERT INTO weekly_summaries (
     most_productive_day, least_productive_day,
     habits_with_streak, longest_streak, computed_at
 ) VALUES (
-    $1, $2, $3, $4,
-    $5, $6, $7, $8,
-    $9, $10,
-    $11, $12,
-    $13, $14,
-    $15, $16, $17
+    ?, ?, ?, ?,
+    ?, ?, ?, ?,
+    ?, ?,
+    ?, ?,
+    ?, ?,
+    ?, ?, ?
 )
 ON CONFLICT (user_id, week_start)
 DO UPDATE SET
-    total_tasks_completed = EXCLUDED.total_tasks_completed,
-    total_habits_completed = EXCLUDED.total_habits_completed,
-    total_blocks_completed = EXCLUDED.total_blocks_completed,
-    total_focus_minutes = EXCLUDED.total_focus_minutes,
-    avg_daily_productivity_score = EXCLUDED.avg_daily_productivity_score,
-    avg_daily_focus_minutes = EXCLUDED.avg_daily_focus_minutes,
-    productivity_trend = EXCLUDED.productivity_trend,
-    focus_trend = EXCLUDED.focus_trend,
-    most_productive_day = EXCLUDED.most_productive_day,
-    least_productive_day = EXCLUDED.least_productive_day,
-    habits_with_streak = EXCLUDED.habits_with_streak,
-    longest_streak = EXCLUDED.longest_streak,
-    computed_at = EXCLUDED.computed_at
+    total_tasks_completed = excluded.total_tasks_completed,
+    total_habits_completed = excluded.total_habits_completed,
+    total_blocks_completed = excluded.total_blocks_completed,
+    total_focus_minutes = excluded.total_focus_minutes,
+    avg_daily_productivity_score = excluded.avg_daily_productivity_score,
+    avg_daily_focus_minutes = excluded.avg_daily_focus_minutes,
+    productivity_trend = excluded.productivity_trend,
+    focus_trend = excluded.focus_trend,
+    most_productive_day = excluded.most_productive_day,
+    least_productive_day = excluded.least_productive_day,
+    habits_with_streak = excluded.habits_with_streak,
+    longest_streak = excluded.longest_streak,
+    computed_at = excluded.computed_at
 `
 
 type UpsertWeeklySummaryParams struct {
-	ID                        pgtype.UUID        `json:"id"`
-	UserID                    pgtype.UUID        `json:"user_id"`
-	WeekStart                 pgtype.Date        `json:"week_start"`
-	WeekEnd                   pgtype.Date        `json:"week_end"`
-	TotalTasksCompleted       int32              `json:"total_tasks_completed"`
-	TotalHabitsCompleted      int32              `json:"total_habits_completed"`
-	TotalBlocksCompleted      int32              `json:"total_blocks_completed"`
-	TotalFocusMinutes         int32              `json:"total_focus_minutes"`
-	AvgDailyProductivityScore pgtype.Numeric     `json:"avg_daily_productivity_score"`
-	AvgDailyFocusMinutes      pgtype.Int4        `json:"avg_daily_focus_minutes"`
-	ProductivityTrend         pgtype.Numeric     `json:"productivity_trend"`
-	FocusTrend                pgtype.Numeric     `json:"focus_trend"`
-	MostProductiveDay         pgtype.Date        `json:"most_productive_day"`
-	LeastProductiveDay        pgtype.Date        `json:"least_productive_day"`
-	HabitsWithStreak          int32              `json:"habits_with_streak"`
-	LongestStreak             int32              `json:"longest_streak"`
-	ComputedAt                pgtype.Timestamptz `json:"computed_at"`
+	ID                        string          `json:"id"`
+	UserID                    string          `json:"user_id"`
+	WeekStart                 string          `json:"week_start"`
+	WeekEnd                   string          `json:"week_end"`
+	TotalTasksCompleted       int64           `json:"total_tasks_completed"`
+	TotalHabitsCompleted      int64           `json:"total_habits_completed"`
+	TotalBlocksCompleted      int64           `json:"total_blocks_completed"`
+	TotalFocusMinutes         int64           `json:"total_focus_minutes"`
+	AvgDailyProductivityScore sql.NullFloat64 `json:"avg_daily_productivity_score"`
+	AvgDailyFocusMinutes      sql.NullInt64   `json:"avg_daily_focus_minutes"`
+	ProductivityTrend         sql.NullFloat64 `json:"productivity_trend"`
+	FocusTrend                sql.NullFloat64 `json:"focus_trend"`
+	MostProductiveDay         sql.NullString  `json:"most_productive_day"`
+	LeastProductiveDay        sql.NullString  `json:"least_productive_day"`
+	HabitsWithStreak          int64           `json:"habits_with_streak"`
+	LongestStreak             int64           `json:"longest_streak"`
+	ComputedAt                string          `json:"computed_at"`
 }
 
 func (q *Queries) UpsertWeeklySummary(ctx context.Context, arg UpsertWeeklySummaryParams) error {
-	_, err := q.db.Exec(ctx, upsertWeeklySummary,
+	_, err := q.db.ExecContext(ctx, upsertWeeklySummary,
 		arg.ID,
 		arg.UserID,
 		arg.WeekStart,

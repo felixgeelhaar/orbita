@@ -17,7 +17,10 @@ type Config struct {
 	EncryptionKey string
 
 	// Database
-	DatabaseURL string
+	DatabaseURL    string
+	DatabaseDriver string // "postgres", "sqlite", or "auto" (default)
+	SQLitePath     string // Path to SQLite database file (default: ~/.orbita/data.db)
+	LocalMode      bool   // If true, uses SQLite and disables external services
 
 	// Redis
 	RedisURL string
@@ -50,6 +53,15 @@ type Config struct {
 	CalendarDeleteMissing bool
 	CalendarID            string
 
+	// Calendar Sync (bi-directional)
+	CalendarSyncEnabled          bool          // Enable automatic calendar sync
+	CalendarSyncInterval         time.Duration // How often to check for external changes
+	CalendarSyncLookAheadDays    int           // How far ahead to look for events
+	CalendarConflictStrategy     string        // orbita_wins, external_wins, manual, time_first
+	CalendarAutoScheduleTasks    bool          // Auto-schedule new tasks
+	CalendarAutoScheduleHabits   bool          // Auto-schedule habit sessions
+	CalendarAutoScheduleMeetings bool          // Auto-schedule meeting blocks
+
 	// Billing
 	StripeAPIKey        string
 	StripeWebhookSecret string
@@ -72,14 +84,33 @@ func Load() (*Config, error) {
 	// Load .env file if it exists (ignore error if not found)
 	_ = godotenv.Load()
 
+	// Detect local mode: enabled when no DATABASE_URL is set or explicitly requested
+	localMode := getBoolEnv("ORBITA_LOCAL_MODE", os.Getenv("DATABASE_URL") == "")
+	dbDriver := getEnv("DATABASE_DRIVER", "auto")
+	dbURL := getEnv("DATABASE_URL", "")
+	sqlitePath := getEnv("SQLITE_PATH", getDefaultSQLitePath())
+
+	// In local mode, default to SQLite
+	if localMode && dbDriver == "auto" {
+		dbDriver = "sqlite"
+	}
+
+	// If no DATABASE_URL but not local mode, use default PostgreSQL URL for development
+	if dbURL == "" && !localMode {
+		dbURL = "postgres://orbita:orbita_dev@localhost:5432/orbita?sslmode=disable"
+	}
+
 	cfg := &Config{
-		AppEnv:        getEnv("APP_ENV", "development"),
-		LogLevel:      getEnv("LOG_LEVEL", "info"),
-		UserID:        getEnv("ORBITA_USER_ID", "00000000-0000-0000-0000-000000000001"),
-		EncryptionKey: getEnv("ORBITA_ENCRYPTION_KEY", ""),
-		DatabaseURL:   getEnv("DATABASE_URL", "postgres://orbita:orbita_dev@localhost:5432/orbita?sslmode=disable"),
-		RedisURL:      getEnv("REDIS_URL", "redis://localhost:6379/0"),
-		RabbitMQURL:   getEnv("RABBITMQ_URL", "amqp://orbita:orbita_dev@localhost:5672/"),
+		AppEnv:         getEnv("APP_ENV", "development"),
+		LogLevel:       getEnv("LOG_LEVEL", "info"),
+		UserID:         getEnv("ORBITA_USER_ID", "00000000-0000-0000-0000-000000000001"),
+		EncryptionKey:  getEnv("ORBITA_ENCRYPTION_KEY", ""),
+		DatabaseURL:    dbURL,
+		DatabaseDriver: dbDriver,
+		SQLitePath:     sqlitePath,
+		LocalMode:      localMode,
+		RedisURL:       getEnv("REDIS_URL", "redis://localhost:6379/0"),
+		RabbitMQURL:    getEnv("RABBITMQ_URL", "amqp://orbita:orbita_dev@localhost:5672/"),
 
 		OutboxPollInterval:     getDurationEnv("OUTBOX_POLL_INTERVAL", 100*time.Millisecond),
 		OutboxBatchSize:        getIntEnv("OUTBOX_BATCH_SIZE", 100),
@@ -101,6 +132,14 @@ func Load() (*Config, error) {
 
 		CalendarDeleteMissing: getBoolEnv("CALENDAR_DELETE_MISSING", false),
 		CalendarID:            getEnv("CALENDAR_ID", "primary"),
+
+		CalendarSyncEnabled:          getBoolEnv("CALENDAR_SYNC_ENABLED", true),
+		CalendarSyncInterval:         getDurationEnv("CALENDAR_SYNC_INTERVAL", 5*time.Minute),
+		CalendarSyncLookAheadDays:    getIntEnv("CALENDAR_SYNC_LOOK_AHEAD_DAYS", 7),
+		CalendarConflictStrategy:     getEnv("CALENDAR_CONFLICT_STRATEGY", "time_first"),
+		CalendarAutoScheduleTasks:    getBoolEnv("CALENDAR_AUTO_SCHEDULE_TASKS", true),
+		CalendarAutoScheduleHabits:   getBoolEnv("CALENDAR_AUTO_SCHEDULE_HABITS", true),
+		CalendarAutoScheduleMeetings: getBoolEnv("CALENDAR_AUTO_SCHEDULE_MEETINGS", true),
 
 		StripeAPIKey:        getEnv("STRIPE_API_KEY", ""),
 		StripeWebhookSecret: getEnv("STRIPE_WEBHOOK_SECRET", ""),
@@ -126,6 +165,30 @@ func (c *Config) IsDevelopment() bool {
 // IsProduction returns true if running in production mode.
 func (c *Config) IsProduction() bool {
 	return c.AppEnv == "production"
+}
+
+// IsLocalMode returns true if using SQLite local mode.
+func (c *Config) IsLocalMode() bool {
+	return c.LocalMode
+}
+
+// IsSQLite returns true if using SQLite as the database.
+func (c *Config) IsSQLite() bool {
+	return c.DatabaseDriver == "sqlite" || c.LocalMode
+}
+
+// IsPostgres returns true if using PostgreSQL as the database.
+func (c *Config) IsPostgres() bool {
+	return c.DatabaseDriver == "postgres" || (c.DatabaseDriver == "auto" && !c.LocalMode)
+}
+
+// LicenseFilePath returns the path to the license file.
+func (c *Config) LicenseFilePath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ".orbita/license.json"
+	}
+	return home + "/.orbita/license.json"
 }
 
 func getEnv(key, defaultValue string) string {
@@ -183,6 +246,14 @@ func getDefaultInstallDir() string {
 		return ".orbita/packages"
 	}
 	return home + "/.orbita/packages"
+}
+
+func getDefaultSQLitePath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ".orbita/data.db"
+	}
+	return home + "/.orbita/data.db"
 }
 
 func splitPaths(s string) []string {

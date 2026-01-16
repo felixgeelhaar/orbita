@@ -53,3 +53,6 @@ tmp/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# License signing keys (private key is server-side only)
+internal/licensing/infrastructure/crypto/license_private_key.pem

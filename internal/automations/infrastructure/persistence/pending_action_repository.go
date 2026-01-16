@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/felixgeelhaar/orbita/db/generated"
+	db "github.com/felixgeelhaar/orbita/db/generated/postgres"
 	"github.com/felixgeelhaar/orbita/internal/automations/domain"
 	"github.com/felixgeelhaar/orbita/internal/shared/infrastructure/convert"
 	"github.com/google/uuid"

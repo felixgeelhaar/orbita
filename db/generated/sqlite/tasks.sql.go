@@ -3,18 +3,17 @@
 //   sqlc v1.30.0
 // source: tasks.sql
 
-package db
+package sqlite
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"database/sql"
 )
 
 const countTasksByStatus = `-- name: CountTasksByStatus :many
 SELECT status, COUNT(*) as count
 FROM tasks
-WHERE user_id = $1
+WHERE user_id = ?
 GROUP BY status
 `
 
@@ -23,8 +22,8 @@ type CountTasksByStatusRow struct {
 	Count  int64  `json:"count"`
 }
 
-func (q *Queries) CountTasksByStatus(ctx context.Context, userID pgtype.UUID) ([]CountTasksByStatusRow, error) {
-	rows, err := q.db.Query(ctx, countTasksByStatus, userID)
+func (q *Queries) CountTasksByStatus(ctx context.Context, userID string) ([]CountTasksByStatusRow, error) {
+	rows, err := q.db.QueryContext(ctx, countTasksByStatus, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -37,6 +36,9 @@ func (q *Queries) CountTasksByStatus(ctx context.Context, userID pgtype.UUID) ([
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -48,26 +50,26 @@ INSERT INTO tasks (
     id, user_id, title, description, status, priority,
     duration_minutes, due_date, version, created_at, updated_at
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING id, user_id, title, description, status, priority, duration_minutes, due_date, completed_at, version, created_at, updated_at
 `
 
 type CreateTaskParams struct {
-	ID              pgtype.UUID        `json:"id"`
-	UserID          pgtype.UUID        `json:"user_id"`
-	Title           string             `json:"title"`
-	Description     pgtype.Text        `json:"description"`
-	Status          string             `json:"status"`
-	Priority        string             `json:"priority"`
-	DurationMinutes pgtype.Int4        `json:"duration_minutes"`
-	DueDate         pgtype.Timestamptz `json:"due_date"`
-	Version         int32              `json:"version"`
-	CreatedAt       pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	ID              string         `json:"id"`
+	UserID          string         `json:"user_id"`
+	Title           string         `json:"title"`
+	Description     sql.NullString `json:"description"`
+	Status          string         `json:"status"`
+	Priority        string         `json:"priority"`
+	DurationMinutes sql.NullInt64  `json:"duration_minutes"`
+	DueDate         sql.NullString `json:"due_date"`
+	Version         int64          `json:"version"`
+	CreatedAt       string         `json:"created_at"`
+	UpdatedAt       string         `json:"updated_at"`
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
-	row := q.db.QueryRow(ctx, createTask,
+	row := q.db.QueryRowContext(ctx, createTask,
 		arg.ID,
 		arg.UserID,
 		arg.Title,
@@ -99,17 +101,17 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 }
 
 const deleteTask = `-- name: DeleteTask :exec
-DELETE FROM tasks WHERE id = $1
+DELETE FROM tasks WHERE id = ?
 `
 
-func (q *Queries) DeleteTask(ctx context.Context, id pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, deleteTask, id)
+func (q *Queries) DeleteTask(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deleteTask, id)
 	return err
 }
 
 const getPendingTasksByUserID = `-- name: GetPendingTasksByUserID :many
 SELECT id, user_id, title, description, status, priority, duration_minutes, due_date, completed_at, version, created_at, updated_at FROM tasks
-WHERE user_id = $1 AND status IN ('pending', 'in_progress')
+WHERE user_id = ? AND status IN ('pending', 'in_progress')
 ORDER BY
     CASE priority
         WHEN 'urgent' THEN 1
@@ -118,12 +120,13 @@ ORDER BY
         WHEN 'low' THEN 4
         ELSE 5
     END,
-    due_date NULLS LAST,
+    CASE WHEN due_date IS NULL THEN 1 ELSE 0 END,
+    due_date,
     created_at
 `
 
-func (q *Queries) GetPendingTasksByUserID(ctx context.Context, userID pgtype.UUID) ([]Task, error) {
-	rows, err := q.db.Query(ctx, getPendingTasksByUserID, userID)
+func (q *Queries) GetPendingTasksByUserID(ctx context.Context, userID string) ([]Task, error) {
+	rows, err := q.db.QueryContext(ctx, getPendingTasksByUserID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -149,6 +152,9 @@ func (q *Queries) GetPendingTasksByUserID(ctx context.Context, userID pgtype.UUI
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -156,11 +162,11 @@ func (q *Queries) GetPendingTasksByUserID(ctx context.Context, userID pgtype.UUI
 }
 
 const getTaskByID = `-- name: GetTaskByID :one
-SELECT id, user_id, title, description, status, priority, duration_minutes, due_date, completed_at, version, created_at, updated_at FROM tasks WHERE id = $1
+SELECT id, user_id, title, description, status, priority, duration_minutes, due_date, completed_at, version, created_at, updated_at FROM tasks WHERE id = ?
 `
 
-func (q *Queries) GetTaskByID(ctx context.Context, id pgtype.UUID) (Task, error) {
-	row := q.db.QueryRow(ctx, getTaskByID, id)
+func (q *Queries) GetTaskByID(ctx context.Context, id string) (Task, error) {
+	row := q.db.QueryRowContext(ctx, getTaskByID, id)
 	var i Task
 	err := row.Scan(
 		&i.ID,
@@ -181,12 +187,12 @@ func (q *Queries) GetTaskByID(ctx context.Context, id pgtype.UUID) (Task, error)
 
 const getTasksByUserID = `-- name: GetTasksByUserID :many
 SELECT id, user_id, title, description, status, priority, duration_minutes, due_date, completed_at, version, created_at, updated_at FROM tasks
-WHERE user_id = $1
+WHERE user_id = ?
 ORDER BY created_at DESC
 `
 
-func (q *Queries) GetTasksByUserID(ctx context.Context, userID pgtype.UUID) ([]Task, error) {
-	rows, err := q.db.Query(ctx, getTasksByUserID, userID)
+func (q *Queries) GetTasksByUserID(ctx context.Context, userID string) ([]Task, error) {
+	rows, err := q.db.QueryContext(ctx, getTasksByUserID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -212,6 +218,9 @@ func (q *Queries) GetTasksByUserID(ctx context.Context, userID pgtype.UUID) ([]T
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -221,34 +230,33 @@ func (q *Queries) GetTasksByUserID(ctx context.Context, userID pgtype.UUID) ([]T
 const updateTask = `-- name: UpdateTask :one
 UPDATE tasks
 SET
-    title = $2,
-    description = $3,
-    status = $4,
-    priority = $5,
-    duration_minutes = $6,
-    due_date = $7,
-    completed_at = $8,
+    title = ?,
+    description = ?,
+    status = ?,
+    priority = ?,
+    duration_minutes = ?,
+    due_date = ?,
+    completed_at = ?,
     version = version + 1,
-    updated_at = NOW()
-WHERE id = $1 AND version = $9
+    updated_at = datetime('now')
+WHERE id = ? AND version = ?
 RETURNING id, user_id, title, description, status, priority, duration_minutes, due_date, completed_at, version, created_at, updated_at
 `
 
 type UpdateTaskParams struct {
-	ID              pgtype.UUID        `json:"id"`
-	Title           string             `json:"title"`
-	Description     pgtype.Text        `json:"description"`
-	Status          string             `json:"status"`
-	Priority        string             `json:"priority"`
-	DurationMinutes pgtype.Int4        `json:"duration_minutes"`
-	DueDate         pgtype.Timestamptz `json:"due_date"`
-	CompletedAt     pgtype.Timestamptz `json:"completed_at"`
-	Version         int32              `json:"version"`
+	Title           string         `json:"title"`
+	Description     sql.NullString `json:"description"`
+	Status          string         `json:"status"`
+	Priority        string         `json:"priority"`
+	DurationMinutes sql.NullInt64  `json:"duration_minutes"`
+	DueDate         sql.NullString `json:"due_date"`
+	CompletedAt     sql.NullString `json:"completed_at"`
+	ID              string         `json:"id"`
+	Version         int64          `json:"version"`
 }
 
 func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
-	row := q.db.QueryRow(ctx, updateTask,
-		arg.ID,
+	row := q.db.QueryRowContext(ctx, updateTask,
 		arg.Title,
 		arg.Description,
 		arg.Status,
@@ -256,6 +264,7 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		arg.DurationMinutes,
 		arg.DueDate,
 		arg.CompletedAt,
+		arg.ID,
 		arg.Version,
 	)
 	var i Task

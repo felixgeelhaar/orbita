@@ -357,3 +357,186 @@ func TestSQLiteTaskRepository_WithDueDate(t *testing.T) {
 	// Compare truncated times to avoid nanosecond differences
 	assert.Equal(t, dueDate.Unix(), found.DueDate().Unix())
 }
+
+func TestSQLiteTaskRepository_ArchivedStatus(t *testing.T) {
+	sqlDB := setupSQLiteTestDB(t)
+	defer sqlDB.Close()
+
+	userID := uuid.New()
+	createTestUser(t, sqlDB, userID)
+
+	repo := NewSQLiteTaskRepository(sqlDB)
+	ctx := context.Background()
+
+	// Create and complete a task, then archive it
+	archivedTask, _ := task.NewTask(userID, "Archived Task")
+	require.NoError(t, archivedTask.Complete())
+	require.NoError(t, archivedTask.Archive())
+
+	err := repo.Save(ctx, archivedTask)
+	require.NoError(t, err)
+
+	// Verify archived status is persisted correctly
+	found, err := repo.FindByID(ctx, archivedTask.ID())
+	require.NoError(t, err)
+	assert.Equal(t, task.StatusArchived, found.Status())
+}
+
+func TestSQLiteTaskRepository_InProgressStatus(t *testing.T) {
+	sqlDB := setupSQLiteTestDB(t)
+	defer sqlDB.Close()
+
+	userID := uuid.New()
+	createTestUser(t, sqlDB, userID)
+
+	repo := NewSQLiteTaskRepository(sqlDB)
+	ctx := context.Background()
+
+	// Create and start a task
+	inProgressTask, _ := task.NewTask(userID, "In Progress Task")
+	require.NoError(t, inProgressTask.Start())
+
+	err := repo.Save(ctx, inProgressTask)
+	require.NoError(t, err)
+
+	// Verify in_progress status is persisted correctly
+	found, err := repo.FindByID(ctx, inProgressTask.ID())
+	require.NoError(t, err)
+	assert.Equal(t, task.StatusInProgress, found.Status())
+}
+
+func TestSQLiteTaskRepository_EmptyUserTasks(t *testing.T) {
+	sqlDB := setupSQLiteTestDB(t)
+	defer sqlDB.Close()
+
+	userID := uuid.New()
+	createTestUser(t, sqlDB, userID)
+
+	repo := NewSQLiteTaskRepository(sqlDB)
+	ctx := context.Background()
+
+	// Find tasks for user with no tasks
+	tasks, err := repo.FindByUserID(ctx, userID)
+	require.NoError(t, err)
+	assert.Len(t, tasks, 0)
+}
+
+func TestSQLiteTaskRepository_NoPendingTasks(t *testing.T) {
+	sqlDB := setupSQLiteTestDB(t)
+	defer sqlDB.Close()
+
+	userID := uuid.New()
+	createTestUser(t, sqlDB, userID)
+
+	repo := NewSQLiteTaskRepository(sqlDB)
+	ctx := context.Background()
+
+	// Create only completed and archived tasks
+	completedTask, _ := task.NewTask(userID, "Completed")
+	require.NoError(t, completedTask.Complete())
+
+	archivedTask, _ := task.NewTask(userID, "Archived")
+	require.NoError(t, archivedTask.Complete())
+	require.NoError(t, archivedTask.Archive())
+
+	require.NoError(t, repo.Save(ctx, completedTask))
+	require.NoError(t, repo.Save(ctx, archivedTask))
+
+	// Find pending tasks - should be empty
+	pending, err := repo.FindPending(ctx, userID)
+	require.NoError(t, err)
+	assert.Len(t, pending, 0)
+}
+
+func TestSQLiteTaskRepository_WithDescription(t *testing.T) {
+	sqlDB := setupSQLiteTestDB(t)
+	defer sqlDB.Close()
+
+	userID := uuid.New()
+	createTestUser(t, sqlDB, userID)
+
+	repo := NewSQLiteTaskRepository(sqlDB)
+	ctx := context.Background()
+
+	// Create task with long description
+	newTask, _ := task.NewTask(userID, "Task with Description")
+	longDescription := "This is a long description that contains multiple sentences. " +
+		"It tests that descriptions are properly persisted and retrieved from the database. " +
+		"The description can contain various characters and formatting."
+	require.NoError(t, newTask.SetDescription(longDescription))
+
+	err := repo.Save(ctx, newTask)
+	require.NoError(t, err)
+
+	// Verify description is persisted correctly
+	found, err := repo.FindByID(ctx, newTask.ID())
+	require.NoError(t, err)
+	assert.Equal(t, longDescription, found.Description())
+}
+
+func TestSQLiteTaskRepository_WithNoDuration(t *testing.T) {
+	sqlDB := setupSQLiteTestDB(t)
+	defer sqlDB.Close()
+
+	userID := uuid.New()
+	createTestUser(t, sqlDB, userID)
+
+	repo := NewSQLiteTaskRepository(sqlDB)
+	ctx := context.Background()
+
+	// Create task without duration
+	newTask, _ := task.NewTask(userID, "Task without Duration")
+
+	err := repo.Save(ctx, newTask)
+	require.NoError(t, err)
+
+	// Verify task is retrieved correctly without duration
+	found, err := repo.FindByID(ctx, newTask.ID())
+	require.NoError(t, err)
+	assert.True(t, found.Duration().IsZero())
+}
+
+func TestSQLiteTaskRepository_DeleteNonExistent(t *testing.T) {
+	sqlDB := setupSQLiteTestDB(t)
+	defer sqlDB.Close()
+
+	repo := NewSQLiteTaskRepository(sqlDB)
+	ctx := context.Background()
+
+	// Deleting a non-existent task should not error (idempotent delete)
+	err := repo.Delete(ctx, uuid.New())
+	assert.NoError(t, err)
+}
+
+func TestSQLiteTaskRepository_AllPriorities(t *testing.T) {
+	sqlDB := setupSQLiteTestDB(t)
+	defer sqlDB.Close()
+
+	userID := uuid.New()
+	createTestUser(t, sqlDB, userID)
+
+	repo := NewSQLiteTaskRepository(sqlDB)
+	ctx := context.Background()
+
+	// Test all priority levels are persisted correctly
+	priorities := []value_objects.Priority{
+		value_objects.PriorityLow,
+		value_objects.PriorityMedium,
+		value_objects.PriorityHigh,
+		value_objects.PriorityUrgent,
+	}
+
+	for _, priority := range priorities {
+		t.Run(priority.String(), func(t *testing.T) {
+			newTask, _ := task.NewTask(userID, "Task "+priority.String())
+			require.NoError(t, newTask.SetPriority(priority))
+
+			err := repo.Save(ctx, newTask)
+			require.NoError(t, err)
+
+			found, err := repo.FindByID(ctx, newTask.ID())
+			require.NoError(t, err)
+			assert.Equal(t, priority, found.Priority())
+		})
+	}
+}

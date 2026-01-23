@@ -307,3 +307,287 @@ func TestCalendarListOutput(t *testing.T) {
 		t.Fatalf("expected output to contain calendar ID, got: %s", output.String())
 	}
 }
+
+func TestCalendarSetMissingCalendar(t *testing.T) {
+	resetFlags()
+	app := &cli.App{
+		SettingsService: identitySettings.NewService(stubSettingsRepo{}),
+		CurrentUserID:   uuid.New(),
+	}
+	cli.SetApp(app)
+	defer cli.SetApp(nil)
+
+	cmd := calendarSetCmd
+	cmd.SetContext(context.Background())
+	calendarID = ""
+
+	if err := cmd.RunE(cmd, []string{}); err == nil {
+		t.Fatalf("expected error for missing calendar")
+	}
+}
+
+func TestCalendarGetPlainOutput(t *testing.T) {
+	resetFlags()
+	app := &cli.App{
+		SettingsService: identitySettings.NewService(stubSettingsRepo{calendarID: "work@example.com"}),
+		CurrentUserID:   uuid.New(),
+	}
+	cli.SetApp(app)
+	defer cli.SetApp(nil)
+
+	var output strings.Builder
+	cmd := calendarGetCmd
+	cmd.SetContext(context.Background())
+	cmd.SetOut(&output)
+
+	if err := cmd.RunE(cmd, []string{}); err != nil {
+		t.Fatalf("get failed: %v", err)
+	}
+
+	if !strings.Contains(output.String(), "work@example.com") {
+		t.Fatalf("expected plain text output, got: %s", output.String())
+	}
+}
+
+func TestCalendarGetPrimaryDefault(t *testing.T) {
+	resetFlags()
+	app := &cli.App{
+		SettingsService: identitySettings.NewService(stubSettingsRepo{calendarID: ""}),
+		CurrentUserID:   uuid.New(),
+	}
+	cli.SetApp(app)
+	defer cli.SetApp(nil)
+
+	var output strings.Builder
+	cmd := calendarGetCmd
+	cmd.SetContext(context.Background())
+	cmd.SetOut(&output)
+
+	if err := cmd.RunE(cmd, []string{}); err != nil {
+		t.Fatalf("get failed: %v", err)
+	}
+
+	if !strings.Contains(output.String(), "primary") {
+		t.Fatalf("expected 'primary' as default, got: %s", output.String())
+	}
+}
+
+func TestDeleteMissingGetPlainOutput(t *testing.T) {
+	resetFlags()
+	app := &cli.App{
+		SettingsService: identitySettings.NewService(stubSettingsRepo{deleteMissing: true}),
+		CurrentUserID:   uuid.New(),
+	}
+	cli.SetApp(app)
+	defer cli.SetApp(nil)
+
+	var output strings.Builder
+	cmd := deleteMissingGetCmd
+	cmd.SetContext(context.Background())
+	cmd.SetOut(&output)
+
+	if err := cmd.RunE(cmd, []string{}); err != nil {
+		t.Fatalf("get failed: %v", err)
+	}
+
+	if !strings.Contains(output.String(), "true") {
+		t.Fatalf("expected plain text output, got: %s", output.String())
+	}
+}
+
+func TestCalendarSetPlainOutput(t *testing.T) {
+	resetFlags()
+	app := &cli.App{
+		SettingsService: identitySettings.NewService(stubSettingsRepo{}),
+		CurrentUserID:   uuid.New(),
+	}
+	cli.SetApp(app)
+	defer cli.SetApp(nil)
+
+	var output strings.Builder
+	cmd := calendarSetCmd
+	cmd.SetContext(context.Background())
+	cmd.SetOut(&output)
+	calendarID = "work"
+
+	if err := cmd.RunE(cmd, []string{}); err != nil {
+		t.Fatalf("set failed: %v", err)
+	}
+
+	if !strings.Contains(output.String(), "Calendar ID saved") {
+		t.Fatalf("expected confirmation message, got: %s", output.String())
+	}
+}
+
+func TestDeleteMissingSetPlainOutput(t *testing.T) {
+	resetFlags()
+	app := &cli.App{
+		SettingsService: identitySettings.NewService(stubSettingsRepo{}),
+		CurrentUserID:   uuid.New(),
+	}
+	cli.SetApp(app)
+	defer cli.SetApp(nil)
+
+	var output strings.Builder
+	cmd := deleteMissingSetCmd
+	cmd.SetContext(context.Background())
+	cmd.SetOut(&output)
+	deleteMissingValue = true
+
+	if err := cmd.RunE(cmd, []string{}); err != nil {
+		t.Fatalf("set failed: %v", err)
+	}
+
+	if !strings.Contains(output.String(), "Delete-missing preference saved") {
+		t.Fatalf("expected confirmation message, got: %s", output.String())
+	}
+}
+
+func TestCalendarListNoApp(t *testing.T) {
+	resetFlags()
+	cli.SetApp(nil)
+
+	cmd := calendarListCmd
+	cmd.SetContext(context.Background())
+
+	err := cmd.RunE(cmd, []string{})
+	if err == nil {
+		t.Fatalf("expected error for nil app")
+	}
+	if !strings.Contains(err.Error(), "not configured") {
+		t.Fatalf("expected not configured error, got: %v", err)
+	}
+}
+
+func TestCalendarListEmptyCalendars(t *testing.T) {
+	resetFlags()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"items": []map[string]any{},
+		})
+	}))
+	defer server.Close()
+
+	source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "test"})
+	syncer := googleCalendar.NewSyncerWithBaseURL(stubTokenProvider{source: source}, nil, server.URL)
+
+	app := &cli.App{
+		CalendarSyncer: syncer,
+		CurrentUserID:  uuid.New(),
+	}
+	cli.SetApp(app)
+	defer cli.SetApp(nil)
+
+	cmd := calendarListCmd
+	cmd.SetContext(context.Background())
+
+	err := cmd.RunE(cmd, []string{})
+	if err != nil {
+		t.Fatalf("expected no error for empty list: %v", err)
+	}
+}
+
+func TestCalendarListNoUserID(t *testing.T) {
+	resetFlags()
+	source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "test"})
+	syncer := googleCalendar.NewSyncerWithBaseURL(stubTokenProvider{source: source}, nil, "http://localhost")
+
+	app := &cli.App{
+		CalendarSyncer: syncer,
+		CurrentUserID:  uuid.Nil,
+	}
+	cli.SetApp(app)
+	defer cli.SetApp(nil)
+
+	cmd := calendarListCmd
+	cmd.SetContext(context.Background())
+
+	err := cmd.RunE(cmd, []string{})
+	if err == nil {
+		t.Fatalf("expected error for missing user")
+	}
+	if !strings.Contains(err.Error(), "current user not configured") {
+		t.Fatalf("expected user not configured error, got: %v", err)
+	}
+}
+
+func TestDeleteMissingGetNoApp(t *testing.T) {
+	resetFlags()
+	cli.SetApp(nil)
+
+	cmd := deleteMissingGetCmd
+	cmd.SetContext(context.Background())
+
+	err := cmd.RunE(cmd, []string{})
+	if err == nil {
+		t.Fatalf("expected error for nil app")
+	}
+}
+
+func TestDeleteMissingSetNoApp(t *testing.T) {
+	resetFlags()
+	cli.SetApp(nil)
+
+	cmd := deleteMissingSetCmd
+	cmd.SetContext(context.Background())
+
+	err := cmd.RunE(cmd, []string{})
+	if err == nil {
+		t.Fatalf("expected error for nil app")
+	}
+}
+
+func TestDeleteMissingGetNoUser(t *testing.T) {
+	resetFlags()
+	app := &cli.App{
+		SettingsService: identitySettings.NewService(stubSettingsRepo{}),
+		CurrentUserID:   uuid.Nil,
+	}
+	cli.SetApp(app)
+	defer cli.SetApp(nil)
+
+	cmd := deleteMissingGetCmd
+	cmd.SetContext(context.Background())
+
+	err := cmd.RunE(cmd, []string{})
+	if err == nil {
+		t.Fatalf("expected error for missing user")
+	}
+}
+
+func TestDeleteMissingSetNoUser(t *testing.T) {
+	resetFlags()
+	app := &cli.App{
+		SettingsService: identitySettings.NewService(stubSettingsRepo{}),
+		CurrentUserID:   uuid.Nil,
+	}
+	cli.SetApp(app)
+	defer cli.SetApp(nil)
+
+	cmd := deleteMissingSetCmd
+	cmd.SetContext(context.Background())
+
+	err := cmd.RunE(cmd, []string{})
+	if err == nil {
+		t.Fatalf("expected error for missing user")
+	}
+}
+
+func TestCalendarSetNoUser(t *testing.T) {
+	resetFlags()
+	app := &cli.App{
+		SettingsService: identitySettings.NewService(stubSettingsRepo{}),
+		CurrentUserID:   uuid.Nil,
+	}
+	cli.SetApp(app)
+	defer cli.SetApp(nil)
+
+	cmd := calendarSetCmd
+	cmd.SetContext(context.Background())
+	calendarID = "work"
+
+	err := cmd.RunE(cmd, []string{})
+	if err == nil {
+		t.Fatalf("expected error for missing user")
+	}
+}

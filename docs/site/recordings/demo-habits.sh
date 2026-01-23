@@ -1,35 +1,30 @@
 #!/bin/bash
-# Habits Demo Recording Script
+# Habits Demo - Shows habit tracking workflow
 ORBITA="./orbita-demo"
 
 type_cmd() {
     echo -n "$ "
     for ((i=0; i<${#1}; i++)); do
         echo -n "${1:$i:1}"
-        sleep 0.05
+        sleep 0.04
     done
     echo
-    sleep 0.3
+    sleep 0.2
 }
 
 clear
-sleep 0.5
+sleep 0.3
 
-# Show habit commands
+# Show habit help
 type_cmd "orbita habit --help"
 $ORBITA habit --help
 sleep 1.5
 
-# List habits
-type_cmd "orbita habit list"
-$ORBITA habit list
-sleep 1.5
-
-# Show create help
+# Show habit create syntax
 type_cmd "orbita habit create --help"
 $ORBITA habit create --help
-sleep 2
+sleep 1.5
 
 echo
-echo "✨ Build consistent habits with streak tracking!"
-sleep 2
+echo "Build consistent habits with streak tracking!"
+sleep 1.5

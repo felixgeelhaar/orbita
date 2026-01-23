@@ -1,49 +1,45 @@
 #!/bin/bash
-# Tasks Demo Recording Script
-# Run: asciinema rec -c "./demo-tasks.sh" tasks-demo.cast
-
+# Tasks Demo - Shows task management workflow
 ORBITA="./orbita-demo"
-DELAY=1
 
 type_cmd() {
     echo -n "$ "
     for ((i=0; i<${#1}; i++)); do
         echo -n "${1:$i:1}"
-        sleep 0.05
+        sleep 0.04
     done
     echo
-    sleep 0.3
+    sleep 0.2
 }
 
 clear
-sleep 0.5
+sleep 0.3
 
-# Show task list
+# Show current tasks
 type_cmd "orbita task list"
 $ORBITA task list
-sleep $DELAY
+sleep 1.2
 
-# Create a new task
-type_cmd "orbita task create \"Ship new feature\" -p high -d 60"
-$ORBITA task create "Ship new feature" -p high -d 60
-sleep $DELAY
+# Create a high priority task
+type_cmd "orbita task create \"Deploy hotfix to production\" -p high -d 30"
+$ORBITA task create "Deploy hotfix to production" -p high -d 30
+sleep 1
+
+# Quick add with natural language
+type_cmd "orbita add \"Review PR from Alice tomorrow morning\""
+$ORBITA add "Review PR from Alice tomorrow morning"
+sleep 1
 
 # Show updated list
 type_cmd "orbita task list"
 $ORBITA task list
-sleep $DELAY
+sleep 1.2
 
 # Complete a task
-TASK_ID="559fa237"
-type_cmd "orbita task complete $TASK_ID"
-$ORBITA task complete $TASK_ID
-sleep $DELAY
-
-# Final list
-type_cmd "orbita task list"
-$ORBITA task list
-sleep 2
+type_cmd "orbita done \"Deploy hotfix\""
+$ORBITA done "Deploy hotfix"
+sleep 0.8
 
 echo
-echo "✨ Tasks managed efficiently from the command line!"
-sleep 2
+echo "Tasks managed efficiently from your terminal!"
+sleep 1.5

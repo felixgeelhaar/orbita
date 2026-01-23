@@ -702,13 +702,14 @@ meeting_prep        <span class="dim">Prepare for meetings</span>
     <script>
         // Initialize asciinema players
         const playerOptions = {
-            cols: 100,
+            cols: 80,
             rows: 24,
             autoPlay: false,
             loop: true,
             speed: 1.5,
             theme: 'monokai',
-            fit: 'width',
+            fit: false,
+            terminalFontSize: '14px',
             terminalFontFamily: "'JetBrains Mono', monospace"
         };
 

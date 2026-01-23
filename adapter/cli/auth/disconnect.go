@@ -8,10 +8,18 @@ import (
 	"strings"
 
 	"github.com/felixgeelhaar/orbita/adapter/cli"
+	calendarApp "github.com/felixgeelhaar/orbita/internal/calendar/application"
 	calendarDomain "github.com/felixgeelhaar/orbita/internal/calendar/domain"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
+
+var disconnectCalendarService *calendarApp.DisconnectCalendarService
+
+// SetDisconnectCalendarService sets the disconnect calendar service.
+func SetDisconnectCalendarService(svc *calendarApp.DisconnectCalendarService) {
+	disconnectCalendarService = svc
+}
 
 var disconnectCmd = &cobra.Command{
 	Use:   "disconnect <provider>",
@@ -55,15 +63,15 @@ func runDisconnect(cmd *cobra.Command, args []string) error {
 		return errors.New("current user not configured")
 	}
 
-	if calendarRepo == nil {
-		return errors.New("calendar repository not configured")
+	if disconnectCalendarService == nil {
+		return errors.New("disconnect calendar service not configured")
 	}
 
 	ctx := cmd.Context()
 	userID := app.CurrentUserID
 
-	// Find calendars for this provider
-	calendars, err := calendarRepo.FindByUserAndProvider(ctx, userID, provider)
+	// Find calendars for this provider using the service
+	calendars, err := disconnectCalendarService.GetCalendarsByProvider(ctx, userID, provider)
 	if err != nil {
 		return fmt.Errorf("failed to find calendars: %w", err)
 	}
@@ -99,8 +107,13 @@ func runDisconnect(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Delete the calendar connections
-	if err := calendarRepo.DeleteByUserAndProvider(ctx, userID, provider); err != nil {
+	// Disconnect using the service (handles transactions and events)
+	disconnectCmd := calendarApp.DisconnectCalendarCommand{
+		UserID:   userID,
+		Provider: provider,
+	}
+	result, err := disconnectCalendarService.DisconnectByProvider(ctx, disconnectCmd)
+	if err != nil {
 		return fmt.Errorf("failed to disconnect: %w", err)
 	}
 
@@ -110,12 +123,9 @@ func runDisconnect(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Disconnected %s calendar.\n", provider.DisplayName())
 
 	// Warn if primary was removed
-	for _, cal := range calendars {
-		if cal.IsPrimary() {
-			fmt.Println("\nNote: Your primary calendar was disconnected. Use 'orbita auth list' to see remaining calendars")
-			fmt.Println("and 'orbita auth connect <provider> --primary' to set a new primary.")
-			break
-		}
+	if result.HadPrimary {
+		fmt.Println("\nNote: Your primary calendar was disconnected. Use 'orbita auth list' to see remaining calendars")
+		fmt.Println("and 'orbita auth connect <provider> --primary' to set a new primary.")
 	}
 
 	return nil

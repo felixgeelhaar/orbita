@@ -31,12 +31,12 @@ func runList(cmd *cobra.Command, args []string) error {
 		return errors.New("current user not configured")
 	}
 
-	if calendarRepo == nil {
-		return errors.New("calendar repository not configured")
+	if disconnectCalendarService == nil {
+		return errors.New("calendar service not configured")
 	}
 
 	ctx := cmd.Context()
-	calendars, err := calendarRepo.FindByUser(ctx, app.CurrentUserID)
+	calendars, err := disconnectCalendarService.ListConnectedCalendars(ctx, app.CurrentUserID)
 	if err != nil {
 		return fmt.Errorf("failed to list calendars: %w", err)
 	}

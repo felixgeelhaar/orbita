@@ -17,6 +17,7 @@ import (
 	"github.com/felixgeelhaar/orbita/adapter/cli/license"
 	"github.com/felixgeelhaar/orbita/adapter/cli/mcp"
 	"github.com/felixgeelhaar/orbita/adapter/cli/meeting"
+	"github.com/felixgeelhaar/orbita/adapter/cli/project"
 	"github.com/felixgeelhaar/orbita/adapter/cli/schedule"
 	cliSettings "github.com/felixgeelhaar/orbita/adapter/cli/settings"
 	"github.com/felixgeelhaar/orbita/adapter/cli/task"
@@ -156,6 +157,12 @@ func main() {
 			cliAuth.SetCalendarRepo(container.ConnectedCalendarRepo)
 			cliApp.SetCalendarRepo(container.ConnectedCalendarRepo)
 		}
+		if container.ConnectCalendarService != nil {
+			cliAuth.SetConnectCalendarService(container.ConnectCalendarService)
+		}
+		if container.DisconnectCalendarService != nil {
+			cliAuth.SetDisconnectCalendarService(container.DisconnectCalendarService)
+		}
 		if container.ProviderRegistry != nil {
 			cliAuth.SetProviderRegistry(container.ProviderRegistry)
 			cliApp.SetProviderRegistry(container.ProviderRegistry)
@@ -193,6 +200,23 @@ func main() {
 		if container.LicenseService != nil {
 			license.SetLicenseService(container.LicenseService)
 		}
+
+		// Wire project handlers
+		if container.CreateProjectHandler != nil {
+			cliApp.SetProjectHandlers(
+				container.CreateProjectHandler,
+				container.UpdateProjectHandler,
+				container.DeleteProjectHandler,
+				container.ChangeProjectStatusHandler,
+				container.AddMilestoneHandler,
+				container.UpdateMilestoneHandler,
+				container.DeleteMilestoneHandler,
+				container.LinkTaskHandler,
+				container.UnlinkTaskHandler,
+				container.GetProjectHandler,
+				container.ListProjectsHandler,
+			)
+		}
 	}
 
 	// Set the CLI app
@@ -203,6 +227,7 @@ func main() {
 	cli.AddCommand(habit.Cmd)
 	cli.AddCommand(inbox.Cmd)
 	cli.AddCommand(meeting.Cmd)
+	cli.AddCommand(project.Cmd)
 	cli.AddCommand(mcp.Cmd)
 	cli.AddCommand(schedule.Cmd)
 	cli.AddCommand(cliBilling.Cmd)

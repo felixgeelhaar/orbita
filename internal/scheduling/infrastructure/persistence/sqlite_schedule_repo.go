@@ -32,16 +32,11 @@ func (r *SQLiteScheduleRepository) getQuerier(ctx context.Context) *db.Queries {
 
 // Save persists a schedule to the database.
 func (r *SQLiteScheduleRepository) Save(ctx context.Context, schedule *domain.Schedule) error {
-	tx, err := r.dbConn.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	queries := db.New(tx)
+	// Use existing transaction from context (via UnitOfWork) or direct connection
+	queries := r.getQuerier(ctx)
 
 	// Check if schedule exists
-	_, err = queries.GetScheduleByID(ctx, schedule.ID().String())
+	_, err := queries.GetScheduleByID(ctx, schedule.ID().String())
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// Create new schedule
@@ -101,7 +96,7 @@ func (r *SQLiteScheduleRepository) Save(ctx context.Context, schedule *domain.Sc
 		}
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 // FindByID retrieves a schedule by its ID.

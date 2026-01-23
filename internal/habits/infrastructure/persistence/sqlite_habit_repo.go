@@ -48,16 +48,10 @@ func (r *SQLiteHabitRepository) Save(ctx context.Context, habit *domain.Habit) e
 }
 
 func (r *SQLiteHabitRepository) create(ctx context.Context, habit *domain.Habit) error {
-	// Start a transaction for habit + completions
-	tx, err := r.dbConn.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
+	// Use existing transaction from context (via UnitOfWork) or direct connection
+	queries := r.getQuerier(ctx)
 
-	queries := db.New(tx)
-
-	err = queries.CreateHabit(ctx, db.CreateHabitParams{
+	err := queries.CreateHabit(ctx, db.CreateHabitParams{
 		ID:              habit.ID().String(),
 		UserID:          habit.UserID().String(),
 		Name:            habit.Name(),
@@ -91,20 +85,14 @@ func (r *SQLiteHabitRepository) create(ctx context.Context, habit *domain.Habit)
 		}
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 func (r *SQLiteHabitRepository) update(ctx context.Context, habit *domain.Habit) error {
-	// Start a transaction for habit + completions
-	tx, err := r.dbConn.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
+	// Use existing transaction from context (via UnitOfWork) or direct connection
+	queries := r.getQuerier(ctx)
 
-	queries := db.New(tx)
-
-	err = queries.UpdateHabit(ctx, db.UpdateHabitParams{
+	err := queries.UpdateHabit(ctx, db.UpdateHabitParams{
 		ID:              habit.ID().String(),
 		Name:            habit.Name(),
 		Description:     toNullString(habit.Description()),
@@ -134,7 +122,7 @@ func (r *SQLiteHabitRepository) update(ctx context.Context, habit *domain.Habit)
 		})
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 // FindByID retrieves a habit by its ID.

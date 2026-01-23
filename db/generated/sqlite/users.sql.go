@@ -9,6 +9,17 @@ import (
 	"context"
 )
 
+const countByEmail = `-- name: CountByEmail :one
+SELECT COUNT(*) AS cnt FROM users WHERE email = ?
+`
+
+func (q *Queries) CountByEmail(ctx context.Context, email string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countByEmail, email)
+	var cnt int64
+	err := row.Scan(&cnt)
+	return cnt, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (id, email, name, created_at, updated_at)
 VALUES (?, ?, ?, ?, ?)

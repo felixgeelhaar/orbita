@@ -34,6 +34,15 @@ func NewUserWithID(id uuid.UUID, email Email, name Name) *User {
 	}
 }
 
+// RehydrateUser recreates a user from persisted state without emitting events.
+func RehydrateUser(base sharedDomain.BaseAggregateRoot, email Email, name Name) *User {
+	return &User{
+		BaseAggregateRoot: base,
+		email:             email,
+		name:              name,
+	}
+}
+
 // Getters
 func (u *User) Email() Email { return u.email }
 func (u *User) Name() Name   { return u.name }

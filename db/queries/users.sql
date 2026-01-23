@@ -17,3 +17,6 @@ RETURNING *;
 
 -- name: DeleteUser :exec
 DELETE FROM users WHERE id = $1;
+
+-- name: CountByEmail :one
+SELECT COUNT(*) AS cnt FROM users WHERE email = $1;

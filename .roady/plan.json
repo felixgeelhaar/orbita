@@ -138,7 +138,8 @@
     {
       "id": "task-time-insights",
       "title": "Implement Time Insights \u0026 Analytics",
-      "description": "Analytics with time tracking, productivity metrics, goal progress, trend analysis. Actionable insights.",
+      "description": "Analytics with time tracking, productivity metrics, goal progress, trend analysis. Actionable insights. COMPLETED: ActionableInsight domain entity with 8 insight types (productivity_drop, peak_hour, best_day, low_focus, goal_at_risk, habit_streak, overdue_tasks, weekly_pattern). InsightGenerator service analyzes productivity data using weighted scoring and generates actionable recommendations with deduplication. ComputeWeeklySummaryHandler aggregates weekly metrics with trend analysis. UpdateGoalProgressHandler and IncrementGoalHandler for goal tracking. Query handlers for insight retrieval. Comprehensive tests.",
+      "status": "done",
       "priority": "medium",
       "estimate": "",
       "depends_on": [
@@ -150,7 +151,8 @@
     {
       "id": "task-wellness-sync",
       "title": "Implement Wellness Sync",
-      "description": "Health and wellness tracking integration. Syncs with fitness devices to incorporate wellness data into scheduling.",
+      "description": "Health and wellness tracking integration. Syncs with fitness devices to incorporate wellness data into scheduling. COMPLETED: WellnessEntry and WellnessGoal domain entities with validation. Support for 7 wellness types (mood, energy, sleep, stress, exercise, hydration, nutrition) and 9 external sources (Apple Health, Google Fit, Fitbit, etc.). LogWellnessEntryHandler with goal auto-update, WellnessCheckinHandler for quick multi-metric check-ins. Goal management handlers with periodic reset. GetTodayWellnessHandler and GetWellnessSummaryHandler with trend analysis and actionable insights. Comprehensive tests.",
+      "status": "done",
       "priority": "low",
       "estimate": "",
       "depends_on": [

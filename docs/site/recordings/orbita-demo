@@ -1,0 +1,3 @@
+#!/bin/bash
+# Wrapper for clean demo output (suppresses debug logs)
+exec /Users/felixgeelhaar/Developer/projects/orbita/bin/orbita "$@" 2>/dev/null

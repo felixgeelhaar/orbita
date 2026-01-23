@@ -9,6 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Asciinema Player -->
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/asciinema-player@3.7.1/dist/bundle/asciinema-player.css" />
 </head>
 <body>
     <nav class="navbar">
@@ -212,15 +214,7 @@
             <div class="demo-content">
                 <div class="demo-panel active" id="panel-tasks">
                     <div class="asciinema-container">
-                        <!-- Replace RECORDING_ID with actual asciinema recording ID -->
-                        <div id="asciinema-tasks" class="asciinema-player-wrapper">
-                            <script src="https://asciinema.org/a/tasks-demo.js" id="asciicast-tasks-demo" async data-autoplay="true" data-loop="true" data-speed="1.5" data-theme="monokai" data-cols="100" data-rows="24"></script>
-                            <noscript>
-                                <a href="https://asciinema.org/a/tasks-demo" target="_blank">
-                                    <img src="https://asciinema.org/a/tasks-demo.svg" alt="Task Management Demo" />
-                                </a>
-                            </noscript>
-                        </div>
+                        <div id="player-tasks" class="asciinema-player-wrapper"></div>
                         <div class="demo-description">
                             <h4>Task Management</h4>
                             <p>Create, list, and complete tasks with priority levels and duration estimates. Intelligent scheduling suggestions based on your patterns.</p>
@@ -230,14 +224,7 @@
 
                 <div class="demo-panel" id="panel-schedule">
                     <div class="asciinema-container">
-                        <div id="asciinema-schedule" class="asciinema-player-wrapper">
-                            <script src="https://asciinema.org/a/schedule-demo.js" id="asciicast-schedule-demo" async data-autoplay="false" data-loop="true" data-speed="1.5" data-theme="monokai" data-cols="100" data-rows="24"></script>
-                            <noscript>
-                                <a href="https://asciinema.org/a/schedule-demo" target="_blank">
-                                    <img src="https://asciinema.org/a/schedule-demo.svg" alt="Smart Scheduling Demo" />
-                                </a>
-                            </noscript>
-                        </div>
+                        <div id="player-schedule" class="asciinema-player-wrapper"></div>
                         <div class="demo-description">
                             <h4>Smart Scheduling</h4>
                             <p>View and manage your daily schedule with automatic time-blocking. Auto-schedule tasks into optimal slots based on energy levels and constraints.</p>
@@ -247,14 +234,7 @@
 
                 <div class="demo-panel" id="panel-meetings">
                     <div class="asciinema-container">
-                        <div id="asciinema-meetings" class="asciinema-player-wrapper">
-                            <script src="https://asciinema.org/a/meetings-demo.js" id="asciicast-meetings-demo" async data-autoplay="false" data-loop="true" data-speed="1.5" data-theme="monokai" data-cols="100" data-rows="24"></script>
-                            <noscript>
-                                <a href="https://asciinema.org/a/meetings-demo" target="_blank">
-                                    <img src="https://asciinema.org/a/meetings-demo.svg" alt="Smart 1:1 Meetings Demo" />
-                                </a>
-                            </noscript>
-                        </div>
+                        <div id="player-meetings" class="asciinema-player-wrapper"></div>
                         <div class="demo-description">
                             <h4>Smart 1:1 Meetings</h4>
                             <p>Track meeting cadence with colleagues, get overdue alerts, and find optimal time slots across calendars with quality scoring.</p>
@@ -264,14 +244,7 @@
 
                 <div class="demo-panel" id="panel-calendar">
                     <div class="asciinema-container">
-                        <div id="asciinema-calendar" class="asciinema-player-wrapper">
-                            <script src="https://asciinema.org/a/calendar-demo.js" id="asciicast-calendar-demo" async data-autoplay="false" data-loop="true" data-speed="1.5" data-theme="monokai" data-cols="100" data-rows="24"></script>
-                            <noscript>
-                                <a href="https://asciinema.org/a/calendar-demo" target="_blank">
-                                    <img src="https://asciinema.org/a/calendar-demo.svg" alt="Calendar Sync Demo" />
-                                </a>
-                            </noscript>
-                        </div>
+                        <div id="player-calendar" class="asciinema-player-wrapper"></div>
                         <div class="demo-description">
                             <h4>Multi-Provider Calendar Sync</h4>
                             <p>Connect Google, Microsoft Outlook, or Apple Calendar. Bi-directional sync with automatic conflict detection and resolution.</p>
@@ -281,14 +254,7 @@
 
                 <div class="demo-panel" id="panel-habits">
                     <div class="asciinema-container">
-                        <div id="asciinema-habits" class="asciinema-player-wrapper">
-                            <script src="https://asciinema.org/a/habits-demo.js" id="asciicast-habits-demo" async data-autoplay="false" data-loop="true" data-speed="1.5" data-theme="monokai" data-cols="100" data-rows="24"></script>
-                            <noscript>
-                                <a href="https://asciinema.org/a/habits-demo" target="_blank">
-                                    <img src="https://asciinema.org/a/habits-demo.svg" alt="Habit Tracking Demo" />
-                                </a>
-                            </noscript>
-                        </div>
+                        <div id="player-habits" class="asciinema-player-wrapper"></div>
                         <div class="demo-description">
                             <h4>Smart Habit Tracking</h4>
                             <p>Build consistent habits with adaptive scheduling, streak tracking, and optimal time calculation based on your completion patterns.</p>
@@ -298,14 +264,7 @@
 
                 <div class="demo-panel" id="panel-projects">
                     <div class="asciinema-container">
-                        <div id="asciinema-projects" class="asciinema-player-wrapper">
-                            <script src="https://asciinema.org/a/projects-demo.js" id="asciicast-projects-demo" async data-autoplay="false" data-loop="true" data-speed="1.5" data-theme="monokai" data-cols="100" data-rows="24"></script>
-                            <noscript>
-                                <a href="https://asciinema.org/a/projects-demo" target="_blank">
-                                    <img src="https://asciinema.org/a/projects-demo.svg" alt="Projects Demo" />
-                                </a>
-                            </noscript>
-                        </div>
+                        <div id="player-projects" class="asciinema-player-wrapper"></div>
                         <div class="demo-description">
                             <h4>Projects & Milestones</h4>
                             <p>Organize work into projects with milestones, link tasks with contribution weights, and track progress with risk assessment.</p>
@@ -738,6 +697,59 @@ meeting_prep        <span class="dim">Prepare for meetings</span>
         </div>
     </footer>
 
+    <script src="https://unpkg.com/asciinema-player@3.7.1/dist/bundle/asciinema-player.min.js"></script>
     <script src="script.js"></script>
+    <script>
+        // Initialize asciinema players
+        const playerOptions = {
+            cols: 100,
+            rows: 24,
+            autoPlay: false,
+            loop: true,
+            speed: 1.5,
+            theme: 'monokai',
+            fit: 'width',
+            terminalFontFamily: "'JetBrains Mono', monospace"
+        };
+
+        const players = {
+            tasks: null,
+            schedule: null,
+            meetings: null,
+            calendar: null,
+            habits: null,
+            projects: null
+        };
+
+        // Create players on demand when tab is clicked
+        function initPlayer(name) {
+            if (!players[name]) {
+                const element = document.getElementById('player-' + name);
+                if (element) {
+                    players[name] = AsciinemaPlayer.create(
+                        'recordings/' + name + '-demo.cast',
+                        element,
+                        { ...playerOptions, autoPlay: true }
+                    );
+                }
+            } else {
+                // Replay if already created
+                players[name].play();
+            }
+        }
+
+        // Initialize tasks player immediately (active tab)
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => initPlayer('tasks'), 500);
+        });
+
+        // Hook into tab switching
+        document.querySelectorAll('.demo-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.getAttribute('data-tab');
+                setTimeout(() => initPlayer(tabName), 100);
+            });
+        });
+    </script>
 </body>
 </html>

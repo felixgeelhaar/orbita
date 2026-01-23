@@ -21,6 +21,8 @@ import (
 	orbitRuntime "github.com/felixgeelhaar/orbita/internal/orbit/runtime"
 	"github.com/felixgeelhaar/orbita/internal/productivity/application/commands"
 	"github.com/felixgeelhaar/orbita/internal/productivity/application/queries"
+	projectCommands "github.com/felixgeelhaar/orbita/internal/projects/application/commands"
+	projectQueries "github.com/felixgeelhaar/orbita/internal/projects/application/queries"
 	scheduleCommands "github.com/felixgeelhaar/orbita/internal/scheduling/application/commands"
 	scheduleQueries "github.com/felixgeelhaar/orbita/internal/scheduling/application/queries"
 	"github.com/google/uuid"
@@ -32,9 +34,12 @@ type App struct {
 	CreateTaskHandler   *commands.CreateTaskHandler
 	CompleteTaskHandler *commands.CompleteTaskHandler
 	ArchiveTaskHandler  *commands.ArchiveTaskHandler
+	StartTaskHandler    *commands.StartTaskHandler
+	UpdateTaskHandler   *commands.UpdateTaskHandler
 
 	// Task Query Handlers
 	ListTasksHandler *queries.ListTasksHandler
+	GetTaskHandler   *queries.GetTaskHandler
 
 	// Habit Command Handlers
 	CreateHabitHandler          *habitCommands.CreateHabitHandler
@@ -118,6 +123,21 @@ type App struct {
 
 	// Insights Service
 	InsightsService *insightsApp.Service
+
+	// Project Command Handlers
+	CreateProjectHandler       *projectCommands.CreateProjectHandler
+	UpdateProjectHandler       *projectCommands.UpdateProjectHandler
+	DeleteProjectHandler       *projectCommands.DeleteProjectHandler
+	ChangeProjectStatusHandler *projectCommands.ChangeProjectStatusHandler
+	AddMilestoneHandler        *projectCommands.AddMilestoneHandler
+	UpdateMilestoneHandler     *projectCommands.UpdateMilestoneHandler
+	DeleteMilestoneHandler     *projectCommands.DeleteMilestoneHandler
+	LinkTaskHandler            *projectCommands.LinkTaskHandler
+	UnlinkTaskHandler          *projectCommands.UnlinkTaskHandler
+
+	// Project Query Handlers
+	GetProjectHandler   *projectQueries.GetProjectHandler
+	ListProjectsHandler *projectQueries.ListProjectsHandler
 
 	// Current user (configured per environment)
 	CurrentUserID uuid.UUID
@@ -283,4 +303,31 @@ func SetApp(a *App) {
 // GetApp returns the global CLI application instance.
 func GetApp() *App {
 	return app
+}
+
+// SetProjectHandlers updates all project handlers.
+func (a *App) SetProjectHandlers(
+	createProject *projectCommands.CreateProjectHandler,
+	updateProject *projectCommands.UpdateProjectHandler,
+	deleteProject *projectCommands.DeleteProjectHandler,
+	changeStatus *projectCommands.ChangeProjectStatusHandler,
+	addMilestone *projectCommands.AddMilestoneHandler,
+	updateMilestone *projectCommands.UpdateMilestoneHandler,
+	deleteMilestone *projectCommands.DeleteMilestoneHandler,
+	linkTask *projectCommands.LinkTaskHandler,
+	unlinkTask *projectCommands.UnlinkTaskHandler,
+	getProject *projectQueries.GetProjectHandler,
+	listProjects *projectQueries.ListProjectsHandler,
+) {
+	a.CreateProjectHandler = createProject
+	a.UpdateProjectHandler = updateProject
+	a.DeleteProjectHandler = deleteProject
+	a.ChangeProjectStatusHandler = changeStatus
+	a.AddMilestoneHandler = addMilestone
+	a.UpdateMilestoneHandler = updateMilestone
+	a.DeleteMilestoneHandler = deleteMilestone
+	a.LinkTaskHandler = linkTask
+	a.UnlinkTaskHandler = unlinkTask
+	a.GetProjectHandler = getProject
+	a.ListProjectsHandler = listProjects
 }

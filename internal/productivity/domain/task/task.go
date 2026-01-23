@@ -150,8 +150,12 @@ func (t *Task) Start() error {
 	if t.IsArchived() {
 		return ErrTaskArchived
 	}
+	if t.status == StatusInProgress {
+		return nil // Idempotent
+	}
 	t.status = StatusInProgress
 	t.Touch()
+	t.AddDomainEvent(NewTaskStarted(t.ID()))
 	return nil
 }
 

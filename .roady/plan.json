@@ -1,0 +1,160 @@
+{
+  "id": "plan-orbita-1769162873",
+  "spec_id": "orbita",
+  "tasks": [
+    {
+      "id": "task-core-foundation",
+      "title": "Implement Core Foundation",
+      "description": "Shared domain primitives: BaseEntity, AggregateRoot, DomainEvent interfaces. Event bus setup with RabbitMQ and outbox pattern.",
+      "status": "done",
+      "priority": "high",
+      "estimate": "",
+      "depends_on": [],
+      "feature_id": "core-foundation"
+    },
+    {
+      "id": "task-identity-auth",
+      "title": "Implement Identity \u0026 Authentication",
+      "description": "OAuth2 authentication, encrypted token storage, user profile management, UserRepository (SQLite + Postgres). Foundation for all user-facing functionality.",
+      "status": "done",
+      "priority": "high",
+      "estimate": "",
+      "depends_on": [
+        "task-core-foundation"
+      ],
+      "feature_id": "identity-&-authentication"
+    },
+    {
+      "id": "task-cli-interface",
+      "title": "Implement CLI Interface",
+      "description": "Cobra-based CLI with command structure for all bounded contexts. Primary interface for users.",
+      "status": "done",
+      "priority": "high",
+      "estimate": "",
+      "depends_on": [
+        "task-core-foundation"
+      ],
+      "feature_id": "cli-interface"
+    },
+    {
+      "id": "task-billing-entitlements",
+      "title": "Implement Billing \u0026 Entitlements",
+      "description": "Stripe integration, module (Orbit) entitlement management, subscription handling. Controls access to premium features. COMPLETED: SQLite entitlement and subscription repositories, factory methods, migration for subscriptions table, comprehensive tests.",
+      "status": "done",
+      "priority": "high",
+      "estimate": "",
+      "depends_on": [
+        "task-identity-auth"
+      ],
+      "feature_id": "billing-&-entitlements"
+    },
+    {
+      "id": "task-productivity-core",
+      "title": "Implement Productivity Core",
+      "description": "Task management with CORE framework (Capture, Organize, Review, Execute). Task creation, prioritization, duration estimates, completion tracking. COMPLETED: UpdateTaskHandler, StartTaskHandler, show/start/update CLI commands, comprehensive tests.",
+      "status": "done",
+      "priority": "high",
+      "estimate": "",
+      "depends_on": [
+        "task-identity-auth",
+        "task-cli-interface"
+      ],
+      "feature_id": "productivity-core-(core-framework)"
+    },
+    {
+      "id": "task-calendar-integrations",
+      "title": "Implement Calendar Integrations",
+      "description": "Multi-provider calendar sync (Google, Outlook, Apple). Bi-directional sync with conflict detection. COMPLETED: ConflictDetector implementation that checks imported events against Orbita blocks, ConflictDetectorHandler for worker integration, comprehensive tests.",
+      "status": "done",
+      "priority": "high",
+      "estimate": "",
+      "depends_on": [
+        "task-identity-auth"
+      ],
+      "feature_id": "calendar-integrations"
+    },
+    {
+      "id": "task-scheduling-engine",
+      "title": "Implement Scheduling Engine",
+      "description": "Central scheduling service consuming candidates from tasks, habits, meetings. Hard constraints, soft penalties, Ideal Week alignment.",
+      "priority": "high",
+      "estimate": "",
+      "depends_on": [
+        "task-productivity-core",
+        "task-calendar-integrations"
+      ],
+      "feature_id": "scheduling-engine"
+    },
+    {
+      "id": "task-smart-habits",
+      "title": "Implement Smart Habits",
+      "description": "Habit tracking with adaptive scheduling. Learns optimal times, generates sessions, adjusts based on completion patterns.",
+      "priority": "medium",
+      "estimate": "",
+      "depends_on": [
+        "task-scheduling-engine"
+      ],
+      "feature_id": "smart-habits"
+    },
+    {
+      "id": "task-smart-1to1",
+      "title": "Implement Smart 1:1 Scheduler",
+      "description": "Intelligent meeting coordination for recurring 1:1s. Frequency management, optimal slot finding, calendar coordination.",
+      "priority": "medium",
+      "estimate": "",
+      "depends_on": [
+        "task-scheduling-engine",
+        "task-calendar-integrations"
+      ],
+      "feature_id": "smart-1:1-scheduler"
+    },
+    {
+      "id": "task-ai-inbox",
+      "title": "Implement AI Inbox Processing",
+      "description": "AI-powered inbox for capturing and classifying items. Auto-categorization, prioritization, routing to contexts.",
+      "priority": "medium",
+      "estimate": "",
+      "depends_on": [
+        "task-productivity-core"
+      ],
+      "feature_id": "ai-inbox-processing"
+    },
+    {
+      "id": "task-automations",
+      "title": "Implement Automations Engine",
+      "description": "User-defined automation rules with triggers, conditions, and actions. Workflow automation without coding.",
+      "priority": "medium",
+      "estimate": "",
+      "depends_on": [
+        "task-productivity-core"
+      ],
+      "feature_id": "automations-engine"
+    },
+    {
+      "id": "task-time-insights",
+      "title": "Implement Time Insights \u0026 Analytics",
+      "description": "Analytics with time tracking, productivity metrics, goal progress, trend analysis. Actionable insights.",
+      "priority": "medium",
+      "estimate": "",
+      "depends_on": [
+        "task-productivity-core",
+        "task-scheduling-engine"
+      ],
+      "feature_id": "time-insights-&-analytics"
+    },
+    {
+      "id": "task-wellness-sync",
+      "title": "Implement Wellness Sync",
+      "description": "Health and wellness tracking integration. Syncs with fitness devices to incorporate wellness data into scheduling.",
+      "priority": "low",
+      "estimate": "",
+      "depends_on": [
+        "task-scheduling-engine"
+      ],
+      "feature_id": "wellness-sync"
+    }
+  ],
+  "approval_status": "approved",
+  "created_at": "2026-01-23T11:07:53.614714+01:00",
+  "updated_at": "2026-01-23T11:11:49.800238+01:00"
+}

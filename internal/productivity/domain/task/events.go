@@ -9,6 +9,8 @@ const (
 	AggregateType = "Task"
 
 	RoutingKeyCreated   = "core.task.created"
+	RoutingKeyStarted   = "core.task.started"
+	RoutingKeyUpdated   = "core.task.updated"
 	RoutingKeyCompleted = "core.task.completed"
 	RoutingKeyArchived  = "core.task.archived"
 )
@@ -26,6 +28,32 @@ func NewTaskCreated(taskID uuid.UUID, title, priority string) TaskCreated {
 		BaseEvent: domain.NewBaseEvent(taskID, AggregateType, RoutingKeyCreated),
 		Title:     title,
 		Priority:  priority,
+	}
+}
+
+// TaskStarted is emitted when a task is started (moved to in_progress).
+type TaskStarted struct {
+	domain.BaseEvent
+}
+
+// NewTaskStarted creates a TaskStarted event.
+func NewTaskStarted(taskID uuid.UUID) TaskStarted {
+	return TaskStarted{
+		BaseEvent: domain.NewBaseEvent(taskID, AggregateType, RoutingKeyStarted),
+	}
+}
+
+// TaskUpdated is emitted when a task is updated.
+type TaskUpdated struct {
+	domain.BaseEvent
+	Fields []string `json:"fields"` // Names of fields that were updated
+}
+
+// NewTaskUpdated creates a TaskUpdated event.
+func NewTaskUpdated(taskID uuid.UUID, fields []string) TaskUpdated {
+	return TaskUpdated{
+		BaseEvent: domain.NewBaseEvent(taskID, AggregateType, RoutingKeyUpdated),
+		Fields:    fields,
 	}
 }
 

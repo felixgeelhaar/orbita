@@ -43,6 +43,7 @@ import (
 	habitPersistence "github.com/felixgeelhaar/orbita/internal/habits/infrastructure/persistence"
 	identityOAuth "github.com/felixgeelhaar/orbita/internal/identity/application/oauth"
 	identitySettings "github.com/felixgeelhaar/orbita/internal/identity/application/settings"
+	identityDomain "github.com/felixgeelhaar/orbita/internal/identity/domain"
 	identityPersistence "github.com/felixgeelhaar/orbita/internal/identity/infrastructure/persistence"
 	inboxCommands "github.com/felixgeelhaar/orbita/internal/inbox/application/commands"
 	inboxQueries "github.com/felixgeelhaar/orbita/internal/inbox/application/queries"
@@ -56,6 +57,9 @@ import (
 	"github.com/felixgeelhaar/orbita/internal/productivity/application/queries"
 	"github.com/felixgeelhaar/orbita/internal/productivity/domain/task"
 	"github.com/felixgeelhaar/orbita/internal/productivity/infrastructure/persistence"
+	projectCommands "github.com/felixgeelhaar/orbita/internal/projects/application/commands"
+	projectQueries "github.com/felixgeelhaar/orbita/internal/projects/application/queries"
+	projectsDomain "github.com/felixgeelhaar/orbita/internal/projects/domain"
 	scheduleCommands "github.com/felixgeelhaar/orbita/internal/scheduling/application/commands"
 	scheduleQueries "github.com/felixgeelhaar/orbita/internal/scheduling/application/queries"
 	schedulerServices "github.com/felixgeelhaar/orbita/internal/scheduling/application/services"
@@ -98,6 +102,7 @@ type Container struct {
 	RescheduleAttemptRepo *schedulePersistence.PostgresRescheduleAttemptRepository
 	OAuthTokenRepo        *identityPersistence.OAuthTokenRepository
 	SettingsRepo          identitySettings.Repository
+	UserRepo              identityDomain.UserRepository
 	OutboxRepo            outbox.Repository
 
 	// Publishers
@@ -110,6 +115,8 @@ type Container struct {
 	CreateTaskHandler   *commands.CreateTaskHandler
 	CompleteTaskHandler *commands.CompleteTaskHandler
 	ArchiveTaskHandler  *commands.ArchiveTaskHandler
+	StartTaskHandler    *commands.StartTaskHandler
+	UpdateTaskHandler   *commands.UpdateTaskHandler
 
 	// Task Query Handlers
 	ListTasksHandler *queries.ListTasksHandler
@@ -158,14 +165,16 @@ type Container struct {
 	LicenseService *licensingApp.Service
 
 	// Calendar Sync
-	CalendarSyncer       calendarApp.Syncer
-	CalendarImporter     calendarApp.Importer
-	SyncStateRepo        calendarDomain.SyncStateRepository
-	CalendarImportWorker *calendarWorkers.CalendarImportWorker
-	ConflictResolver     *schedulerServices.ConflictResolver
-	ProviderRegistry     *calendarApp.ProviderRegistry
-	SyncCoordinator      *calendarApp.SyncCoordinator
-	ConnectedCalendarRepo calendarDomain.ConnectedCalendarRepository
+	CalendarSyncer            calendarApp.Syncer
+	CalendarImporter          calendarApp.Importer
+	SyncStateRepo             calendarDomain.SyncStateRepository
+	CalendarImportWorker      *calendarWorkers.CalendarImportWorker
+	ConflictResolver          *schedulerServices.ConflictResolver
+	ProviderRegistry          *calendarApp.ProviderRegistry
+	SyncCoordinator           *calendarApp.SyncCoordinator
+	ConnectedCalendarRepo     calendarDomain.ConnectedCalendarRepository
+	ConnectCalendarService    *calendarApp.ConnectCalendarService
+	DisconnectCalendarService *calendarApp.DisconnectCalendarService
 
 	// Event Subscribers
 	SchedulingSubscriber   *scheduleSubs.SchedulingSubscriber
@@ -211,6 +220,24 @@ type Container struct {
 
 	// Insights
 	InsightsService *insightsApp.Service
+
+	// Project Repositories
+	ProjectRepo projectsDomain.Repository
+
+	// Project Command Handlers
+	CreateProjectHandler       *projectCommands.CreateProjectHandler
+	UpdateProjectHandler       *projectCommands.UpdateProjectHandler
+	DeleteProjectHandler       *projectCommands.DeleteProjectHandler
+	ChangeProjectStatusHandler *projectCommands.ChangeProjectStatusHandler
+	AddMilestoneHandler        *projectCommands.AddMilestoneHandler
+	UpdateMilestoneHandler     *projectCommands.UpdateMilestoneHandler
+	DeleteMilestoneHandler     *projectCommands.DeleteMilestoneHandler
+	LinkTaskHandler            *projectCommands.LinkTaskHandler
+	UnlinkTaskHandler          *projectCommands.UnlinkTaskHandler
+
+	// Project Query Handlers
+	GetProjectHandler   *projectQueries.GetProjectHandler
+	ListProjectsHandler *projectQueries.ListProjectsHandler
 }
 
 // NewContainer creates and wires all dependencies.
@@ -269,6 +296,7 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 	c.RescheduleAttemptRepo = schedulePersistence.NewPostgresRescheduleAttemptRepository(pool)
 	c.OAuthTokenRepo = identityPersistence.NewOAuthTokenRepository(pool)
 	c.SettingsRepo = identityPersistence.NewSettingsRepository(pool)
+	c.UserRepo = identityPersistence.NewPostgresUserRepository(pool)
 	c.OutboxRepo = outbox.NewPostgresRepository(pool)
 	c.UnitOfWork = sharedPersistence.NewPostgresUnitOfWork(pool)
 	c.InboxRepo = inboxPersistence.NewPostgresInboxRepository(pool)
@@ -293,6 +321,8 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 	c.CreateTaskHandler = commands.NewCreateTaskHandler(c.TaskRepo, c.OutboxRepo, c.UnitOfWork)
 	c.CompleteTaskHandler = commands.NewCompleteTaskHandler(c.TaskRepo, c.OutboxRepo, c.UnitOfWork)
 	c.ArchiveTaskHandler = commands.NewArchiveTaskHandler(c.TaskRepo, c.OutboxRepo, c.UnitOfWork)
+	c.StartTaskHandler = commands.NewStartTaskHandler(c.TaskRepo, c.OutboxRepo, c.UnitOfWork)
+	c.UpdateTaskHandler = commands.NewUpdateTaskHandler(c.TaskRepo, c.OutboxRepo, c.UnitOfWork)
 
 	// Create task query handlers
 	c.ListTasksHandler = queries.NewListTasksHandler(c.TaskRepo)
@@ -426,6 +456,20 @@ func NewContainer(ctx context.Context, cfg *config.Config, logger *slog.Logger) 
 
 	// Create sync coordinator
 	c.SyncCoordinator = calendarApp.NewSyncCoordinator(c.ProviderRegistry, c.ConnectedCalendarRepo)
+
+	// Create calendar services
+	c.ConnectCalendarService = calendarApp.NewConnectCalendarService(
+		c.ConnectedCalendarRepo,
+		c.OutboxRepo,
+		c.UnitOfWork,
+		logger,
+	)
+	c.DisconnectCalendarService = calendarApp.NewDisconnectCalendarService(
+		c.ConnectedCalendarRepo,
+		c.OutboxRepo,
+		c.UnitOfWork,
+		logger,
+	)
 
 	// Create calendar syncer if provider is supported (legacy single-provider mode)
 	if c.AuthService != nil && cfg.OAuthProvider == "google" {
@@ -699,6 +743,12 @@ func NewLocalContainer(ctx context.Context, cfg *config.Config, logger *slog.Log
 	}
 	c.SettingsRepo = settingsRepo
 
+	userRepo, err := factory.UserRepository()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create user repository: %w", err)
+	}
+	c.UserRepo = userRepo
+
 	outboxRepo, err := factory.OutboxRepository()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create outbox repository: %w", err)
@@ -715,6 +765,8 @@ func NewLocalContainer(ctx context.Context, cfg *config.Config, logger *slog.Log
 	c.CreateTaskHandler = commands.NewCreateTaskHandler(taskRepo, outboxRepo, c.UnitOfWork)
 	c.CompleteTaskHandler = commands.NewCompleteTaskHandler(taskRepo, outboxRepo, c.UnitOfWork)
 	c.ArchiveTaskHandler = commands.NewArchiveTaskHandler(taskRepo, outboxRepo, c.UnitOfWork)
+	c.StartTaskHandler = commands.NewStartTaskHandler(taskRepo, outboxRepo, c.UnitOfWork)
+	c.UpdateTaskHandler = commands.NewUpdateTaskHandler(taskRepo, outboxRepo, c.UnitOfWork)
 
 	// Create task query handlers
 	c.ListTasksHandler = queries.NewListTasksHandler(taskRepo)
@@ -784,6 +836,20 @@ func NewLocalContainer(ctx context.Context, cfg *config.Config, logger *slog.Log
 	// Create sync coordinator
 	c.SyncCoordinator = calendarApp.NewSyncCoordinator(c.ProviderRegistry, c.ConnectedCalendarRepo)
 
+	// Create calendar services
+	c.ConnectCalendarService = calendarApp.NewConnectCalendarService(
+		c.ConnectedCalendarRepo,
+		c.OutboxRepo,
+		c.UnitOfWork,
+		logger,
+	)
+	c.DisconnectCalendarService = calendarApp.NewDisconnectCalendarService(
+		c.ConnectedCalendarRepo,
+		c.OutboxRepo,
+		c.UnitOfWork,
+		logger,
+	)
+
 	// Create in-process event bus for local mode (no RabbitMQ)
 	c.InProcessEventBus = eventbus.NewInProcessEventBus(logger)
 
@@ -848,6 +914,28 @@ func NewLocalContainer(ctx context.Context, cfg *config.Config, logger *slog.Log
 	// Create settings service
 	c.SettingsService = identitySettings.NewService(settingsRepo)
 
+	// Create project repository
+	projectRepo, err := factory.ProjectRepository()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create project repository: %w", err)
+	}
+	c.ProjectRepo = projectRepo
+
+	// Create project command handlers
+	c.CreateProjectHandler = projectCommands.NewCreateProjectHandler(projectRepo, c.UnitOfWork)
+	c.UpdateProjectHandler = projectCommands.NewUpdateProjectHandler(projectRepo, c.UnitOfWork)
+	c.DeleteProjectHandler = projectCommands.NewDeleteProjectHandler(projectRepo, c.UnitOfWork)
+	c.ChangeProjectStatusHandler = projectCommands.NewChangeProjectStatusHandler(projectRepo, c.UnitOfWork)
+	c.AddMilestoneHandler = projectCommands.NewAddMilestoneHandler(projectRepo, c.UnitOfWork)
+	c.UpdateMilestoneHandler = projectCommands.NewUpdateMilestoneHandler(projectRepo, c.UnitOfWork)
+	c.DeleteMilestoneHandler = projectCommands.NewDeleteMilestoneHandler(projectRepo, c.UnitOfWork)
+	c.LinkTaskHandler = projectCommands.NewLinkTaskHandler(projectRepo, c.UnitOfWork)
+	c.UnlinkTaskHandler = projectCommands.NewUnlinkTaskHandler(projectRepo, c.UnitOfWork)
+
+	// Create project query handlers
+	c.GetProjectHandler = projectQueries.NewGetProjectHandler(projectRepo)
+	c.ListProjectsHandler = projectQueries.NewListProjectsHandler(projectRepo)
+
 	// Create license service for local mode
 	licenseRepo := licensingPersistence.NewFileRepository(cfg.LicenseFilePath())
 	licenseVerifier, err := licensingCrypto.NewVerifier()
@@ -858,6 +946,189 @@ func NewLocalContainer(ctx context.Context, cfg *config.Config, logger *slog.Log
 
 	// Create LocalBillingService that wraps the license service
 	c.BillingService = licensingApp.NewLocalBillingService(c.LicenseService)
+
+	// Create inbox repository and handlers
+	inboxRepo, err := factory.InboxRepository()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create inbox repository: %w", err)
+	}
+	c.InboxClassifier = inboxServices.NewClassifier()
+	c.CaptureInboxItemHandler = inboxCommands.NewCaptureInboxItemHandler(inboxRepo, c.InboxClassifier, c.UnitOfWork)
+	c.ListInboxItemsHandler = inboxQueries.NewListInboxItemsHandler(inboxRepo)
+	c.GetInboxItemHandler = inboxQueries.NewGetInboxItemHandler(inboxRepo)
+	c.PromoteInboxItemHandler = inboxCommands.NewPromoteInboxItemHandler(
+		inboxRepo,
+		c.CreateTaskHandler,
+		c.CreateHabitHandler,
+		c.CreateMeetingHandler,
+	)
+
+	// Create automation repositories and service
+	ruleRepo, err := factory.RuleRepository()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create automation rule repository: %w", err)
+	}
+	execRepo, err := factory.ExecutionRepository()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create automation execution repository: %w", err)
+	}
+	pendingRepo, err := factory.PendingActionRepository()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create automation pending action repository: %w", err)
+	}
+	c.AutomationService = automationApp.NewService(ruleRepo, execRepo, pendingRepo)
+
+	// Create insights repositories and service
+	snapshotRepo, err := factory.SnapshotRepository()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create insights snapshot repository: %w", err)
+	}
+	sessionRepo, err := factory.SessionRepository()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create insights session repository: %w", err)
+	}
+	summaryRepo, err := factory.SummaryRepository()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create insights summary repository: %w", err)
+	}
+	goalRepo, err := factory.GoalRepository()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create insights goal repository: %w", err)
+	}
+	analyticsDS, err := factory.AnalyticsDataSource()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create insights analytics data source: %w", err)
+	}
+	c.InsightsService = insightsApp.NewService(snapshotRepo, sessionRepo, summaryRepo, goalRepo, analyticsDS)
+
+	// Create reschedule attempt repository and handler
+	rescheduleAttemptRepo, err := factory.RescheduleAttemptRepository()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create reschedule attempt repository: %w", err)
+	}
+	c.AutoRescheduleHandler = scheduleCommands.NewAutoRescheduleHandler(scheduleRepo, rescheduleAttemptRepo, outboxRepo, c.UnitOfWork, c.SchedulerEngine)
+	c.ListRescheduleAttemptsHandler = scheduleQueries.NewListRescheduleAttemptsHandler(rescheduleAttemptRepo)
+
+	// Create engine registry and register built-in engines
+	c.EngineRegistry = registry.NewRegistry(logger)
+
+	// Register built-in engines
+	if err := c.EngineRegistry.RegisterBuiltin(builtin.NewDefaultSchedulerEngine()); err != nil {
+		logger.Warn("failed to register default scheduler engine", "error", err)
+	}
+	if err := c.EngineRegistry.RegisterBuiltin(builtin.NewDefaultPriorityEngine()); err != nil {
+		logger.Warn("failed to register default priority engine", "error", err)
+	}
+	if err := c.EngineRegistry.RegisterBuiltin(builtin.NewDefaultClassifierEngine()); err != nil {
+		logger.Warn("failed to register default classifier engine", "error", err)
+	}
+	if err := c.EngineRegistry.RegisterBuiltin(builtin.NewDefaultAutomationEngine()); err != nil {
+		logger.Warn("failed to register default automation engine", "error", err)
+	}
+
+	// Create engine executor with circuit breaker
+	executorConfig := runtime.DefaultExecutorConfig()
+	metricsCollector := runtime.NewMetricsCollector()
+	c.EngineExecutor = runtime.NewExecutor(c.EngineRegistry, metricsCollector, logger, executorConfig)
+
+	logger.Info("registered engines", "count", c.EngineRegistry.Count())
+
+	// Create orbit registry and register built-in orbits
+	c.OrbitRegistry = orbitRegistry.NewRegistry(logger, c.BillingService)
+
+	// Register built-in orbits
+	wellnessOrbit := wellness.New()
+	if err := c.OrbitRegistry.RegisterBuiltin(wellnessOrbit); err != nil {
+		logger.Warn("failed to register wellness orbit", "error", err)
+	}
+
+	idealweekOrbit := idealweek.New()
+	if err := c.OrbitRegistry.RegisterBuiltin(idealweekOrbit); err != nil {
+		logger.Warn("failed to register ideal week orbit", "error", err)
+	}
+
+	focusmodeOrbit := focusmode.New()
+	if err := c.OrbitRegistry.RegisterBuiltin(focusmodeOrbit); err != nil {
+		logger.Warn("failed to register focus mode orbit", "error", err)
+	}
+
+	// Discover and load orbits from filesystem
+	orbitSearchPaths := cfg.OrbitSearchPaths
+	if len(orbitSearchPaths) == 0 {
+		orbitSearchPaths = orbitRegistry.DefaultOrbitSearchPaths()
+	}
+
+	orbitDiscovery := orbitRegistry.NewDiscovery(orbitSearchPaths, logger)
+	discoveredOrbits, err := orbitDiscovery.Discover()
+	if err != nil {
+		logger.Warn("orbit discovery failed", "error", err)
+	} else if len(discoveredOrbits) > 0 {
+		logger.Info("discovered orbits from filesystem",
+			"count", len(discoveredOrbits),
+			"paths", orbitSearchPaths,
+		)
+		for _, discovered := range discoveredOrbits {
+			if c.OrbitRegistry.Has(discovered.Manifest.ID) {
+				logger.Debug("skipping discovered orbit, already registered",
+					"orbit_id", discovered.Manifest.ID,
+				)
+				continue
+			}
+
+			if err := c.OrbitRegistry.RegisterManifest(discovered.Manifest, discovered.Path); err != nil {
+				logger.Warn("failed to register discovered orbit",
+					"orbit_id", discovered.Manifest.ID,
+					"path", discovered.Path,
+					"error", err,
+				)
+			} else {
+				logger.Info("registered discovered orbit",
+					"orbit_id", discovered.Manifest.ID,
+					"path", discovered.Path,
+				)
+			}
+		}
+	}
+
+	// Create API factories for orbit sandbox
+	apiFactories := &orbitAPI.APIFactories{
+		ListTaskHandler:    c.ListTasksHandler,
+		GetTaskHandler:     c.GetTaskHandler,
+		ListHabitHandler:   c.ListHabitsHandler,
+		GetHabitHandler:    c.GetHabitHandler,
+		ScheduleHandler:    c.GetScheduleHandler,
+		ListMeetingHandler: c.ListMeetingsHandler,
+		GetMeetingHandler:  c.GetMeetingHandler,
+		ListInboxHandler:   c.ListInboxItemsHandler,
+		GetInboxHandler:    c.GetInboxItemHandler,
+		RedisClient:        nil, // Local mode uses in-memory storage
+	}
+
+	// Create orbit sandbox with full API factory integration
+	c.OrbitSandbox = orbitRuntime.NewSandbox(orbitRuntime.SandboxConfig{
+		Logger:             logger,
+		Registry:           c.OrbitRegistry,
+		TaskAPIFactory:     apiFactories.TaskAPIFactory(),
+		HabitAPIFactory:    apiFactories.HabitAPIFactory(),
+		ScheduleAPIFactory: apiFactories.ScheduleAPIFactory(),
+		MeetingAPIFactory:  apiFactories.MeetingAPIFactory(),
+		InboxAPIFactory:    apiFactories.InboxAPIFactory(),
+		StorageAPIFactory:  apiFactories.StorageAPIFactory(),
+		MetricsFactory:     orbitAPI.NoopMetricsFactory(),
+	})
+
+	// Create orbit executor
+	c.OrbitExecutor = orbitRuntime.NewExecutor(orbitRuntime.ExecutorConfig{
+		Sandbox:  c.OrbitSandbox,
+		Registry: c.OrbitRegistry,
+		Logger:   logger,
+	})
+
+	logger.Info("registered orbits",
+		"wellness", wellness.OrbitID,
+		"idealweek", idealweek.OrbitID,
+		"focusmode", focusmode.OrbitID,
+	)
 
 	// Store connection for Close
 	c.DBConn = conn

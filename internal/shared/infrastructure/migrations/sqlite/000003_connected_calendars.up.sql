@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS connected_calendars (
     sync_pull INTEGER NOT NULL DEFAULT 0,  -- Pull events from this calendar
     config TEXT DEFAULT '{}',             -- JSON config (CalDAV URL, etc.)
     last_sync_at TEXT,
+    version INTEGER NOT NULL DEFAULT 0,   -- Optimistic concurrency control
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
     updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
 

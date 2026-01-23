@@ -93,9 +93,25 @@ FROM connected_calendars
 WHERE id = ?
 `
 
-func (q *Queries) GetConnectedCalendarByID(ctx context.Context, id string) (ConnectedCalendar, error) {
+type GetConnectedCalendarByIDRow struct {
+	ID         string         `json:"id"`
+	UserID     string         `json:"user_id"`
+	Provider   string         `json:"provider"`
+	CalendarID string         `json:"calendar_id"`
+	Name       string         `json:"name"`
+	IsPrimary  int64          `json:"is_primary"`
+	IsEnabled  int64          `json:"is_enabled"`
+	SyncPush   int64          `json:"sync_push"`
+	SyncPull   int64          `json:"sync_pull"`
+	Config     sql.NullString `json:"config"`
+	LastSyncAt sql.NullString `json:"last_sync_at"`
+	CreatedAt  string         `json:"created_at"`
+	UpdatedAt  string         `json:"updated_at"`
+}
+
+func (q *Queries) GetConnectedCalendarByID(ctx context.Context, id string) (GetConnectedCalendarByIDRow, error) {
 	row := q.db.QueryRowContext(ctx, getConnectedCalendarByID, id)
-	var i ConnectedCalendar
+	var i GetConnectedCalendarByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -127,9 +143,25 @@ type GetConnectedCalendarByUserProviderCalendarParams struct {
 	CalendarID string `json:"calendar_id"`
 }
 
-func (q *Queries) GetConnectedCalendarByUserProviderCalendar(ctx context.Context, arg GetConnectedCalendarByUserProviderCalendarParams) (ConnectedCalendar, error) {
+type GetConnectedCalendarByUserProviderCalendarRow struct {
+	ID         string         `json:"id"`
+	UserID     string         `json:"user_id"`
+	Provider   string         `json:"provider"`
+	CalendarID string         `json:"calendar_id"`
+	Name       string         `json:"name"`
+	IsPrimary  int64          `json:"is_primary"`
+	IsEnabled  int64          `json:"is_enabled"`
+	SyncPush   int64          `json:"sync_push"`
+	SyncPull   int64          `json:"sync_pull"`
+	Config     sql.NullString `json:"config"`
+	LastSyncAt sql.NullString `json:"last_sync_at"`
+	CreatedAt  string         `json:"created_at"`
+	UpdatedAt  string         `json:"updated_at"`
+}
+
+func (q *Queries) GetConnectedCalendarByUserProviderCalendar(ctx context.Context, arg GetConnectedCalendarByUserProviderCalendarParams) (GetConnectedCalendarByUserProviderCalendarRow, error) {
 	row := q.db.QueryRowContext(ctx, getConnectedCalendarByUserProviderCalendar, arg.UserID, arg.Provider, arg.CalendarID)
-	var i ConnectedCalendar
+	var i GetConnectedCalendarByUserProviderCalendarRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -156,15 +188,31 @@ WHERE user_id = ?
 ORDER BY is_primary DESC, provider, name
 `
 
-func (q *Queries) GetConnectedCalendarsByUser(ctx context.Context, userID string) ([]ConnectedCalendar, error) {
+type GetConnectedCalendarsByUserRow struct {
+	ID         string         `json:"id"`
+	UserID     string         `json:"user_id"`
+	Provider   string         `json:"provider"`
+	CalendarID string         `json:"calendar_id"`
+	Name       string         `json:"name"`
+	IsPrimary  int64          `json:"is_primary"`
+	IsEnabled  int64          `json:"is_enabled"`
+	SyncPush   int64          `json:"sync_push"`
+	SyncPull   int64          `json:"sync_pull"`
+	Config     sql.NullString `json:"config"`
+	LastSyncAt sql.NullString `json:"last_sync_at"`
+	CreatedAt  string         `json:"created_at"`
+	UpdatedAt  string         `json:"updated_at"`
+}
+
+func (q *Queries) GetConnectedCalendarsByUser(ctx context.Context, userID string) ([]GetConnectedCalendarsByUserRow, error) {
 	rows, err := q.db.QueryContext(ctx, getConnectedCalendarsByUser, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ConnectedCalendar{}
+	items := []GetConnectedCalendarsByUserRow{}
 	for rows.Next() {
-		var i ConnectedCalendar
+		var i GetConnectedCalendarsByUserRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -206,15 +254,31 @@ type GetConnectedCalendarsByUserAndProviderParams struct {
 	Provider string `json:"provider"`
 }
 
-func (q *Queries) GetConnectedCalendarsByUserAndProvider(ctx context.Context, arg GetConnectedCalendarsByUserAndProviderParams) ([]ConnectedCalendar, error) {
+type GetConnectedCalendarsByUserAndProviderRow struct {
+	ID         string         `json:"id"`
+	UserID     string         `json:"user_id"`
+	Provider   string         `json:"provider"`
+	CalendarID string         `json:"calendar_id"`
+	Name       string         `json:"name"`
+	IsPrimary  int64          `json:"is_primary"`
+	IsEnabled  int64          `json:"is_enabled"`
+	SyncPush   int64          `json:"sync_push"`
+	SyncPull   int64          `json:"sync_pull"`
+	Config     sql.NullString `json:"config"`
+	LastSyncAt sql.NullString `json:"last_sync_at"`
+	CreatedAt  string         `json:"created_at"`
+	UpdatedAt  string         `json:"updated_at"`
+}
+
+func (q *Queries) GetConnectedCalendarsByUserAndProvider(ctx context.Context, arg GetConnectedCalendarsByUserAndProviderParams) ([]GetConnectedCalendarsByUserAndProviderRow, error) {
 	rows, err := q.db.QueryContext(ctx, getConnectedCalendarsByUserAndProvider, arg.UserID, arg.Provider)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ConnectedCalendar{}
+	items := []GetConnectedCalendarsByUserAndProviderRow{}
 	for rows.Next() {
-		var i ConnectedCalendar
+		var i GetConnectedCalendarsByUserAndProviderRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -251,15 +315,31 @@ WHERE user_id = ? AND is_enabled = 1 AND sync_pull = 1
 ORDER BY is_primary DESC, provider, name
 `
 
-func (q *Queries) GetEnabledPullCalendarsByUser(ctx context.Context, userID string) ([]ConnectedCalendar, error) {
+type GetEnabledPullCalendarsByUserRow struct {
+	ID         string         `json:"id"`
+	UserID     string         `json:"user_id"`
+	Provider   string         `json:"provider"`
+	CalendarID string         `json:"calendar_id"`
+	Name       string         `json:"name"`
+	IsPrimary  int64          `json:"is_primary"`
+	IsEnabled  int64          `json:"is_enabled"`
+	SyncPush   int64          `json:"sync_push"`
+	SyncPull   int64          `json:"sync_pull"`
+	Config     sql.NullString `json:"config"`
+	LastSyncAt sql.NullString `json:"last_sync_at"`
+	CreatedAt  string         `json:"created_at"`
+	UpdatedAt  string         `json:"updated_at"`
+}
+
+func (q *Queries) GetEnabledPullCalendarsByUser(ctx context.Context, userID string) ([]GetEnabledPullCalendarsByUserRow, error) {
 	rows, err := q.db.QueryContext(ctx, getEnabledPullCalendarsByUser, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ConnectedCalendar{}
+	items := []GetEnabledPullCalendarsByUserRow{}
 	for rows.Next() {
-		var i ConnectedCalendar
+		var i GetEnabledPullCalendarsByUserRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -296,15 +376,31 @@ WHERE user_id = ? AND is_enabled = 1 AND sync_push = 1
 ORDER BY is_primary DESC, provider, name
 `
 
-func (q *Queries) GetEnabledPushCalendarsByUser(ctx context.Context, userID string) ([]ConnectedCalendar, error) {
+type GetEnabledPushCalendarsByUserRow struct {
+	ID         string         `json:"id"`
+	UserID     string         `json:"user_id"`
+	Provider   string         `json:"provider"`
+	CalendarID string         `json:"calendar_id"`
+	Name       string         `json:"name"`
+	IsPrimary  int64          `json:"is_primary"`
+	IsEnabled  int64          `json:"is_enabled"`
+	SyncPush   int64          `json:"sync_push"`
+	SyncPull   int64          `json:"sync_pull"`
+	Config     sql.NullString `json:"config"`
+	LastSyncAt sql.NullString `json:"last_sync_at"`
+	CreatedAt  string         `json:"created_at"`
+	UpdatedAt  string         `json:"updated_at"`
+}
+
+func (q *Queries) GetEnabledPushCalendarsByUser(ctx context.Context, userID string) ([]GetEnabledPushCalendarsByUserRow, error) {
 	rows, err := q.db.QueryContext(ctx, getEnabledPushCalendarsByUser, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ConnectedCalendar{}
+	items := []GetEnabledPushCalendarsByUserRow{}
 	for rows.Next() {
-		var i ConnectedCalendar
+		var i GetEnabledPushCalendarsByUserRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -340,9 +436,25 @@ FROM connected_calendars
 WHERE user_id = ? AND is_primary = 1
 `
 
-func (q *Queries) GetPrimaryConnectedCalendarByUser(ctx context.Context, userID string) (ConnectedCalendar, error) {
+type GetPrimaryConnectedCalendarByUserRow struct {
+	ID         string         `json:"id"`
+	UserID     string         `json:"user_id"`
+	Provider   string         `json:"provider"`
+	CalendarID string         `json:"calendar_id"`
+	Name       string         `json:"name"`
+	IsPrimary  int64          `json:"is_primary"`
+	IsEnabled  int64          `json:"is_enabled"`
+	SyncPush   int64          `json:"sync_push"`
+	SyncPull   int64          `json:"sync_pull"`
+	Config     sql.NullString `json:"config"`
+	LastSyncAt sql.NullString `json:"last_sync_at"`
+	CreatedAt  string         `json:"created_at"`
+	UpdatedAt  string         `json:"updated_at"`
+}
+
+func (q *Queries) GetPrimaryConnectedCalendarByUser(ctx context.Context, userID string) (GetPrimaryConnectedCalendarByUserRow, error) {
 	row := q.db.QueryRowContext(ctx, getPrimaryConnectedCalendarByUser, userID)
-	var i ConnectedCalendar
+	var i GetPrimaryConnectedCalendarByUserRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,

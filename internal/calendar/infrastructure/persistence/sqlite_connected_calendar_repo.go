@@ -3,9 +3,11 @@ package persistence
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/felixgeelhaar/orbita/internal/calendar/domain"
+	sharedDomain "github.com/felixgeelhaar/orbita/internal/shared/domain"
 	"github.com/google/uuid"
 )
 
@@ -19,14 +21,14 @@ func NewSQLiteConnectedCalendarRepository(db *sql.DB) *SQLiteConnectedCalendarRe
 	return &SQLiteConnectedCalendarRepository{db: db}
 }
 
-// Save persists a connected calendar (create or update).
+// Save persists a connected calendar (create or update) with optimistic concurrency control.
 func (r *SQLiteConnectedCalendarRepository) Save(ctx context.Context, cal *domain.ConnectedCalendar) error {
 	query := `
 		INSERT INTO connected_calendars (
 			id, user_id, provider, calendar_id, name, is_primary, is_enabled,
-			sync_push, sync_pull, config, last_sync_at, created_at, updated_at
+			sync_push, sync_pull, config, last_sync_at, created_at, updated_at, version
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (user_id, provider, calendar_id) DO UPDATE SET
 			name = excluded.name,
 			is_primary = excluded.is_primary,
@@ -35,7 +37,9 @@ func (r *SQLiteConnectedCalendarRepository) Save(ctx context.Context, cal *domai
 			sync_pull = excluded.sync_pull,
 			config = excluded.config,
 			last_sync_at = excluded.last_sync_at,
-			updated_at = excluded.updated_at
+			updated_at = excluded.updated_at,
+			version = excluded.version
+		WHERE connected_calendars.version = ?
 	`
 
 	var lastSyncAt *string
@@ -44,7 +48,12 @@ func (r *SQLiteConnectedCalendarRepository) Save(ctx context.Context, cal *domai
 		lastSyncAt = &t
 	}
 
-	_, err := r.db.ExecContext(ctx, query,
+	// For optimistic concurrency:
+	// - New records have version 0
+	// - On save, we check current DB version equals entity version, then save with version+1
+	newVersion := cal.Version() + 1
+
+	result, err := r.db.ExecContext(ctx, query,
 		cal.ID().String(),
 		cal.UserID().String(),
 		cal.Provider().String(),
@@ -58,15 +67,33 @@ func (r *SQLiteConnectedCalendarRepository) Save(ctx context.Context, cal *domai
 		lastSyncAt,
 		cal.CreatedAt().Format(time.RFC3339),
 		cal.UpdatedAt().Format(time.RFC3339),
+		newVersion,
+		cal.Version(),
 	)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Check if update was applied (optimistic lock check)
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("%w: calendar %s was modified by another process", sharedDomain.ErrConcurrentModification, cal.ID())
+	}
+
+	// Update entity version after successful save
+	cal.SetVersion(newVersion)
+
+	return nil
 }
 
 // FindByID finds a connected calendar by ID.
 func (r *SQLiteConnectedCalendarRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.ConnectedCalendar, error) {
 	query := `
 		SELECT id, user_id, provider, calendar_id, name, is_primary, is_enabled,
-		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at
+		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at, version
 		FROM connected_calendars
 		WHERE id = ?
 	`
@@ -79,7 +106,7 @@ func (r *SQLiteConnectedCalendarRepository) FindByID(ctx context.Context, id uui
 func (r *SQLiteConnectedCalendarRepository) FindByUserAndProvider(ctx context.Context, userID uuid.UUID, provider domain.ProviderType) ([]*domain.ConnectedCalendar, error) {
 	query := `
 		SELECT id, user_id, provider, calendar_id, name, is_primary, is_enabled,
-		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at
+		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at, version
 		FROM connected_calendars
 		WHERE user_id = ? AND provider = ?
 		ORDER BY is_primary DESC, name
@@ -98,7 +125,7 @@ func (r *SQLiteConnectedCalendarRepository) FindByUserAndProvider(ctx context.Co
 func (r *SQLiteConnectedCalendarRepository) FindByUserProviderAndCalendar(ctx context.Context, userID uuid.UUID, provider domain.ProviderType, calendarID string) (*domain.ConnectedCalendar, error) {
 	query := `
 		SELECT id, user_id, provider, calendar_id, name, is_primary, is_enabled,
-		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at
+		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at, version
 		FROM connected_calendars
 		WHERE user_id = ? AND provider = ? AND calendar_id = ?
 	`
@@ -111,7 +138,7 @@ func (r *SQLiteConnectedCalendarRepository) FindByUserProviderAndCalendar(ctx co
 func (r *SQLiteConnectedCalendarRepository) FindByUser(ctx context.Context, userID uuid.UUID) ([]*domain.ConnectedCalendar, error) {
 	query := `
 		SELECT id, user_id, provider, calendar_id, name, is_primary, is_enabled,
-		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at
+		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at, version
 		FROM connected_calendars
 		WHERE user_id = ?
 		ORDER BY is_primary DESC, provider, name
@@ -130,7 +157,7 @@ func (r *SQLiteConnectedCalendarRepository) FindByUser(ctx context.Context, user
 func (r *SQLiteConnectedCalendarRepository) FindPrimaryForUser(ctx context.Context, userID uuid.UUID) (*domain.ConnectedCalendar, error) {
 	query := `
 		SELECT id, user_id, provider, calendar_id, name, is_primary, is_enabled,
-		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at
+		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at, version
 		FROM connected_calendars
 		WHERE user_id = ? AND is_primary = 1
 	`
@@ -143,7 +170,7 @@ func (r *SQLiteConnectedCalendarRepository) FindPrimaryForUser(ctx context.Conte
 func (r *SQLiteConnectedCalendarRepository) FindEnabledPushCalendars(ctx context.Context, userID uuid.UUID) ([]*domain.ConnectedCalendar, error) {
 	query := `
 		SELECT id, user_id, provider, calendar_id, name, is_primary, is_enabled,
-		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at
+		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at, version
 		FROM connected_calendars
 		WHERE user_id = ? AND is_enabled = 1 AND sync_push = 1
 		ORDER BY is_primary DESC, provider, name
@@ -162,7 +189,7 @@ func (r *SQLiteConnectedCalendarRepository) FindEnabledPushCalendars(ctx context
 func (r *SQLiteConnectedCalendarRepository) FindEnabledPullCalendars(ctx context.Context, userID uuid.UUID) ([]*domain.ConnectedCalendar, error) {
 	query := `
 		SELECT id, user_id, provider, calendar_id, name, is_primary, is_enabled,
-		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at
+		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at, version
 		FROM connected_calendars
 		WHERE user_id = ? AND is_enabled = 1 AND sync_pull = 1
 		ORDER BY is_primary DESC, provider, name
@@ -175,17 +202,6 @@ func (r *SQLiteConnectedCalendarRepository) FindEnabledPullCalendars(ctx context
 	defer rows.Close()
 
 	return r.scanCalendars(rows)
-}
-
-// ClearPrimaryForUser removes the primary flag from all user calendars.
-func (r *SQLiteConnectedCalendarRepository) ClearPrimaryForUser(ctx context.Context, userID uuid.UUID) error {
-	query := `
-		UPDATE connected_calendars
-		SET is_primary = 0, updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
-		WHERE user_id = ? AND is_primary = 1
-	`
-	_, err := r.db.ExecContext(ctx, query, userID.String())
-	return err
 }
 
 // Delete removes a connected calendar.
@@ -217,12 +233,13 @@ func (r *SQLiteConnectedCalendarRepository) scanCalendar(row *sql.Row) (*domain.
 		lastSyncAt   sql.NullString
 		createdAtStr string
 		updatedAtStr string
+		version      int
 	)
 
 	err := row.Scan(
 		&idStr, &userIDStr, &provider, &calendarID, &name,
 		&isPrimary, &isEnabled, &syncPush, &syncPull,
-		&config, &lastSyncAt, &createdAtStr, &updatedAtStr,
+		&config, &lastSyncAt, &createdAtStr, &updatedAtStr, &version,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -235,7 +252,7 @@ func (r *SQLiteConnectedCalendarRepository) scanCalendar(row *sql.Row) (*domain.
 		idStr, userIDStr, provider, calendarID, name,
 		isPrimary, isEnabled, syncPush, syncPull,
 		config, lastSyncAt,
-		createdAtStr, updatedAtStr,
+		createdAtStr, updatedAtStr, version,
 	)
 }
 
@@ -257,12 +274,13 @@ func (r *SQLiteConnectedCalendarRepository) scanCalendars(rows *sql.Rows) ([]*do
 			lastSyncAt   sql.NullString
 			createdAtStr string
 			updatedAtStr string
+			version      int
 		)
 
 		err := rows.Scan(
 			&idStr, &userIDStr, &provider, &calendarID, &name,
 			&isPrimary, &isEnabled, &syncPush, &syncPull,
-			&config, &lastSyncAt, &createdAtStr, &updatedAtStr,
+			&config, &lastSyncAt, &createdAtStr, &updatedAtStr, &version,
 		)
 		if err != nil {
 			return nil, err
@@ -272,7 +290,7 @@ func (r *SQLiteConnectedCalendarRepository) scanCalendars(rows *sql.Rows) ([]*do
 			idStr, userIDStr, provider, calendarID, name,
 			isPrimary, isEnabled, syncPush, syncPull,
 			config, lastSyncAt,
-			createdAtStr, updatedAtStr,
+			createdAtStr, updatedAtStr, version,
 		)
 		if err != nil {
 			return nil, err
@@ -288,6 +306,7 @@ func (r *SQLiteConnectedCalendarRepository) buildCalendar(
 	isPrimary, isEnabled, syncPush, syncPull int,
 	config, lastSyncAtStr sql.NullString,
 	createdAtStr, updatedAtStr string,
+	version int,
 ) (*domain.ConnectedCalendar, error) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -326,6 +345,7 @@ func (r *SQLiteConnectedCalendarRepository) buildCalendar(
 		config.String,
 		lastSyncAt,
 		createdAt, updatedAt,
+		version,
 	), nil
 }
 

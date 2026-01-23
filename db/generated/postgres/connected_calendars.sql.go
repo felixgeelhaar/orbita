@@ -94,9 +94,25 @@ FROM connected_calendars
 WHERE id = $1
 `
 
-func (q *Queries) GetConnectedCalendarByID(ctx context.Context, id pgtype.UUID) (ConnectedCalendar, error) {
+type GetConnectedCalendarByIDRow struct {
+	ID         pgtype.UUID        `json:"id"`
+	UserID     pgtype.UUID        `json:"user_id"`
+	Provider   string             `json:"provider"`
+	CalendarID string             `json:"calendar_id"`
+	Name       string             `json:"name"`
+	IsPrimary  bool               `json:"is_primary"`
+	IsEnabled  bool               `json:"is_enabled"`
+	SyncPush   bool               `json:"sync_push"`
+	SyncPull   bool               `json:"sync_pull"`
+	Config     []byte             `json:"config"`
+	LastSyncAt pgtype.Timestamptz `json:"last_sync_at"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetConnectedCalendarByID(ctx context.Context, id pgtype.UUID) (GetConnectedCalendarByIDRow, error) {
 	row := q.db.QueryRow(ctx, getConnectedCalendarByID, id)
-	var i ConnectedCalendar
+	var i GetConnectedCalendarByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -128,9 +144,25 @@ type GetConnectedCalendarByUserProviderCalendarParams struct {
 	CalendarID string      `json:"calendar_id"`
 }
 
-func (q *Queries) GetConnectedCalendarByUserProviderCalendar(ctx context.Context, arg GetConnectedCalendarByUserProviderCalendarParams) (ConnectedCalendar, error) {
+type GetConnectedCalendarByUserProviderCalendarRow struct {
+	ID         pgtype.UUID        `json:"id"`
+	UserID     pgtype.UUID        `json:"user_id"`
+	Provider   string             `json:"provider"`
+	CalendarID string             `json:"calendar_id"`
+	Name       string             `json:"name"`
+	IsPrimary  bool               `json:"is_primary"`
+	IsEnabled  bool               `json:"is_enabled"`
+	SyncPush   bool               `json:"sync_push"`
+	SyncPull   bool               `json:"sync_pull"`
+	Config     []byte             `json:"config"`
+	LastSyncAt pgtype.Timestamptz `json:"last_sync_at"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetConnectedCalendarByUserProviderCalendar(ctx context.Context, arg GetConnectedCalendarByUserProviderCalendarParams) (GetConnectedCalendarByUserProviderCalendarRow, error) {
 	row := q.db.QueryRow(ctx, getConnectedCalendarByUserProviderCalendar, arg.UserID, arg.Provider, arg.CalendarID)
-	var i ConnectedCalendar
+	var i GetConnectedCalendarByUserProviderCalendarRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -157,15 +189,31 @@ WHERE user_id = $1
 ORDER BY is_primary DESC, provider, name
 `
 
-func (q *Queries) GetConnectedCalendarsByUser(ctx context.Context, userID pgtype.UUID) ([]ConnectedCalendar, error) {
+type GetConnectedCalendarsByUserRow struct {
+	ID         pgtype.UUID        `json:"id"`
+	UserID     pgtype.UUID        `json:"user_id"`
+	Provider   string             `json:"provider"`
+	CalendarID string             `json:"calendar_id"`
+	Name       string             `json:"name"`
+	IsPrimary  bool               `json:"is_primary"`
+	IsEnabled  bool               `json:"is_enabled"`
+	SyncPush   bool               `json:"sync_push"`
+	SyncPull   bool               `json:"sync_pull"`
+	Config     []byte             `json:"config"`
+	LastSyncAt pgtype.Timestamptz `json:"last_sync_at"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetConnectedCalendarsByUser(ctx context.Context, userID pgtype.UUID) ([]GetConnectedCalendarsByUserRow, error) {
 	rows, err := q.db.Query(ctx, getConnectedCalendarsByUser, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ConnectedCalendar{}
+	items := []GetConnectedCalendarsByUserRow{}
 	for rows.Next() {
-		var i ConnectedCalendar
+		var i GetConnectedCalendarsByUserRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -204,15 +252,31 @@ type GetConnectedCalendarsByUserAndProviderParams struct {
 	Provider string      `json:"provider"`
 }
 
-func (q *Queries) GetConnectedCalendarsByUserAndProvider(ctx context.Context, arg GetConnectedCalendarsByUserAndProviderParams) ([]ConnectedCalendar, error) {
+type GetConnectedCalendarsByUserAndProviderRow struct {
+	ID         pgtype.UUID        `json:"id"`
+	UserID     pgtype.UUID        `json:"user_id"`
+	Provider   string             `json:"provider"`
+	CalendarID string             `json:"calendar_id"`
+	Name       string             `json:"name"`
+	IsPrimary  bool               `json:"is_primary"`
+	IsEnabled  bool               `json:"is_enabled"`
+	SyncPush   bool               `json:"sync_push"`
+	SyncPull   bool               `json:"sync_pull"`
+	Config     []byte             `json:"config"`
+	LastSyncAt pgtype.Timestamptz `json:"last_sync_at"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetConnectedCalendarsByUserAndProvider(ctx context.Context, arg GetConnectedCalendarsByUserAndProviderParams) ([]GetConnectedCalendarsByUserAndProviderRow, error) {
 	rows, err := q.db.Query(ctx, getConnectedCalendarsByUserAndProvider, arg.UserID, arg.Provider)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ConnectedCalendar{}
+	items := []GetConnectedCalendarsByUserAndProviderRow{}
 	for rows.Next() {
-		var i ConnectedCalendar
+		var i GetConnectedCalendarsByUserAndProviderRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -246,15 +310,31 @@ WHERE user_id = $1 AND is_enabled = TRUE AND sync_pull = TRUE
 ORDER BY is_primary DESC, provider, name
 `
 
-func (q *Queries) GetEnabledPullCalendarsByUser(ctx context.Context, userID pgtype.UUID) ([]ConnectedCalendar, error) {
+type GetEnabledPullCalendarsByUserRow struct {
+	ID         pgtype.UUID        `json:"id"`
+	UserID     pgtype.UUID        `json:"user_id"`
+	Provider   string             `json:"provider"`
+	CalendarID string             `json:"calendar_id"`
+	Name       string             `json:"name"`
+	IsPrimary  bool               `json:"is_primary"`
+	IsEnabled  bool               `json:"is_enabled"`
+	SyncPush   bool               `json:"sync_push"`
+	SyncPull   bool               `json:"sync_pull"`
+	Config     []byte             `json:"config"`
+	LastSyncAt pgtype.Timestamptz `json:"last_sync_at"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetEnabledPullCalendarsByUser(ctx context.Context, userID pgtype.UUID) ([]GetEnabledPullCalendarsByUserRow, error) {
 	rows, err := q.db.Query(ctx, getEnabledPullCalendarsByUser, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ConnectedCalendar{}
+	items := []GetEnabledPullCalendarsByUserRow{}
 	for rows.Next() {
-		var i ConnectedCalendar
+		var i GetEnabledPullCalendarsByUserRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -288,15 +368,31 @@ WHERE user_id = $1 AND is_enabled = TRUE AND sync_push = TRUE
 ORDER BY is_primary DESC, provider, name
 `
 
-func (q *Queries) GetEnabledPushCalendarsByUser(ctx context.Context, userID pgtype.UUID) ([]ConnectedCalendar, error) {
+type GetEnabledPushCalendarsByUserRow struct {
+	ID         pgtype.UUID        `json:"id"`
+	UserID     pgtype.UUID        `json:"user_id"`
+	Provider   string             `json:"provider"`
+	CalendarID string             `json:"calendar_id"`
+	Name       string             `json:"name"`
+	IsPrimary  bool               `json:"is_primary"`
+	IsEnabled  bool               `json:"is_enabled"`
+	SyncPush   bool               `json:"sync_push"`
+	SyncPull   bool               `json:"sync_pull"`
+	Config     []byte             `json:"config"`
+	LastSyncAt pgtype.Timestamptz `json:"last_sync_at"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetEnabledPushCalendarsByUser(ctx context.Context, userID pgtype.UUID) ([]GetEnabledPushCalendarsByUserRow, error) {
 	rows, err := q.db.Query(ctx, getEnabledPushCalendarsByUser, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ConnectedCalendar{}
+	items := []GetEnabledPushCalendarsByUserRow{}
 	for rows.Next() {
-		var i ConnectedCalendar
+		var i GetEnabledPushCalendarsByUserRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -329,9 +425,25 @@ FROM connected_calendars
 WHERE user_id = $1 AND is_primary = TRUE
 `
 
-func (q *Queries) GetPrimaryConnectedCalendarByUser(ctx context.Context, userID pgtype.UUID) (ConnectedCalendar, error) {
+type GetPrimaryConnectedCalendarByUserRow struct {
+	ID         pgtype.UUID        `json:"id"`
+	UserID     pgtype.UUID        `json:"user_id"`
+	Provider   string             `json:"provider"`
+	CalendarID string             `json:"calendar_id"`
+	Name       string             `json:"name"`
+	IsPrimary  bool               `json:"is_primary"`
+	IsEnabled  bool               `json:"is_enabled"`
+	SyncPush   bool               `json:"sync_push"`
+	SyncPull   bool               `json:"sync_pull"`
+	Config     []byte             `json:"config"`
+	LastSyncAt pgtype.Timestamptz `json:"last_sync_at"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetPrimaryConnectedCalendarByUser(ctx context.Context, userID pgtype.UUID) (GetPrimaryConnectedCalendarByUserRow, error) {
 	row := q.db.QueryRow(ctx, getPrimaryConnectedCalendarByUser, userID)
-	var i ConnectedCalendar
+	var i GetPrimaryConnectedCalendarByUserRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,

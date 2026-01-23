@@ -213,7 +213,7 @@ func (c *SyncCoordinator) SyncAll(ctx context.Context, userID uuid.UUID, blocks 
 		}
 
 		result.AddResult(cal.Provider(), syncResult)
-		cal.MarkSynced()
+		cal.MarkSyncedSimple()
 		if saveErr := c.calendarRepo.Save(ctx, cal); saveErr != nil {
 			// Log but don't fail the sync
 			result.AddError(cal.Provider(), fmt.Errorf("sync succeeded but failed to update last sync time: %w", saveErr))
@@ -257,7 +257,7 @@ func (c *SyncCoordinator) SyncToProvider(ctx context.Context, userID uuid.UUID, 
 		return nil, err
 	}
 
-	targetCal.MarkSynced()
+	targetCal.MarkSyncedSimple()
 	if saveErr := c.calendarRepo.Save(ctx, targetCal); saveErr != nil {
 		// Log but don't fail the sync
 	}

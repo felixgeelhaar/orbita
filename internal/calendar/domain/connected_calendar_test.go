@@ -16,8 +16,9 @@ func TestNewConnectedCalendar(t *testing.T) {
 	calendarID := "primary"
 	name := "My Calendar"
 
-	cal := domain.NewConnectedCalendar(userID, provider, calendarID, name)
+	cal, err := domain.NewConnectedCalendar(userID, provider, calendarID, name)
 
+	require.NoError(t, err)
 	require.NotNil(t, cal)
 	assert.NotEqual(t, uuid.Nil, cal.ID())
 	assert.Equal(t, userID, cal.UserID())
@@ -33,8 +34,82 @@ func TestNewConnectedCalendar(t *testing.T) {
 	assert.False(t, cal.HasSynced())
 }
 
+func TestNewConnectedCalendar_Validation(t *testing.T) {
+	validUserID := uuid.New()
+	validProvider := domain.ProviderGoogle
+	validCalendarID := "primary"
+	validName := "My Calendar"
+
+	tests := []struct {
+		name       string
+		userID     uuid.UUID
+		provider   domain.ProviderType
+		calendarID string
+		calName    string
+		wantErr    error
+	}{
+		{
+			name:       "empty user ID",
+			userID:     uuid.Nil,
+			provider:   validProvider,
+			calendarID: validCalendarID,
+			calName:    validName,
+			wantErr:    domain.ErrEmptyUserID,
+		},
+		{
+			name:       "invalid provider",
+			userID:     validUserID,
+			provider:   domain.ProviderType("invalid"),
+			calendarID: validCalendarID,
+			calName:    validName,
+			wantErr:    domain.ErrInvalidProvider,
+		},
+		{
+			name:       "empty calendar ID",
+			userID:     validUserID,
+			provider:   validProvider,
+			calendarID: "",
+			calName:    validName,
+			wantErr:    domain.ErrEmptyCalendarID,
+		},
+		{
+			name:       "whitespace calendar ID",
+			userID:     validUserID,
+			provider:   validProvider,
+			calendarID: "   ",
+			calName:    validName,
+			wantErr:    domain.ErrEmptyCalendarID,
+		},
+		{
+			name:       "empty name",
+			userID:     validUserID,
+			provider:   validProvider,
+			calendarID: validCalendarID,
+			calName:    "",
+			wantErr:    domain.ErrEmptyName,
+		},
+		{
+			name:       "whitespace name",
+			userID:     validUserID,
+			provider:   validProvider,
+			calendarID: validCalendarID,
+			calName:    "   ",
+			wantErr:    domain.ErrEmptyName,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cal, err := domain.NewConnectedCalendar(tt.userID, tt.provider, tt.calendarID, tt.calName)
+			assert.Nil(t, cal)
+			assert.ErrorIs(t, err, tt.wantErr)
+		})
+	}
+}
+
 func TestConnectedCalendar_SetName(t *testing.T) {
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderGoogle, "primary", "Old Name")
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderGoogle, "primary", "Old Name")
+	require.NoError(t, err)
 
 	cal.SetName("New Name")
 
@@ -42,19 +117,22 @@ func TestConnectedCalendar_SetName(t *testing.T) {
 }
 
 func TestConnectedCalendar_SetPrimary(t *testing.T) {
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderGoogle, "primary", "Calendar")
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderGoogle, "primary", "Calendar")
+	require.NoError(t, err)
 
 	assert.False(t, cal.IsPrimary())
 
-	cal.SetPrimary(true)
+	cal.SetPrimary(true, nil)
 	assert.True(t, cal.IsPrimary())
 
-	cal.SetPrimary(false)
+	// Use ClearPrimary to unset (SetPrimary with false doesn't record event)
+	cal.ClearPrimary()
 	assert.False(t, cal.IsPrimary())
 }
 
 func TestConnectedCalendar_SetEnabled(t *testing.T) {
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderGoogle, "primary", "Calendar")
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderGoogle, "primary", "Calendar")
+	require.NoError(t, err)
 
 	assert.True(t, cal.IsEnabled())
 
@@ -66,7 +144,8 @@ func TestConnectedCalendar_SetEnabled(t *testing.T) {
 }
 
 func TestConnectedCalendar_SetSyncPush(t *testing.T) {
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderGoogle, "primary", "Calendar")
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderGoogle, "primary", "Calendar")
+	require.NoError(t, err)
 
 	assert.True(t, cal.SyncPush())
 
@@ -78,7 +157,8 @@ func TestConnectedCalendar_SetSyncPush(t *testing.T) {
 }
 
 func TestConnectedCalendar_SetSyncPull(t *testing.T) {
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderGoogle, "primary", "Calendar")
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderGoogle, "primary", "Calendar")
+	require.NoError(t, err)
 
 	assert.False(t, cal.SyncPull())
 
@@ -90,7 +170,8 @@ func TestConnectedCalendar_SetSyncPull(t *testing.T) {
 }
 
 func TestConnectedCalendar_SetConfig(t *testing.T) {
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderCalDAV, "cal1", "Calendar")
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderCalDAV, "cal1", "Calendar")
+	require.NoError(t, err)
 
 	cal.SetConfig("url", "https://example.com/caldav")
 	cal.SetConfig("username", "user@example.com")
@@ -101,14 +182,16 @@ func TestConnectedCalendar_SetConfig(t *testing.T) {
 }
 
 func TestConnectedCalendar_ConfigValue_NilConfig(t *testing.T) {
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderGoogle, "primary", "Calendar")
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderGoogle, "primary", "Calendar")
+	require.NoError(t, err)
 
 	// ConfigValue should return empty string for missing keys
 	assert.Equal(t, "", cal.ConfigValue("missing"))
 }
 
 func TestConnectedCalendar_ConfigJSON(t *testing.T) {
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderCalDAV, "cal1", "Calendar")
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderCalDAV, "cal1", "Calendar")
+	require.NoError(t, err)
 
 	// Empty config should return "{}"
 	assert.Equal(t, "{}", cal.ConfigJSON())
@@ -122,20 +205,34 @@ func TestConnectedCalendar_ConfigJSON(t *testing.T) {
 }
 
 func TestConnectedCalendar_MarkSynced(t *testing.T) {
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderGoogle, "primary", "Calendar")
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderGoogle, "primary", "Calendar")
+	require.NoError(t, err)
 
 	assert.False(t, cal.HasSynced())
 	assert.True(t, cal.LastSyncAt().IsZero())
 
-	cal.MarkSynced()
+	cal.MarkSynced(5, 3, 1, 0) // created, updated, deleted, failed
 
 	assert.True(t, cal.HasSynced())
 	assert.False(t, cal.LastSyncAt().IsZero())
 	assert.WithinDuration(t, time.Now().UTC(), cal.LastSyncAt(), time.Second)
 }
 
+func TestConnectedCalendar_MarkSyncedSimple(t *testing.T) {
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderGoogle, "primary", "Calendar")
+	require.NoError(t, err)
+
+	assert.False(t, cal.HasSynced())
+
+	cal.MarkSyncedSimple()
+
+	assert.True(t, cal.HasSynced())
+	assert.WithinDuration(t, time.Now().UTC(), cal.LastSyncAt(), time.Second)
+}
+
 func TestConnectedCalendar_SetCalDAVConfig(t *testing.T) {
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderCalDAV, "calendar", "Calendar")
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderCalDAV, "calendar", "Calendar")
+	require.NoError(t, err)
 
 	cal.SetCalDAVConfig("https://caldav.example.com", "user@example.com")
 
@@ -162,6 +259,7 @@ func TestRehydrateConnectedCalendar(t *testing.T) {
 		id, userID, provider, calendarID, name,
 		isPrimary, isEnabled, syncPush, syncPull,
 		configJSON, lastSyncAt, createdAt, updatedAt,
+		1, // version
 	)
 
 	require.NotNil(t, cal)
@@ -176,6 +274,7 @@ func TestRehydrateConnectedCalendar(t *testing.T) {
 	assert.True(t, cal.SyncPull())
 	assert.Equal(t, "abc123", cal.ConfigValue("tenant_id"))
 	assert.Equal(t, lastSyncAt, cal.LastSyncAt())
+	assert.Equal(t, 1, cal.Version())
 }
 
 func TestRehydrateConnectedCalendar_EmptyConfig(t *testing.T) {
@@ -187,6 +286,7 @@ func TestRehydrateConnectedCalendar_EmptyConfig(t *testing.T) {
 		id, userID, domain.ProviderGoogle, "primary", "Calendar",
 		false, true, true, false,
 		"", now, now, now,
+		0, // version
 	)
 
 	require.NotNil(t, cal)
@@ -203,6 +303,7 @@ func TestRehydrateConnectedCalendar_EmptyBracesConfig(t *testing.T) {
 		id, userID, domain.ProviderGoogle, "primary", "Calendar",
 		false, true, true, false,
 		"{}", now, now, now,
+		0, // version
 	)
 
 	require.NotNil(t, cal)

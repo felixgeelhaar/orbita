@@ -180,8 +180,8 @@ func TestRegisterProviders_GoogleFactoryCreation(t *testing.T) {
 	RegisterProviders(registry, config)
 
 	// Create a connected calendar
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderGoogle, "primary", "My Calendar")
-	require.NotNil(t, cal)
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderGoogle, "primary", "My Calendar")
+	require.NoError(t, err)
 
 	// Create syncer using the factory
 	ctx := context.Background()
@@ -200,8 +200,8 @@ func TestRegisterProviders_GoogleFactoryWithCustomCalendarID(t *testing.T) {
 	RegisterProviders(registry, config)
 
 	// Create a connected calendar with custom ID
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderGoogle, "custom-calendar-id", "My Calendar")
-	require.NotNil(t, cal)
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderGoogle, "custom-calendar-id", "My Calendar")
+	require.NoError(t, err)
 
 	ctx := context.Background()
 	syncer, err := registry.CreateBidirectional(ctx, cal)
@@ -218,8 +218,8 @@ func TestRegisterProviders_MicrosoftFactoryCreation(t *testing.T) {
 
 	RegisterProviders(registry, config)
 
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderMicrosoft, "primary", "My Calendar")
-	require.NotNil(t, cal)
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderMicrosoft, "primary", "My Calendar")
+	require.NoError(t, err)
 
 	ctx := context.Background()
 	syncer, err := registry.CreateBidirectional(ctx, cal)
@@ -239,8 +239,8 @@ func TestRegisterProviders_AppleFactoryCreation(t *testing.T) {
 
 	RegisterProviders(registry, config)
 
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderApple, "", "My Calendar")
-	require.NotNil(t, cal)
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderApple, "primary", "My Calendar")
+	require.NoError(t, err)
 
 	ctx := context.Background()
 	syncer, err := registry.CreateBidirectional(ctx, cal)
@@ -260,8 +260,8 @@ func TestRegisterProviders_AppleFactoryWithCustomURL(t *testing.T) {
 
 	RegisterProviders(registry, config)
 
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderApple, "/calendars/user/personal/", "My Calendar")
-	require.NotNil(t, cal)
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderApple, "/calendars/user/personal/", "My Calendar")
+	require.NoError(t, err)
 	cal.SetCalDAVConfig("https://custom-caldav.icloud.com", "user@icloud.com")
 
 	ctx := context.Background()
@@ -281,11 +281,11 @@ func TestRegisterProviders_AppleFactoryCredentialError(t *testing.T) {
 
 	RegisterProviders(registry, config)
 
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderApple, "", "My Calendar")
-	require.NotNil(t, cal)
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderApple, "primary", "My Calendar")
+	require.NoError(t, err)
 
 	ctx := context.Background()
-	_, err := registry.CreateBidirectional(ctx, cal)
+	_, err = registry.CreateBidirectional(ctx, cal)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "Apple credentials")
@@ -302,8 +302,8 @@ func TestRegisterProviders_CalDAVFactoryCreation(t *testing.T) {
 
 	RegisterProviders(registry, config)
 
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderCalDAV, "", "My Calendar")
-	require.NotNil(t, cal)
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderCalDAV, "primary", "My Calendar")
+	require.NoError(t, err)
 	cal.SetCalDAVConfig("https://caldav.fastmail.com", "user@fastmail.com")
 
 	ctx := context.Background()
@@ -323,12 +323,12 @@ func TestRegisterProviders_CalDAVFactoryCredentialError(t *testing.T) {
 
 	RegisterProviders(registry, config)
 
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderCalDAV, "", "My Calendar")
-	require.NotNil(t, cal)
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderCalDAV, "primary", "My Calendar")
+	require.NoError(t, err)
 	cal.SetCalDAVConfig("https://caldav.example.com", "user")
 
 	ctx := context.Background()
-	_, err := registry.CreateBidirectional(ctx, cal)
+	_, err = registry.CreateBidirectional(ctx, cal)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "CalDAV credentials")
@@ -346,12 +346,12 @@ func TestRegisterProviders_CalDAVFactoryNoURL(t *testing.T) {
 	RegisterProviders(registry, config)
 
 	// Calendar without CalDAV URL
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderCalDAV, "", "My Calendar")
-	require.NotNil(t, cal)
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderCalDAV, "primary", "My Calendar")
+	require.NoError(t, err)
 	// Don't set CalDAV config
 
 	ctx := context.Background()
-	_, err := registry.CreateBidirectional(ctx, cal)
+	_, err = registry.CreateBidirectional(ctx, cal)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "CalDAV URL not configured")
@@ -368,8 +368,8 @@ func TestRegisterProviders_CalDAVFactoryWithCalendarPath(t *testing.T) {
 
 	RegisterProviders(registry, config)
 
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderCalDAV, "/calendars/user/personal/", "My Calendar")
-	require.NotNil(t, cal)
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderCalDAV, "/calendars/user/personal/", "My Calendar")
+	require.NoError(t, err)
 	cal.SetCalDAVConfig("https://caldav.example.com", "user")
 
 	ctx := context.Background()

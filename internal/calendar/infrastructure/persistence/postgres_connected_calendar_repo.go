@@ -3,9 +3,11 @@ package persistence
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/felixgeelhaar/orbita/internal/calendar/domain"
+	sharedDomain "github.com/felixgeelhaar/orbita/internal/shared/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -21,14 +23,14 @@ func NewPostgresConnectedCalendarRepository(pool *pgxpool.Pool) *PostgresConnect
 	return &PostgresConnectedCalendarRepository{pool: pool}
 }
 
-// Save persists a connected calendar (create or update).
+// Save persists a connected calendar (create or update) with optimistic concurrency control.
 func (r *PostgresConnectedCalendarRepository) Save(ctx context.Context, cal *domain.ConnectedCalendar) error {
 	query := `
 		INSERT INTO connected_calendars (
 			id, user_id, provider, calendar_id, name, is_primary, is_enabled,
-			sync_push, sync_pull, config, last_sync_at, created_at, updated_at
+			sync_push, sync_pull, config, last_sync_at, created_at, updated_at, version
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		ON CONFLICT (user_id, provider, calendar_id) DO UPDATE SET
 			name = EXCLUDED.name,
 			is_primary = EXCLUDED.is_primary,
@@ -37,7 +39,9 @@ func (r *PostgresConnectedCalendarRepository) Save(ctx context.Context, cal *dom
 			sync_pull = EXCLUDED.sync_pull,
 			config = EXCLUDED.config,
 			last_sync_at = EXCLUDED.last_sync_at,
-			updated_at = EXCLUDED.updated_at
+			updated_at = EXCLUDED.updated_at,
+			version = EXCLUDED.version
+		WHERE connected_calendars.version = $15
 	`
 
 	var lastSyncAt *time.Time
@@ -46,7 +50,12 @@ func (r *PostgresConnectedCalendarRepository) Save(ctx context.Context, cal *dom
 		lastSyncAt = &t
 	}
 
-	_, err := r.pool.Exec(ctx, query,
+	// For optimistic concurrency:
+	// - New records have version 0
+	// - On save, we check current DB version equals entity version, then save with version+1
+	newVersion := cal.Version() + 1
+
+	result, err := r.pool.Exec(ctx, query,
 		cal.ID(),
 		cal.UserID(),
 		cal.Provider().String(),
@@ -60,15 +69,30 @@ func (r *PostgresConnectedCalendarRepository) Save(ctx context.Context, cal *dom
 		lastSyncAt,
 		cal.CreatedAt(),
 		cal.UpdatedAt(),
+		newVersion,
+		cal.Version(),
 	)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Check if update was applied (optimistic lock check)
+	// For inserts, RowsAffected() is 1; for updates, it's 1 if version matched
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("%w: calendar %s was modified by another process", sharedDomain.ErrConcurrentModification, cal.ID())
+	}
+
+	// Update entity version after successful save
+	cal.SetVersion(newVersion)
+
+	return nil
 }
 
 // FindByID finds a connected calendar by ID.
 func (r *PostgresConnectedCalendarRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.ConnectedCalendar, error) {
 	query := `
 		SELECT id, user_id, provider, calendar_id, name, is_primary, is_enabled,
-		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at
+		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at, version
 		FROM connected_calendars
 		WHERE id = $1
 	`
@@ -81,7 +105,7 @@ func (r *PostgresConnectedCalendarRepository) FindByID(ctx context.Context, id u
 func (r *PostgresConnectedCalendarRepository) FindByUserAndProvider(ctx context.Context, userID uuid.UUID, provider domain.ProviderType) ([]*domain.ConnectedCalendar, error) {
 	query := `
 		SELECT id, user_id, provider, calendar_id, name, is_primary, is_enabled,
-		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at
+		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at, version
 		FROM connected_calendars
 		WHERE user_id = $1 AND provider = $2
 		ORDER BY is_primary DESC, name
@@ -100,7 +124,7 @@ func (r *PostgresConnectedCalendarRepository) FindByUserAndProvider(ctx context.
 func (r *PostgresConnectedCalendarRepository) FindByUserProviderAndCalendar(ctx context.Context, userID uuid.UUID, provider domain.ProviderType, calendarID string) (*domain.ConnectedCalendar, error) {
 	query := `
 		SELECT id, user_id, provider, calendar_id, name, is_primary, is_enabled,
-		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at
+		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at, version
 		FROM connected_calendars
 		WHERE user_id = $1 AND provider = $2 AND calendar_id = $3
 	`
@@ -113,7 +137,7 @@ func (r *PostgresConnectedCalendarRepository) FindByUserProviderAndCalendar(ctx 
 func (r *PostgresConnectedCalendarRepository) FindByUser(ctx context.Context, userID uuid.UUID) ([]*domain.ConnectedCalendar, error) {
 	query := `
 		SELECT id, user_id, provider, calendar_id, name, is_primary, is_enabled,
-		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at
+		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at, version
 		FROM connected_calendars
 		WHERE user_id = $1
 		ORDER BY is_primary DESC, provider, name
@@ -132,7 +156,7 @@ func (r *PostgresConnectedCalendarRepository) FindByUser(ctx context.Context, us
 func (r *PostgresConnectedCalendarRepository) FindPrimaryForUser(ctx context.Context, userID uuid.UUID) (*domain.ConnectedCalendar, error) {
 	query := `
 		SELECT id, user_id, provider, calendar_id, name, is_primary, is_enabled,
-		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at
+		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at, version
 		FROM connected_calendars
 		WHERE user_id = $1 AND is_primary = TRUE
 	`
@@ -145,7 +169,7 @@ func (r *PostgresConnectedCalendarRepository) FindPrimaryForUser(ctx context.Con
 func (r *PostgresConnectedCalendarRepository) FindEnabledPushCalendars(ctx context.Context, userID uuid.UUID) ([]*domain.ConnectedCalendar, error) {
 	query := `
 		SELECT id, user_id, provider, calendar_id, name, is_primary, is_enabled,
-		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at
+		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at, version
 		FROM connected_calendars
 		WHERE user_id = $1 AND is_enabled = TRUE AND sync_push = TRUE
 		ORDER BY is_primary DESC, provider, name
@@ -164,7 +188,7 @@ func (r *PostgresConnectedCalendarRepository) FindEnabledPushCalendars(ctx conte
 func (r *PostgresConnectedCalendarRepository) FindEnabledPullCalendars(ctx context.Context, userID uuid.UUID) ([]*domain.ConnectedCalendar, error) {
 	query := `
 		SELECT id, user_id, provider, calendar_id, name, is_primary, is_enabled,
-		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at
+		       sync_push, sync_pull, config, last_sync_at, created_at, updated_at, version
 		FROM connected_calendars
 		WHERE user_id = $1 AND is_enabled = TRUE AND sync_pull = TRUE
 		ORDER BY is_primary DESC, provider, name
@@ -177,17 +201,6 @@ func (r *PostgresConnectedCalendarRepository) FindEnabledPullCalendars(ctx conte
 	defer rows.Close()
 
 	return r.scanCalendars(rows)
-}
-
-// ClearPrimaryForUser removes the primary flag from all user calendars.
-func (r *PostgresConnectedCalendarRepository) ClearPrimaryForUser(ctx context.Context, userID uuid.UUID) error {
-	query := `
-		UPDATE connected_calendars
-		SET is_primary = FALSE, updated_at = NOW()
-		WHERE user_id = $1 AND is_primary = TRUE
-	`
-	_, err := r.pool.Exec(ctx, query, userID)
-	return err
 }
 
 // Delete removes a connected calendar.
@@ -219,12 +232,13 @@ func (r *PostgresConnectedCalendarRepository) scanCalendar(row pgx.Row) (*domain
 		lastSyncAt sql.NullTime
 		createdAt  time.Time
 		updatedAt  time.Time
+		version    int
 	)
 
 	err := row.Scan(
 		&id, &userID, &provider, &calendarID, &name,
 		&isPrimary, &isEnabled, &syncPush, &syncPull,
-		&config, &lastSyncAt, &createdAt, &updatedAt,
+		&config, &lastSyncAt, &createdAt, &updatedAt, &version,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -241,6 +255,7 @@ func (r *PostgresConnectedCalendarRepository) scanCalendar(row pgx.Row) (*domain
 		config.String,
 		lastSyncAt.Time,
 		createdAt, updatedAt,
+		version,
 	), nil
 }
 
@@ -262,12 +277,13 @@ func (r *PostgresConnectedCalendarRepository) scanCalendars(rows pgx.Rows) ([]*d
 			lastSyncAt sql.NullTime
 			createdAt  time.Time
 			updatedAt  time.Time
+			version    int
 		)
 
 		err := rows.Scan(
 			&id, &userID, &provider, &calendarID, &name,
 			&isPrimary, &isEnabled, &syncPush, &syncPull,
-			&config, &lastSyncAt, &createdAt, &updatedAt,
+			&config, &lastSyncAt, &createdAt, &updatedAt, &version,
 		)
 		if err != nil {
 			return nil, err
@@ -281,6 +297,7 @@ func (r *PostgresConnectedCalendarRepository) scanCalendars(rows pgx.Rows) ([]*d
 			config.String,
 			lastSyncAt.Time,
 			createdAt, updatedAt,
+			version,
 		)
 		calendars = append(calendars, cal)
 	}

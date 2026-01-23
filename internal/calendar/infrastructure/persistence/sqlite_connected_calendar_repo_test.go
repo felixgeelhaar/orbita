@@ -49,6 +49,14 @@ func setupCalendarTestDB(t *testing.T) *sql.DB {
 	_, err = sqlDB.Exec(string(connectedSchema))
 	require.NoError(t, err, "Failed to apply connected_calendars migration")
 
+	// Apply version column migration for optimistic concurrency
+	versionPath := filepath.Join("..", "..", "..", "..", "migrations", "sqlite", "000005_connected_calendars_version.up.sql")
+	versionSchema, err := os.ReadFile(versionPath)
+	require.NoError(t, err, "Failed to read connected_calendars_version migration")
+
+	_, err = sqlDB.Exec(string(versionSchema))
+	require.NoError(t, err, "Failed to apply connected_calendars_version migration")
+
 	return sqlDB
 }
 
@@ -78,12 +86,13 @@ func TestSQLiteConnectedCalendarRepository_Save_Create(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a new connected calendar
-	cal := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal Calendar")
-	cal.SetPrimary(true)
+	cal, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal Calendar")
+	require.NoError(t, err)
+	cal.SetPrimary(true, nil)
 	cal.SetSyncPull(true)
 
 	// Save it
-	err := repo.Save(ctx, cal)
+	err = repo.Save(ctx, cal)
 	require.NoError(t, err)
 
 	// Verify it was created
@@ -112,16 +121,17 @@ func TestSQLiteConnectedCalendarRepository_Save_Update(t *testing.T) {
 	ctx := context.Background()
 
 	// Create and save a calendar
-	cal := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal Calendar")
-	cal.SetPrimary(true)
+	cal, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal Calendar")
+	require.NoError(t, err)
+	cal.SetPrimary(true, nil)
 
-	err := repo.Save(ctx, cal)
+	err = repo.Save(ctx, cal)
 	require.NoError(t, err)
 
 	// Update the calendar
 	cal.SetName("Updated Calendar")
 	cal.SetSyncPull(true)
-	cal.MarkSynced()
+	cal.MarkSyncedSimple()
 
 	err = repo.Save(ctx, cal)
 	require.NoError(t, err)
@@ -158,11 +168,13 @@ func TestSQLiteConnectedCalendarRepository_FindByUserAndProvider(t *testing.T) {
 	ctx := context.Background()
 
 	// Create two Google calendars
-	cal1 := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "cal1", "Calendar 1")
-	cal1.SetPrimary(true)
+	cal1, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "cal1", "Calendar 1")
+	require.NoError(t, err)
+	cal1.SetPrimary(true, nil)
 	cal1.SetSyncPull(true)
 
-	cal2 := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "cal2", "Calendar 2")
+	cal2, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "cal2", "Calendar 2")
+	require.NoError(t, err)
 
 	require.NoError(t, repo.Save(ctx, cal1))
 	require.NoError(t, repo.Save(ctx, cal2))
@@ -201,7 +213,8 @@ func TestSQLiteConnectedCalendarRepository_FindByUserProviderAndCalendar(t *test
 	repo := NewSQLiteConnectedCalendarRepository(sqlDB)
 	ctx := context.Background()
 
-	cal := domain.NewConnectedCalendar(userID, domain.ProviderMicrosoft, "work-cal", "Work Calendar")
+	cal, err := domain.NewConnectedCalendar(userID, domain.ProviderMicrosoft, "work-cal", "Work Calendar")
+	require.NoError(t, err)
 	require.NoError(t, repo.Save(ctx, cal))
 
 	// Find specific calendar
@@ -237,12 +250,15 @@ func TestSQLiteConnectedCalendarRepository_FindByUser(t *testing.T) {
 	ctx := context.Background()
 
 	// Create calendars from different providers
-	googleCal := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "g-cal", "Google Cal")
-	googleCal.SetPrimary(true)
+	googleCal, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "g-cal", "Google Cal")
+	require.NoError(t, err)
+	googleCal.SetPrimary(true, nil)
 	googleCal.SetSyncPull(true)
 
-	msCal := domain.NewConnectedCalendar(userID, domain.ProviderMicrosoft, "ms-cal", "MS Cal")
-	caldavCal := domain.NewConnectedCalendar(userID, domain.ProviderCalDAV, "dav-cal", "CalDAV Cal")
+	msCal, err := domain.NewConnectedCalendar(userID, domain.ProviderMicrosoft, "ms-cal", "MS Cal")
+	require.NoError(t, err)
+	caldavCal, err := domain.NewConnectedCalendar(userID, domain.ProviderCalDAV, "dav-cal", "CalDAV Cal")
+	require.NoError(t, err)
 
 	require.NoError(t, repo.Save(ctx, googleCal))
 	require.NoError(t, repo.Save(ctx, msCal))
@@ -268,11 +284,13 @@ func TestSQLiteConnectedCalendarRepository_FindPrimaryForUser(t *testing.T) {
 	ctx := context.Background()
 
 	// Create calendars - one primary
-	primaryCal := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Primary")
-	primaryCal.SetPrimary(true)
+	primaryCal, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Primary")
+	require.NoError(t, err)
+	primaryCal.SetPrimary(true, nil)
 	primaryCal.SetSyncPull(true)
 
-	secondaryCal := domain.NewConnectedCalendar(userID, domain.ProviderMicrosoft, "secondary", "Secondary")
+	secondaryCal, err := domain.NewConnectedCalendar(userID, domain.ProviderMicrosoft, "secondary", "Secondary")
+	require.NoError(t, err)
 
 	require.NoError(t, repo.Save(ctx, primaryCal))
 	require.NoError(t, repo.Save(ctx, secondaryCal))
@@ -296,7 +314,8 @@ func TestSQLiteConnectedCalendarRepository_FindPrimaryForUser_NoPrimary(t *testi
 	ctx := context.Background()
 
 	// Create only non-primary calendar
-	cal := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "cal", "Cal")
+	cal, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "cal", "Cal")
+	require.NoError(t, err)
 	require.NoError(t, repo.Save(ctx, cal))
 
 	// Find primary - should return nil
@@ -316,13 +335,16 @@ func TestSQLiteConnectedCalendarRepository_FindEnabledPushCalendars(t *testing.T
 	ctx := context.Background()
 
 	// Create calendars with different push settings
-	pushEnabled := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "push1", "Push Enabled")
+	pushEnabled, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "push1", "Push Enabled")
+	require.NoError(t, err)
 	// Default is enabled and syncPush=true
 
-	pushDisabled := domain.NewConnectedCalendar(userID, domain.ProviderMicrosoft, "push2", "Push Disabled")
+	pushDisabled, err := domain.NewConnectedCalendar(userID, domain.ProviderMicrosoft, "push2", "Push Disabled")
+	require.NoError(t, err)
 	pushDisabled.SetSyncPush(false)
 
-	disabled := domain.NewConnectedCalendar(userID, domain.ProviderCalDAV, "push3", "Disabled")
+	disabled, err := domain.NewConnectedCalendar(userID, domain.ProviderCalDAV, "push3", "Disabled")
+	require.NoError(t, err)
 	disabled.SetEnabled(false)
 
 	require.NoError(t, repo.Save(ctx, pushEnabled))
@@ -347,11 +369,13 @@ func TestSQLiteConnectedCalendarRepository_FindEnabledPullCalendars(t *testing.T
 	ctx := context.Background()
 
 	// Create calendars with different pull settings
-	pullEnabled := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "pull1", "Pull Enabled")
-	pullEnabled.SetPrimary(true)
+	pullEnabled, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "pull1", "Pull Enabled")
+	require.NoError(t, err)
+	pullEnabled.SetPrimary(true, nil)
 	pullEnabled.SetSyncPull(true)
 
-	pullDisabled := domain.NewConnectedCalendar(userID, domain.ProviderMicrosoft, "pull2", "Pull Disabled")
+	pullDisabled, err := domain.NewConnectedCalendar(userID, domain.ProviderMicrosoft, "pull2", "Pull Disabled")
+	require.NoError(t, err)
 	// Default syncPull=false
 
 	require.NoError(t, repo.Save(ctx, pullEnabled))
@@ -364,37 +388,6 @@ func TestSQLiteConnectedCalendarRepository_FindEnabledPullCalendars(t *testing.T
 	assert.Equal(t, "Pull Enabled", calendars[0].Name())
 }
 
-func TestSQLiteConnectedCalendarRepository_ClearPrimaryForUser(t *testing.T) {
-	sqlDB := setupCalendarTestDB(t)
-	defer sqlDB.Close()
-
-	userID := uuid.New()
-	createCalendarTestUser(t, sqlDB, userID)
-
-	repo := NewSQLiteConnectedCalendarRepository(sqlDB)
-	ctx := context.Background()
-
-	// Create a primary calendar
-	primaryCal := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Primary")
-	primaryCal.SetPrimary(true)
-	primaryCal.SetSyncPull(true)
-	require.NoError(t, repo.Save(ctx, primaryCal))
-
-	// Verify it's primary
-	found, err := repo.FindPrimaryForUser(ctx, userID)
-	require.NoError(t, err)
-	require.NotNil(t, found)
-
-	// Clear primary
-	err = repo.ClearPrimaryForUser(ctx, userID)
-	require.NoError(t, err)
-
-	// Verify no primary now
-	found, err = repo.FindPrimaryForUser(ctx, userID)
-	assert.NoError(t, err)
-	assert.Nil(t, found)
-}
-
 func TestSQLiteConnectedCalendarRepository_Delete(t *testing.T) {
 	sqlDB := setupCalendarTestDB(t)
 	defer sqlDB.Close()
@@ -405,11 +398,12 @@ func TestSQLiteConnectedCalendarRepository_Delete(t *testing.T) {
 	repo := NewSQLiteConnectedCalendarRepository(sqlDB)
 	ctx := context.Background()
 
-	cal := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "cal", "Cal")
+	cal, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "cal", "Cal")
+	require.NoError(t, err)
 	require.NoError(t, repo.Save(ctx, cal))
 
 	// Delete it
-	err := repo.Delete(ctx, cal.ID())
+	err = repo.Delete(ctx, cal.ID())
 	require.NoError(t, err)
 
 	// Verify it's gone
@@ -429,20 +423,23 @@ func TestSQLiteConnectedCalendarRepository_DeleteByUserAndProvider(t *testing.T)
 	ctx := context.Background()
 
 	// Create multiple Google calendars
-	cal1 := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "g1", "G1")
-	cal1.SetPrimary(true)
+	cal1, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "g1", "G1")
+	require.NoError(t, err)
+	cal1.SetPrimary(true, nil)
 	cal1.SetSyncPull(true)
 
-	cal2 := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "g2", "G2")
+	cal2, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "g2", "G2")
+	require.NoError(t, err)
 	// And one Microsoft calendar
-	msCal := domain.NewConnectedCalendar(userID, domain.ProviderMicrosoft, "ms", "MS")
+	msCal, err := domain.NewConnectedCalendar(userID, domain.ProviderMicrosoft, "ms", "MS")
+	require.NoError(t, err)
 
 	require.NoError(t, repo.Save(ctx, cal1))
 	require.NoError(t, repo.Save(ctx, cal2))
 	require.NoError(t, repo.Save(ctx, msCal))
 
 	// Delete all Google calendars
-	err := repo.DeleteByUserAndProvider(ctx, userID, domain.ProviderGoogle)
+	err = repo.DeleteByUserAndProvider(ctx, userID, domain.ProviderGoogle)
 	require.NoError(t, err)
 
 	// Verify Google calendars are gone
@@ -474,7 +471,8 @@ func TestSQLiteConnectedCalendarRepository_AllProviders(t *testing.T) {
 	}
 
 	for _, provider := range providers {
-		cal := domain.NewConnectedCalendar(userID, provider, provider.String()+"-cal", provider.String()+" Calendar")
+		cal, err := domain.NewConnectedCalendar(userID, provider, provider.String()+"-cal", provider.String()+" Calendar")
+		require.NoError(t, err)
 		require.NoError(t, repo.Save(ctx, cal))
 	}
 
@@ -495,7 +493,8 @@ func TestSQLiteConnectedCalendarRepository_WithConfig(t *testing.T) {
 	ctx := context.Background()
 
 	// Create CalDAV calendar with config
-	cal := domain.NewConnectedCalendar(userID, domain.ProviderCalDAV, "caldav-cal", "CalDAV")
+	cal, err := domain.NewConnectedCalendar(userID, domain.ProviderCalDAV, "caldav-cal", "CalDAV")
+	require.NoError(t, err)
 	cal.SetConfig("url", "https://caldav.example.com")
 	cal.SetConfig("username", "user@example.com")
 
@@ -522,12 +521,14 @@ func TestSQLiteConnectedCalendarRepository_MultipleUsers(t *testing.T) {
 	ctx := context.Background()
 
 	// Create calendars for both users
-	cal1 := domain.NewConnectedCalendar(user1, domain.ProviderGoogle, "cal", "User1 Cal")
-	cal1.SetPrimary(true)
+	cal1, err := domain.NewConnectedCalendar(user1, domain.ProviderGoogle, "cal", "User1 Cal")
+	require.NoError(t, err)
+	cal1.SetPrimary(true, nil)
 	cal1.SetSyncPull(true)
 
-	cal2 := domain.NewConnectedCalendar(user2, domain.ProviderGoogle, "cal", "User2 Cal")
-	cal2.SetPrimary(true)
+	cal2, err := domain.NewConnectedCalendar(user2, domain.ProviderGoogle, "cal", "User2 Cal")
+	require.NoError(t, err)
+	cal2.SetPrimary(true, nil)
 	cal2.SetSyncPull(true)
 
 	require.NoError(t, repo.Save(ctx, cal1))

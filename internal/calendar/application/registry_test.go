@@ -197,7 +197,8 @@ func TestProviderRegistry_RegisterBidirectional(t *testing.T) {
 	assert.True(t, registry.HasProvider(domain.ProviderCalDAV))
 
 	// Should be able to create syncer
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderCalDAV, "cal", "Test")
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderCalDAV, "cal", "Test")
+	require.NoError(t, err)
 	syncer, err := registry.CreateSyncer(context.Background(), cal)
 	assert.NoError(t, err)
 	assert.NotNil(t, syncer)
@@ -215,7 +216,8 @@ func TestProviderRegistry_RegisterBidirectional(t *testing.T) {
 
 func TestProviderRegistry_CreateSyncer_NotRegistered(t *testing.T) {
 	registry := application.NewProviderRegistry()
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderGoogle, "primary", "Test")
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderGoogle, "primary", "Test")
+	require.NoError(t, err)
 
 	syncer, err := registry.CreateSyncer(context.Background(), cal)
 
@@ -226,7 +228,8 @@ func TestProviderRegistry_CreateSyncer_NotRegistered(t *testing.T) {
 
 func TestProviderRegistry_CreateImporter_NotRegistered(t *testing.T) {
 	registry := application.NewProviderRegistry()
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderMicrosoft, "work", "Work")
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderMicrosoft, "work", "Work")
+	require.NoError(t, err)
 
 	importer, err := registry.CreateImporter(context.Background(), cal)
 
@@ -237,7 +240,8 @@ func TestProviderRegistry_CreateImporter_NotRegistered(t *testing.T) {
 
 func TestProviderRegistry_CreateBidirectional_NotRegistered(t *testing.T) {
 	registry := application.NewProviderRegistry()
-	cal := domain.NewConnectedCalendar(uuid.New(), domain.ProviderCalDAV, "cal", "Cal")
+	cal, err := domain.NewConnectedCalendar(uuid.New(), domain.ProviderCalDAV, "cal", "Cal")
+	require.NoError(t, err)
 
 	bidir, err := registry.CreateBidirectional(context.Background(), cal)
 
@@ -329,7 +333,8 @@ func TestSyncCoordinator_SyncAll(t *testing.T) {
 	registry := application.NewProviderRegistry()
 	userID := uuid.New()
 
-	cal := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal")
+	cal, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal")
+	require.NoError(t, err)
 
 	repo := &mockCalendarRepo{
 		pushCalendars: []*domain.ConnectedCalendar{cal},
@@ -371,7 +376,8 @@ func TestSyncCoordinator_SyncAll_SyncerError(t *testing.T) {
 	registry := application.NewProviderRegistry()
 	userID := uuid.New()
 
-	cal := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal")
+	cal, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal")
+	require.NoError(t, err)
 
 	repo := &mockCalendarRepo{
 		pushCalendars: []*domain.ConnectedCalendar{cal},
@@ -394,7 +400,8 @@ func TestSyncCoordinator_SyncToProvider(t *testing.T) {
 	registry := application.NewProviderRegistry()
 	userID := uuid.New()
 
-	cal := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal")
+	cal, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal")
+	require.NoError(t, err)
 
 	repo := &mockCalendarRepo{
 		calendars: []*domain.ConnectedCalendar{cal},
@@ -429,7 +436,8 @@ func TestSyncCoordinator_SyncToProvider_CalendarDisabled(t *testing.T) {
 	registry := application.NewProviderRegistry()
 	userID := uuid.New()
 
-	cal := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal")
+	cal, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal")
+	require.NoError(t, err)
 	cal.SetEnabled(false)
 
 	repo := &mockCalendarRepo{
@@ -449,8 +457,9 @@ func TestSyncCoordinator_GetPrimaryImporter(t *testing.T) {
 	registry := application.NewProviderRegistry()
 	userID := uuid.New()
 
-	primary := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Primary")
-	primary.SetPrimary(true)
+	primary, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Primary")
+	require.NoError(t, err)
+	primary.SetPrimary(true, nil)
 
 	repo := &mockCalendarRepo{
 		primary: primary,
@@ -473,7 +482,8 @@ func TestSyncCoordinator_GetPrimaryImporter_FallbackToPull(t *testing.T) {
 	registry := application.NewProviderRegistry()
 	userID := uuid.New()
 
-	pullCal := domain.NewConnectedCalendar(userID, domain.ProviderMicrosoft, "work", "Work")
+	pullCal, err := domain.NewConnectedCalendar(userID, domain.ProviderMicrosoft, "work", "Work")
+	require.NoError(t, err)
 	pullCal.SetSyncPull(true)
 
 	repo := &mockCalendarRepo{
@@ -512,7 +522,8 @@ func TestSyncCoordinator_GetImporterForProvider(t *testing.T) {
 	registry := application.NewProviderRegistry()
 	userID := uuid.New()
 
-	cal := domain.NewConnectedCalendar(userID, domain.ProviderCalDAV, "cal", "CalDAV")
+	cal, err := domain.NewConnectedCalendar(userID, domain.ProviderCalDAV, "cal", "CalDAV")
+	require.NoError(t, err)
 
 	repo := &mockCalendarRepo{
 		calendars: []*domain.ConnectedCalendar{cal},
@@ -548,7 +559,8 @@ func TestSyncCoordinator_GetImporterForProvider_CalendarDisabled(t *testing.T) {
 	registry := application.NewProviderRegistry()
 	userID := uuid.New()
 
-	cal := domain.NewConnectedCalendar(userID, domain.ProviderApple, "cal", "Apple")
+	cal, err := domain.NewConnectedCalendar(userID, domain.ProviderApple, "cal", "Apple")
+	require.NoError(t, err)
 	cal.SetEnabled(false)
 
 	repo := &mockCalendarRepo{
@@ -569,8 +581,10 @@ func TestSyncCoordinator_ListConnectedCalendars(t *testing.T) {
 	registry := application.NewProviderRegistry()
 	userID := uuid.New()
 
-	cal1 := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal")
-	cal2 := domain.NewConnectedCalendar(userID, domain.ProviderMicrosoft, "work", "Work")
+	cal1, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal")
+	require.NoError(t, err)
+	cal2, err := domain.NewConnectedCalendar(userID, domain.ProviderMicrosoft, "work", "Work")
+	require.NoError(t, err)
 
 	repo := &mockCalendarRepo{
 		calendars: []*domain.ConnectedCalendar{cal1, cal2},
@@ -588,7 +602,8 @@ func TestSyncCoordinator_SyncAll_CreateSyncerError(t *testing.T) {
 	registry := application.NewProviderRegistry()
 	userID := uuid.New()
 
-	cal := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal")
+	cal, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal")
+	require.NoError(t, err)
 
 	repo := &mockCalendarRepo{
 		pushCalendars: []*domain.ConnectedCalendar{cal},
@@ -612,7 +627,8 @@ func TestSyncCoordinator_SyncAll_SaveError(t *testing.T) {
 	registry := application.NewProviderRegistry()
 	userID := uuid.New()
 
-	cal := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal")
+	cal, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal")
+	require.NoError(t, err)
 
 	repo := &mockCalendarRepo{
 		pushCalendars: []*domain.ConnectedCalendar{cal},
@@ -652,7 +668,8 @@ func TestSyncCoordinator_SyncToProvider_CreateSyncerError(t *testing.T) {
 	registry := application.NewProviderRegistry()
 	userID := uuid.New()
 
-	cal := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal")
+	cal, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal")
+	require.NoError(t, err)
 
 	repo := &mockCalendarRepo{
 		calendars: []*domain.ConnectedCalendar{cal},
@@ -675,7 +692,8 @@ func TestSyncCoordinator_SyncToProvider_SyncError(t *testing.T) {
 	registry := application.NewProviderRegistry()
 	userID := uuid.New()
 
-	cal := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal")
+	cal, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal")
+	require.NoError(t, err)
 
 	repo := &mockCalendarRepo{
 		calendars: []*domain.ConnectedCalendar{cal},
@@ -746,7 +764,8 @@ func TestSyncCoordinator_GetImporterForProvider_CreateImporterError(t *testing.T
 	registry := application.NewProviderRegistry()
 	userID := uuid.New()
 
-	cal := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal")
+	cal, err := domain.NewConnectedCalendar(userID, domain.ProviderGoogle, "primary", "Personal")
+	require.NoError(t, err)
 	cal.SetSyncPull(true)
 
 	repo := &mockCalendarRepo{

@@ -1037,10 +1037,7 @@ p {
     font-size: 0.9rem;
 }
 
-/* Override asciinema player theme */
-.asciinema-player .asciinema-terminal {
-    background: var(--terminal-bg) !important;
-}
+/* Let asciinema player use its native theme */
 
 /* Responsive asciinema */
 @media (max-width: 768px) {

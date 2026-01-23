@@ -57,7 +57,7 @@ var captureCmd = &cobra.Command{
 }
 
 func init() {
-	captureCmd.Flags().StringVarP(&captureContent, "content", "c", "", "text to capture (required)")
+	captureCmd.Flags().StringVarP(&captureContent, "content", "t", "", "text to capture (required)")
 	captureCmd.Flags().StringVar(&captureSource, "source", "", "source identifier (e.g. gmail, cli)")
 	captureCmd.Flags().StringSliceVar(&captureMetadata, "metadata", nil, "metadata entry as key=value (can repeat)")
 	captureCmd.Flags().StringSliceVar(&captureTags, "tag", nil, "tag for the item (can repeat)")

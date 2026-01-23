@@ -89,6 +89,7 @@ type ConnectedCalendar struct {
 	LastSyncAt sql.NullString `json:"last_sync_at"`
 	CreatedAt  string         `json:"created_at"`
 	UpdatedAt  string         `json:"updated_at"`
+	Version    int64          `json:"version"`
 }
 
 type Entitlement struct {
@@ -124,19 +125,18 @@ type HabitCompletion struct {
 }
 
 type InboxItem struct {
-	ID              string          `json:"id"`
-	UserID          string          `json:"user_id"`
-	Source          string          `json:"source"`
-	SourceID        sql.NullString  `json:"source_id"`
-	RawContent      string          `json:"raw_content"`
-	ParsedTitle     sql.NullString  `json:"parsed_title"`
-	ParsedPriority  sql.NullString  `json:"parsed_priority"`
-	ParsedDueDate   sql.NullString  `json:"parsed_due_date"`
-	SuggestedTaskID sql.NullString  `json:"suggested_task_id"`
-	Status          string          `json:"status"`
-	AiConfidence    sql.NullFloat64 `json:"ai_confidence"`
-	CreatedAt       string          `json:"created_at"`
-	ProcessedAt     sql.NullString  `json:"processed_at"`
+	ID             string         `json:"id"`
+	UserID         string         `json:"user_id"`
+	Content        string         `json:"content"`
+	Metadata       string         `json:"metadata"`
+	Tags           string         `json:"tags"`
+	Source         string         `json:"source"`
+	Classification string         `json:"classification"`
+	CapturedAt     string         `json:"captured_at"`
+	Promoted       int64          `json:"promoted"`
+	PromotedTo     sql.NullString `json:"promoted_to"`
+	PromotedID     sql.NullString `json:"promoted_id"`
+	PromotedAt     sql.NullString `json:"promoted_at"`
 }
 
 type InstalledPackage struct {
@@ -177,6 +177,27 @@ type Meeting struct {
 	Archived             int64          `json:"archived"`
 	CreatedAt            string         `json:"created_at"`
 	UpdatedAt            string         `json:"updated_at"`
+}
+
+type Milestone struct {
+	ID           string         `json:"id"`
+	ProjectID    string         `json:"project_id"`
+	Name         string         `json:"name"`
+	Description  sql.NullString `json:"description"`
+	DueDate      string         `json:"due_date"`
+	Status       string         `json:"status"`
+	Progress     float64        `json:"progress"`
+	DisplayOrder int64          `json:"display_order"`
+	CreatedAt    string         `json:"created_at"`
+	UpdatedAt    string         `json:"updated_at"`
+}
+
+type MilestoneTaskLink struct {
+	MilestoneID  string `json:"milestone_id"`
+	TaskID       string `json:"task_id"`
+	Role         string `json:"role"`
+	DisplayOrder int64  `json:"display_order"`
+	CreatedAt    string `json:"created_at"`
 }
 
 type OauthToken struct {
@@ -255,18 +276,45 @@ type ProductivitySnapshot struct {
 	UpdatedAt              string          `json:"updated_at"`
 }
 
+type Project struct {
+	ID                string         `json:"id"`
+	UserID            string         `json:"user_id"`
+	Name              string         `json:"name"`
+	Description       sql.NullString `json:"description"`
+	Status            string         `json:"status"`
+	StartDate         sql.NullString `json:"start_date"`
+	DueDate           sql.NullString `json:"due_date"`
+	HealthOverall     float64        `json:"health_overall"`
+	HealthOnTrack     int64          `json:"health_on_track"`
+	HealthRiskFactors string         `json:"health_risk_factors"`
+	HealthLastUpdated string         `json:"health_last_updated"`
+	Metadata          string         `json:"metadata"`
+	CreatedAt         string         `json:"created_at"`
+	UpdatedAt         string         `json:"updated_at"`
+}
+
+type ProjectTaskLink struct {
+	ProjectID    string `json:"project_id"`
+	TaskID       string `json:"task_id"`
+	Role         string `json:"role"`
+	DisplayOrder int64  `json:"display_order"`
+	CreatedAt    string `json:"created_at"`
+}
+
 type RescheduleAttempt struct {
 	ID            string         `json:"id"`
 	UserID        string         `json:"user_id"`
 	ScheduleID    string         `json:"schedule_id"`
-	OriginalStart string         `json:"original_start"`
-	OriginalEnd   string         `json:"original_end"`
-	NewStart      sql.NullString `json:"new_start"`
-	NewEnd        sql.NullString `json:"new_end"`
-	Status        string         `json:"status"`
-	Reason        sql.NullString `json:"reason"`
+	BlockID       string         `json:"block_id"`
+	AttemptType   string         `json:"attempt_type"`
+	Success       int64          `json:"success"`
+	FailureReason sql.NullString `json:"failure_reason"`
+	OldStartTime  string         `json:"old_start_time"`
+	OldEndTime    string         `json:"old_end_time"`
+	NewStartTime  sql.NullString `json:"new_start_time"`
+	NewEndTime    sql.NullString `json:"new_end_time"`
+	AttemptedAt   string         `json:"attempted_at"`
 	CreatedAt     string         `json:"created_at"`
-	CompletedAt   sql.NullString `json:"completed_at"`
 }
 
 type Schedule struct {

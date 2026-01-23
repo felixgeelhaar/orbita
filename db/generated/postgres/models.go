@@ -89,6 +89,7 @@ type ConnectedCalendar struct {
 	LastSyncAt pgtype.Timestamptz `json:"last_sync_at"`
 	CreatedAt  pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	Version    int32              `json:"version"`
 }
 
 type Entitlement struct {
@@ -243,6 +244,27 @@ type Meeting struct {
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 }
 
+type Milestone struct {
+	ID           pgtype.UUID        `json:"id"`
+	ProjectID    pgtype.UUID        `json:"project_id"`
+	Name         string             `json:"name"`
+	Description  pgtype.Text        `json:"description"`
+	DueDate      pgtype.Timestamptz `json:"due_date"`
+	Status       string             `json:"status"`
+	Progress     pgtype.Numeric     `json:"progress"`
+	DisplayOrder int32              `json:"display_order"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type MilestoneTaskLink struct {
+	MilestoneID  pgtype.UUID        `json:"milestone_id"`
+	TaskID       pgtype.UUID        `json:"task_id"`
+	Role         string             `json:"role"`
+	DisplayOrder int32              `json:"display_order"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
 type OauthToken struct {
 	ID           int64              `json:"id"`
 	UserID       pgtype.UUID        `json:"user_id"`
@@ -317,6 +339,31 @@ type ProductivitySnapshot struct {
 	ComputedAt             pgtype.Timestamptz `json:"computed_at"`
 	CreatedAt              pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Project struct {
+	ID                pgtype.UUID        `json:"id"`
+	UserID            pgtype.UUID        `json:"user_id"`
+	Name              string             `json:"name"`
+	Description       pgtype.Text        `json:"description"`
+	Status            string             `json:"status"`
+	StartDate         pgtype.Timestamptz `json:"start_date"`
+	DueDate           pgtype.Timestamptz `json:"due_date"`
+	HealthOverall     pgtype.Numeric     `json:"health_overall"`
+	HealthOnTrack     bool               `json:"health_on_track"`
+	HealthRiskFactors []byte             `json:"health_risk_factors"`
+	HealthLastUpdated pgtype.Timestamptz `json:"health_last_updated"`
+	Metadata          []byte             `json:"metadata"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+}
+
+type ProjectTaskLink struct {
+	ProjectID    pgtype.UUID        `json:"project_id"`
+	TaskID       pgtype.UUID        `json:"task_id"`
+	Role         string             `json:"role"`
+	DisplayOrder int32              `json:"display_order"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 }
 
 type RescheduleAttempt struct {

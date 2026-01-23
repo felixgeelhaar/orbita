@@ -18,6 +18,7 @@ type Querier interface {
 	CountAutomationRuleExecutionsSince(ctx context.Context, arg CountAutomationRuleExecutionsSinceParams) (int64, error)
 	CountAutomationRules(ctx context.Context, arg CountAutomationRulesParams) (int64, error)
 	CountAutomationRulesByUserID(ctx context.Context, userID pgtype.UUID) (int64, error)
+	CountByEmail(ctx context.Context, email string) (int64, error)
 	CountTasksByStatus(ctx context.Context, userID pgtype.UUID) ([]CountTasksByStatusRow, error)
 	CreateAutomationPendingAction(ctx context.Context, arg CreateAutomationPendingActionParams) error
 	CreateAutomationRule(ctx context.Context, arg CreateAutomationRuleParams) error
@@ -25,9 +26,16 @@ type Querier interface {
 	CreateConnectedCalendar(ctx context.Context, arg CreateConnectedCalendarParams) error
 	CreateHabit(ctx context.Context, arg CreateHabitParams) error
 	CreateHabitCompletion(ctx context.Context, arg CreateHabitCompletionParams) error
+	// Milestones
+	CreateMilestone(ctx context.Context, arg CreateMilestoneParams) (Milestone, error)
+	// Milestone Task Links
+	CreateMilestoneTaskLink(ctx context.Context, arg CreateMilestoneTaskLinkParams) error
 	// Productivity Goals
 	CreateProductivityGoal(ctx context.Context, arg CreateProductivityGoalParams) error
 	CreateProductivitySnapshot(ctx context.Context, arg CreateProductivitySnapshotParams) error
+	CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error)
+	// Project Task Links
+	CreateProjectTaskLink(ctx context.Context, arg CreateProjectTaskLinkParams) error
 	CreateSchedule(ctx context.Context, arg CreateScheduleParams) error
 	CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error)
 	CreateTimeBlock(ctx context.Context, arg CreateTimeBlockParams) error
@@ -36,6 +44,8 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	// Weekly Summaries
 	CreateWeeklySummary(ctx context.Context, arg CreateWeeklySummaryParams) error
+	DeleteAllMilestoneTaskLinks(ctx context.Context, milestoneID pgtype.UUID) error
+	DeleteAllProjectTaskLinks(ctx context.Context, projectID pgtype.UUID) error
 	DeleteAutomationRule(ctx context.Context, id pgtype.UUID) error
 	DeleteAutomationRuleExecutionsOlderThan(ctx context.Context, completedAt pgtype.Timestamptz) (int64, error)
 	DeleteConnectedCalendar(ctx context.Context, id pgtype.UUID) error
@@ -43,7 +53,11 @@ type Querier interface {
 	DeleteExecutedAutomationPendingActions(ctx context.Context, executedAt pgtype.Timestamptz) (int64, error)
 	DeleteHabit(ctx context.Context, id pgtype.UUID) error
 	DeleteHabitCompletionsByHabitID(ctx context.Context, habitID pgtype.UUID) error
+	DeleteMilestone(ctx context.Context, id pgtype.UUID) error
+	DeleteMilestoneTaskLink(ctx context.Context, arg DeleteMilestoneTaskLinkParams) error
 	DeleteProductivityGoal(ctx context.Context, id pgtype.UUID) error
+	DeleteProject(ctx context.Context, arg DeleteProjectParams) error
+	DeleteProjectTaskLink(ctx context.Context, arg DeleteProjectTaskLinkParams) error
 	DeletePublishedEvents(ctx context.Context) error
 	DeleteSchedule(ctx context.Context, id pgtype.UUID) error
 	DeleteTask(ctx context.Context, id pgtype.UUID) error
@@ -54,6 +68,7 @@ type Querier interface {
 	GetAchievedProductivityGoals(ctx context.Context, arg GetAchievedProductivityGoalsParams) ([]ProductivityGoal, error)
 	GetActiveHabitsByUserID(ctx context.Context, userID pgtype.UUID) ([]Habit, error)
 	GetActiveProductivityGoals(ctx context.Context, userID pgtype.UUID) ([]ProductivityGoal, error)
+	GetActiveProjects(ctx context.Context, userID pgtype.UUID) ([]Project, error)
 	GetActiveTimeSession(ctx context.Context, userID pgtype.UUID) (TimeSession, error)
 	// Automation Pending Actions
 	GetAutomationPendingActionByID(ctx context.Context, id pgtype.UUID) (AutomationPendingAction, error)
@@ -66,15 +81,15 @@ type Querier interface {
 	GetAutomationRuleExecutionsByRuleID(ctx context.Context, arg GetAutomationRuleExecutionsByRuleIDParams) ([]AutomationRuleExecution, error)
 	GetAutomationRulesByUserID(ctx context.Context, userID pgtype.UUID) ([]AutomationRule, error)
 	GetAverageProductivityScore(ctx context.Context, arg GetAverageProductivityScoreParams) (int32, error)
-	GetConnectedCalendarByID(ctx context.Context, id pgtype.UUID) (ConnectedCalendar, error)
-	GetConnectedCalendarByUserProviderCalendar(ctx context.Context, arg GetConnectedCalendarByUserProviderCalendarParams) (ConnectedCalendar, error)
-	GetConnectedCalendarsByUser(ctx context.Context, userID pgtype.UUID) ([]ConnectedCalendar, error)
-	GetConnectedCalendarsByUserAndProvider(ctx context.Context, arg GetConnectedCalendarsByUserAndProviderParams) ([]ConnectedCalendar, error)
+	GetConnectedCalendarByID(ctx context.Context, id pgtype.UUID) (GetConnectedCalendarByIDRow, error)
+	GetConnectedCalendarByUserProviderCalendar(ctx context.Context, arg GetConnectedCalendarByUserProviderCalendarParams) (GetConnectedCalendarByUserProviderCalendarRow, error)
+	GetConnectedCalendarsByUser(ctx context.Context, userID pgtype.UUID) ([]GetConnectedCalendarsByUserRow, error)
+	GetConnectedCalendarsByUserAndProvider(ctx context.Context, arg GetConnectedCalendarsByUserAndProviderParams) ([]GetConnectedCalendarsByUserAndProviderRow, error)
 	GetDueAutomationPendingActions(ctx context.Context, limit int32) ([]AutomationPendingAction, error)
 	GetEnabledAutomationRulesByTriggerType(ctx context.Context, arg GetEnabledAutomationRulesByTriggerTypeParams) ([]AutomationRule, error)
 	GetEnabledAutomationRulesByUserID(ctx context.Context, userID pgtype.UUID) ([]AutomationRule, error)
-	GetEnabledPullCalendarsByUser(ctx context.Context, userID pgtype.UUID) ([]ConnectedCalendar, error)
-	GetEnabledPushCalendarsByUser(ctx context.Context, userID pgtype.UUID) ([]ConnectedCalendar, error)
+	GetEnabledPullCalendarsByUser(ctx context.Context, userID pgtype.UUID) ([]GetEnabledPullCalendarsByUserRow, error)
+	GetEnabledPushCalendarsByUser(ctx context.Context, userID pgtype.UUID) ([]GetEnabledPushCalendarsByUserRow, error)
 	GetFailedEvents(ctx context.Context, arg GetFailedEventsParams) ([]Outbox, error)
 	GetHabitByID(ctx context.Context, id pgtype.UUID) (Habit, error)
 	GetHabitCompletionsByDateRange(ctx context.Context, arg GetHabitCompletionsByDateRangeParams) (int64, error)
@@ -86,15 +101,22 @@ type Querier interface {
 	GetLatestProductivitySnapshot(ctx context.Context, userID pgtype.UUID) (ProductivitySnapshot, error)
 	GetLatestWeeklySummary(ctx context.Context, userID pgtype.UUID) (WeeklySummary, error)
 	GetLongestActiveStreak(ctx context.Context, userID pgtype.UUID) (int32, error)
+	GetMilestoneByID(ctx context.Context, id pgtype.UUID) (Milestone, error)
+	GetMilestoneTaskLinks(ctx context.Context, milestoneID pgtype.UUID) ([]MilestoneTaskLink, error)
+	GetMilestonesByProjectID(ctx context.Context, projectID pgtype.UUID) ([]Milestone, error)
 	GetPeakProductivityHours(ctx context.Context, arg GetPeakProductivityHoursParams) ([]GetPeakProductivityHoursRow, error)
 	GetPendingTasksByUserID(ctx context.Context, userID pgtype.UUID) ([]Task, error)
-	GetPrimaryConnectedCalendarByUser(ctx context.Context, userID pgtype.UUID) (ConnectedCalendar, error)
+	GetPrimaryConnectedCalendarByUser(ctx context.Context, userID pgtype.UUID) (GetPrimaryConnectedCalendarByUserRow, error)
 	GetProductivityGoal(ctx context.Context, id pgtype.UUID) (ProductivityGoal, error)
 	GetProductivityGoalsByPeriod(ctx context.Context, arg GetProductivityGoalsByPeriodParams) ([]ProductivityGoal, error)
 	GetProductivityGoalsByType(ctx context.Context, arg GetProductivityGoalsByTypeParams) ([]ProductivityGoal, error)
 	GetProductivitySnapshot(ctx context.Context, arg GetProductivitySnapshotParams) (ProductivitySnapshot, error)
 	GetProductivitySnapshotRange(ctx context.Context, arg GetProductivitySnapshotRangeParams) ([]ProductivitySnapshot, error)
 	GetProductivitySnapshots(ctx context.Context, arg GetProductivitySnapshotsParams) ([]ProductivitySnapshot, error)
+	GetProjectByID(ctx context.Context, arg GetProjectByIDParams) (Project, error)
+	GetProjectTaskLinks(ctx context.Context, projectID pgtype.UUID) ([]ProjectTaskLink, error)
+	GetProjectsByStatus(ctx context.Context, arg GetProjectsByStatusParams) ([]Project, error)
+	GetProjectsByUserID(ctx context.Context, userID pgtype.UUID) ([]Project, error)
 	GetScheduleByID(ctx context.Context, id pgtype.UUID) (Schedule, error)
 	GetScheduleByUserAndDate(ctx context.Context, arg GetScheduleByUserAndDateParams) (Schedule, error)
 	GetSchedulesByUserDateRange(ctx context.Context, arg GetSchedulesByUserDateRangeParams) ([]Schedule, error)
@@ -126,7 +148,9 @@ type Querier interface {
 	UpdateAutomationRuleExecution(ctx context.Context, arg UpdateAutomationRuleExecutionParams) error
 	UpdateConnectedCalendar(ctx context.Context, arg UpdateConnectedCalendarParams) error
 	UpdateHabit(ctx context.Context, arg UpdateHabitParams) error
+	UpdateMilestone(ctx context.Context, arg UpdateMilestoneParams) (Milestone, error)
 	UpdateProductivityGoal(ctx context.Context, arg UpdateProductivityGoalParams) error
+	UpdateProject(ctx context.Context, arg UpdateProjectParams) (Project, error)
 	UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) error
 	UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error)
 	UpdateTimeBlock(ctx context.Context, arg UpdateTimeBlockParams) error

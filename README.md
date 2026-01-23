@@ -112,6 +112,90 @@ internal/
 
 ## Quick Start
 
+### Installation
+
+#### Homebrew (Recommended)
+
+```bash
+brew install felixgeelhaar/tap/orbita
+```
+
+#### From Source
+
+```bash
+go install github.com/felixgeelhaar/orbita/cmd/orbita@latest
+```
+
+### Usage
+
+```bash
+# === Tasks ===
+orbita task create "Review PR #123" -p high -d 30
+orbita task list
+orbita task show <task-id>
+orbita task start <task-id>
+orbita task complete <task-id>
+
+# === Inbox ===
+orbita inbox capture "Call dentist tomorrow at 2pm"
+orbita inbox list
+orbita inbox process          # AI classification
+orbita inbox promote <id>     # Promote to task
+
+# === Habits ===
+orbita habit create "Morning meditation" --duration 15 --frequency daily
+orbita habit list
+orbita habit complete <habit-id>
+orbita habit streak <habit-id>
+
+# === Meetings ===
+orbita meeting create "1:1 with Alice" --frequency weekly --duration 30
+orbita meeting list
+orbita meeting schedule        # Find optimal slots
+
+# === Schedule ===
+orbita schedule today
+orbita schedule week
+orbita schedule block create "Deep work" --start 09:00 --duration 120
+
+# === Calendar ===
+orbita auth connect google     # OAuth flow
+orbita auth connect microsoft
+orbita auth list               # Show connected calendars
+orbita auth disconnect <provider>
+
+# === Projects ===
+orbita project create "Q1 Launch" --due 2026-03-31
+orbita project list
+orbita project milestone add <project-id> "Beta release" --due 2026-02-15
+orbita project task link <project-id> <task-id>
+
+# === Insights ===
+orbita insights today
+orbita insights week
+orbita insights goals
+
+# === Wellness ===
+orbita wellness checkin --mood 7 --energy 8 --sleep 7
+orbita wellness log sleep 7.5
+orbita wellness goals
+orbita wellness summary
+
+# === Automations ===
+orbita automation list
+orbita automation create "Auto-prioritize urgent" --trigger event --action set-priority
+
+# === License ===
+orbita license status
+orbita activate <license-key>
+orbita upgrade               # Open pricing page
+
+# === MCP Server ===
+orbita mcp serve             # Start MCP server for AI integrations
+```
+
+## Development
+
 ### Prerequisites
 
 - Go 1.25+
@@ -120,7 +204,7 @@ internal/
 - RabbitMQ 3.12+
 - Redis 7+
 
-### Installation
+### Setup
 
 ```bash
 # Clone the repository
@@ -139,76 +223,6 @@ make migrate-up
 # Build the CLI
 make build
 ```
-
-### Usage
-
-```bash
-# === Tasks ===
-./bin/orbita task create "Review PR #123" -p high -d 30
-./bin/orbita task list
-./bin/orbita task show <task-id>
-./bin/orbita task start <task-id>
-./bin/orbita task complete <task-id>
-
-# === Inbox ===
-./bin/orbita inbox capture "Call dentist tomorrow at 2pm"
-./bin/orbita inbox list
-./bin/orbita inbox process          # AI classification
-./bin/orbita inbox promote <id>     # Promote to task
-
-# === Habits ===
-./bin/orbita habit create "Morning meditation" --duration 15 --frequency daily
-./bin/orbita habit list
-./bin/orbita habit complete <habit-id>
-./bin/orbita habit streak <habit-id>
-
-# === Meetings ===
-./bin/orbita meeting create "1:1 with Alice" --frequency weekly --duration 30
-./bin/orbita meeting list
-./bin/orbita meeting schedule        # Find optimal slots
-
-# === Schedule ===
-./bin/orbita schedule today
-./bin/orbita schedule week
-./bin/orbita schedule block create "Deep work" --start 09:00 --duration 120
-
-# === Calendar ===
-./bin/orbita auth connect google     # OAuth flow
-./bin/orbita auth connect microsoft
-./bin/orbita auth list               # Show connected calendars
-./bin/orbita auth disconnect <provider>
-
-# === Projects ===
-./bin/orbita project create "Q1 Launch" --due 2026-03-31
-./bin/orbita project list
-./bin/orbita project milestone add <project-id> "Beta release" --due 2026-02-15
-./bin/orbita project task link <project-id> <task-id>
-
-# === Insights ===
-./bin/orbita insights today
-./bin/orbita insights week
-./bin/orbita insights goals
-
-# === Wellness ===
-./bin/orbita wellness checkin --mood 7 --energy 8 --sleep 7
-./bin/orbita wellness log sleep 7.5
-./bin/orbita wellness goals
-./bin/orbita wellness summary
-
-# === Automations ===
-./bin/orbita automation list
-./bin/orbita automation create "Auto-prioritize urgent" --trigger event --action set-priority
-
-# === License ===
-./bin/orbita license status
-./bin/orbita activate <license-key>
-./bin/orbita upgrade               # Open pricing page
-
-# === MCP Server ===
-./bin/orbita mcp serve             # Start MCP server for AI integrations
-```
-
-## Development
 
 ### Commands
 

@@ -130,11 +130,5 @@ CREATE TRIGGER tr_automation_rules_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_automation_rule_updated_at();
 
--- Seed entitlement for Automations Pro
-INSERT INTO entitlements (id, name, description, created_at)
-VALUES (
-    'automations-pro',
-    'Automations Pro',
-    'Advanced automation features including webhooks, patterns, and delayed actions'
-, NOW())
-ON CONFLICT (id) DO NOTHING;
+-- Note: Entitlements are user-specific and managed by the billing system
+-- No seeding needed here as entitlements are granted per-user when they subscribe

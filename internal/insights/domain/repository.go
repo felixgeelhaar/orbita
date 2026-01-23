@@ -136,3 +136,30 @@ type HabitStats struct {
 	Completed     int
 	LongestStreak int
 }
+
+// InsightRepository defines operations for actionable insights.
+type InsightRepository interface {
+	// Create creates a new insight.
+	Create(ctx context.Context, insight *ActionableInsight) error
+
+	// Update updates an existing insight.
+	Update(ctx context.Context, insight *ActionableInsight) error
+
+	// GetByID retrieves an insight by ID.
+	GetByID(ctx context.Context, id uuid.UUID) (*ActionableInsight, error)
+
+	// GetActive retrieves active (valid, not dismissed) insights.
+	GetActive(ctx context.Context, userID uuid.UUID) ([]*ActionableInsight, error)
+
+	// GetByType retrieves insights of a specific type.
+	GetByType(ctx context.Context, userID uuid.UUID, insightType InsightType) ([]*ActionableInsight, error)
+
+	// GetRecent retrieves recent insights regardless of status.
+	GetRecent(ctx context.Context, userID uuid.UUID, limit int) ([]*ActionableInsight, error)
+
+	// Delete deletes an insight.
+	Delete(ctx context.Context, id uuid.UUID) error
+
+	// DeleteExpired deletes insights past their validity period.
+	DeleteExpired(ctx context.Context) (int, error)
+}

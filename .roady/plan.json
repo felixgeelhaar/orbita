@@ -114,7 +114,8 @@
     {
       "id": "task-ai-inbox",
       "title": "Implement AI Inbox Processing",
-      "description": "AI-powered inbox for capturing and classifying items. Auto-categorization, prioritization, routing to contexts.",
+      "description": "AI-powered inbox for capturing and classifying items. Auto-categorization, prioritization, routing to contexts. COMPLETED: AIProcessor service integrates with ClassifierEnginePro for NLU-based classification with entity extraction (title, due date, duration, priority, people, tags, URLs), ProcessInboxItemHandler processes individual items with AI, ProcessAllPendingHandler batch processes unpromoted items with classification summary, AutoPromoteHandler auto-promotes items meeting confidence thresholds, comprehensive tests.",
+      "status": "done",
       "priority": "medium",
       "estimate": "",
       "depends_on": [

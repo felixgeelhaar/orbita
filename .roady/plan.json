@@ -89,7 +89,8 @@
     {
       "id": "task-smart-habits",
       "title": "Implement Smart Habits",
-      "description": "Habit tracking with adaptive scheduling. Learns optimal times, generates sessions, adjusts based on completion patterns.",
+      "description": "Habit tracking with adaptive scheduling. Learns optimal times, generates sessions, adjusts based on completion patterns. COMPLETED: OptimalTimeCalculator analyzes completion patterns to determine best habit times with confidence scoring, GenerateSessionsHandler creates scheduled habit sessions using learned patterns or preferred time fallback, comprehensive tests for both services.",
+      "status": "done",
       "priority": "medium",
       "estimate": "",
       "depends_on": [
@@ -157,5 +158,5 @@
   ],
   "approval_status": "approved",
   "created_at": "2026-01-23T11:07:53.614714+01:00",
-  "updated_at": "2026-01-23T11:11:49.800238+01:00"
+  "updated_at": "2026-01-23T14:30:00.000000+01:00"
 }

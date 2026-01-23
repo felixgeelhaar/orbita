@@ -38,7 +38,7 @@ jobs:
           cache: true
 
       - name: Install verdict
-        run: go install github.com/felixgeelhaar/verdictsec@latest
+        run: go install github.com/felixgeelhaar/verdictsec/cmd/verdict@latest
 
       - name: Run all security scans
         run: |
@@ -168,9 +168,9 @@ jobs:
           cache: true
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v4
+        uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.61
+          version: v1.64
           args: --timeout=5m
 
   # sqlc runs in parallel - fast check

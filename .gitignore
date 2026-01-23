@@ -58,3 +58,14 @@ tmp/
 internal/licensing/infrastructure/crypto/license_private_key.pem
 # Relicta release run state files
 .relicta/releases/run-*.json
+
+# Roady state files
+.roady/events.jsonl
+.roady/policy.yaml
+.roady/spec.lock.json
+.roady/spec.yaml
+.roady/state.json
+.roady/usage.json
+
+# Built binary
+orbita

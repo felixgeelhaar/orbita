@@ -170,6 +170,27 @@
                     <p>Create custom rules that trigger actions automatically. Build workflows like "if task overdue, notify and reschedule".</p>
                     <code class="feature-code">orbita automation create --trigger overdue</code>
                 </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">&#128194;</div>
+                    <h3>Projects & Milestones</h3>
+                    <p>Organize work into projects with milestones, task linking, and progress tracking. Risk assessment based on deadlines and completion rates.</p>
+                    <code class="feature-code">orbita project create "Q1 Launch" --due 2026-03-31</code>
+                </div>
+
+                <div class="feature-card featured">
+                    <div class="feature-icon">&#127760;</div>
+                    <h3>Multi-Provider Calendar</h3>
+                    <p>Connect Google Calendar, Microsoft Outlook, or Apple Calendar via CalDAV. Bi-directional sync with version tracking and conflict detection.</p>
+                    <code class="feature-code">orbita auth connect google</code>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">&#128154;</div>
+                    <h3>Wellness Tracking</h3>
+                    <p>Track mood, energy, sleep, stress, and more. Integrates with Apple Health, Fitbit, Oura, Whoop, and Garmin for holistic insights.</p>
+                    <code class="feature-code">orbita wellness checkin --mood 8 --energy 7</code>
+                </div>
             </div>
         </div>
     </section>
@@ -177,7 +198,7 @@
     <section class="demo" id="demo">
         <div class="container">
             <h2>See Orbita <span class="gradient-text">in action</span></h2>
-            <p class="section-subtitle">Real workflows, real commands</p>
+            <p class="section-subtitle">Real terminal recordings of actual workflows</p>
 
             <div class="demo-tabs">
                 <button class="demo-tab active" data-tab="tasks">Tasks</button>
@@ -185,160 +206,109 @@
                 <button class="demo-tab" data-tab="meetings">1:1 Meetings</button>
                 <button class="demo-tab" data-tab="calendar">Calendar</button>
                 <button class="demo-tab" data-tab="habits">Habits</button>
+                <button class="demo-tab" data-tab="projects">Projects</button>
             </div>
 
             <div class="demo-content">
                 <div class="demo-panel active" id="panel-tasks">
-                    <div class="terminal-window">
-                        <div class="terminal-header">
-                            <span class="terminal-dot red"></span>
-                            <span class="terminal-dot yellow"></span>
-                            <span class="terminal-dot green"></span>
-                            <span class="terminal-title">Task Management</span>
+                    <div class="asciinema-container">
+                        <!-- Replace RECORDING_ID with actual asciinema recording ID -->
+                        <div id="asciinema-tasks" class="asciinema-player-wrapper">
+                            <script src="https://asciinema.org/a/tasks-demo.js" id="asciicast-tasks-demo" async data-autoplay="true" data-loop="true" data-speed="1.5" data-theme="monokai" data-cols="100" data-rows="24"></script>
+                            <noscript>
+                                <a href="https://asciinema.org/a/tasks-demo" target="_blank">
+                                    <img src="https://asciinema.org/a/tasks-demo.svg" alt="Task Management Demo" />
+                                </a>
+                            </noscript>
                         </div>
-                        <div class="terminal-body">
-<pre><span class="prompt">$</span> orbita task list --status pending
-
-<span class="table-header">ID        Title                      Priority  Due        Duration</span>
-<span class="table-row">abc123    Review PR #42              high      today      30m</span>
-<span class="table-row">def456    Update documentation       medium    tomorrow   60m</span>
-<span class="table-row">ghi789    Refactor auth module       high      Jan 12     120m</span>
-
-<span class="prompt">$</span> orbita task complete abc123
-<span class="success">&#10004;</span> Task completed: Review PR #42
-
-<span class="prompt">$</span> orbita task create "Deploy to staging" -p high -d 45 --due tomorrow
-<span class="success">&#10004;</span> Task created: Deploy to staging
-   Priority: high | Duration: 45m | Due: Jan 11
-</pre>
+                        <div class="demo-description">
+                            <h4>Task Management</h4>
+                            <p>Create, list, and complete tasks with priority levels and duration estimates. Intelligent scheduling suggestions based on your patterns.</p>
                         </div>
                     </div>
                 </div>
 
                 <div class="demo-panel" id="panel-schedule">
-                    <div class="terminal-window">
-                        <div class="terminal-header">
-                            <span class="terminal-dot red"></span>
-                            <span class="terminal-dot yellow"></span>
-                            <span class="terminal-dot green"></span>
-                            <span class="terminal-title">Smart Scheduling</span>
+                    <div class="asciinema-container">
+                        <div id="asciinema-schedule" class="asciinema-player-wrapper">
+                            <script src="https://asciinema.org/a/schedule-demo.js" id="asciicast-schedule-demo" async data-autoplay="false" data-loop="true" data-speed="1.5" data-theme="monokai" data-cols="100" data-rows="24"></script>
+                            <noscript>
+                                <a href="https://asciinema.org/a/schedule-demo" target="_blank">
+                                    <img src="https://asciinema.org/a/schedule-demo.svg" alt="Smart Scheduling Demo" />
+                                </a>
+                            </noscript>
                         </div>
-                        <div class="terminal-body">
-<pre><span class="prompt">$</span> orbita schedule show
-
-<span class="table-header">Today's Schedule - January 10, 2025</span>
-
-  09:00 - 10:30  <span class="block-task">&#9632;</span> Deep Work: Refactor auth module
-  10:30 - 11:00  <span class="block-break">&#9633;</span> Break
-  11:00 - 11:30  <span class="block-task">&#9632;</span> Review PR #42
-  11:30 - 12:00  <span class="block-habit">&#9670;</span> Code review habit
-
-  14:00 - 15:00  <span class="block-meeting">&#9679;</span> Team sync meeting
-  15:00 - 16:00  <span class="block-task">&#9632;</span> Update documentation
-
-<span class="prompt">$</span> orbita schedule auto --date tomorrow
-<span class="success">&#10004;</span> Auto-scheduled 3 tasks for tomorrow
-   - Deploy to staging (09:00 - 09:45)
-   - Write tests (10:00 - 11:30)
-   - Documentation review (14:00 - 15:00)
-</pre>
+                        <div class="demo-description">
+                            <h4>Smart Scheduling</h4>
+                            <p>View and manage your daily schedule with automatic time-blocking. Auto-schedule tasks into optimal slots based on energy levels and constraints.</p>
                         </div>
                     </div>
                 </div>
 
                 <div class="demo-panel" id="panel-meetings">
-                    <div class="terminal-window">
-                        <div class="terminal-header">
-                            <span class="terminal-dot red"></span>
-                            <span class="terminal-dot yellow"></span>
-                            <span class="terminal-dot green"></span>
-                            <span class="terminal-title">Smart 1:1 Meetings</span>
+                    <div class="asciinema-container">
+                        <div id="asciinema-meetings" class="asciinema-player-wrapper">
+                            <script src="https://asciinema.org/a/meetings-demo.js" id="asciicast-meetings-demo" async data-autoplay="false" data-loop="true" data-speed="1.5" data-theme="monokai" data-cols="100" data-rows="24"></script>
+                            <noscript>
+                                <a href="https://asciinema.org/a/meetings-demo" target="_blank">
+                                    <img src="https://asciinema.org/a/meetings-demo.svg" alt="Smart 1:1 Meetings Demo" />
+                                </a>
+                            </noscript>
                         </div>
-                        <div class="terminal-body">
-<pre><span class="prompt">$</span> orbita meeting list
-
-<span class="table-header">Person        Cadence    Last Met      Next        Status</span>
-<span class="table-row">@alice        weekly     3 days ago    Jan 13      <span class="success">on track</span></span>
-<span class="table-row">@bob          biweekly   10 days ago   Jan 12      <span class="warning">due soon</span></span>
-<span class="table-row">@carol        monthly    25 days ago   overdue     <span class="error">overdue</span></span>
-
-<span class="prompt">$</span> orbita meeting create @dave --cadence weekly --duration 30
-<span class="success">&#10004;</span> Created 1:1 with @dave
-   Cadence: weekly | Duration: 30m
-   <span class="info">&#8505;</span>  Finding optimal time slot...
-   Suggested: Thursday 2:00 PM (both calendars free)
-
-<span class="prompt">$</span> orbita meeting held @carol --notes "Discussed Q1 roadmap"
-<span class="success">&#10004;</span> Marked 1:1 with @carol as held
-   Next scheduled: Feb 10 (monthly cadence)
-
-<span class="prompt">$</span> orbita meeting adjust @bob --cadence weekly
-<span class="success">&#10004;</span> Updated cadence for @bob: biweekly -> weekly
-</pre>
+                        <div class="demo-description">
+                            <h4>Smart 1:1 Meetings</h4>
+                            <p>Track meeting cadence with colleagues, get overdue alerts, and find optimal time slots across calendars with quality scoring.</p>
                         </div>
                     </div>
                 </div>
 
                 <div class="demo-panel" id="panel-calendar">
-                    <div class="terminal-window">
-                        <div class="terminal-header">
-                            <span class="terminal-dot red"></span>
-                            <span class="terminal-dot yellow"></span>
-                            <span class="terminal-dot green"></span>
-                            <span class="terminal-title">Calendar Sync</span>
+                    <div class="asciinema-container">
+                        <div id="asciinema-calendar" class="asciinema-player-wrapper">
+                            <script src="https://asciinema.org/a/calendar-demo.js" id="asciicast-calendar-demo" async data-autoplay="false" data-loop="true" data-speed="1.5" data-theme="monokai" data-cols="100" data-rows="24"></script>
+                            <noscript>
+                                <a href="https://asciinema.org/a/calendar-demo" target="_blank">
+                                    <img src="https://asciinema.org/a/calendar-demo.svg" alt="Calendar Sync Demo" />
+                                </a>
+                            </noscript>
                         </div>
-                        <div class="terminal-body">
-<pre><span class="prompt">$</span> orbita calendar connect google
-<span class="info">&#8505;</span>  Opening browser for authentication...
-<span class="success">&#10004;</span> Connected to Google Calendar
-   Account: dev@example.com
-   Calendars synced: 3
-
-<span class="prompt">$</span> orbita calendar sync
-<span class="info">&#8505;</span>  Syncing calendars...
-   <span class="success">&#10004;</span> Imported 5 events from Google Calendar
-   <span class="success">&#10004;</span> Exported 3 time blocks to Google Calendar
-
-<span class="prompt">$</span> orbita calendar list --today
-
-<span class="table-header">Time          Event                    Source      Type</span>
-<span class="table-row">09:00-10:30   Deep Work Block          orbita      <span class="block-task">task</span></span>
-<span class="table-row">11:00-11:30   Team Standup             google      <span class="block-meeting">meeting</span></span>
-<span class="table-row">14:00-15:00   1:1 with Alice           orbita      <span class="block-meeting">1:1</span></span>
-<span class="table-row">16:00-17:00   Sprint Planning          google      <span class="block-meeting">meeting</span></span>
-
-<span class="prompt">$</span> orbita calendar conflicts --week
-<span class="success">&#10004;</span> No conflicts detected this week
-</pre>
+                        <div class="demo-description">
+                            <h4>Multi-Provider Calendar Sync</h4>
+                            <p>Connect Google, Microsoft Outlook, or Apple Calendar. Bi-directional sync with automatic conflict detection and resolution.</p>
                         </div>
                     </div>
                 </div>
 
                 <div class="demo-panel" id="panel-habits">
-                    <div class="terminal-window">
-                        <div class="terminal-header">
-                            <span class="terminal-dot red"></span>
-                            <span class="terminal-dot yellow"></span>
-                            <span class="terminal-dot green"></span>
-                            <span class="terminal-title">Habit Tracking</span>
+                    <div class="asciinema-container">
+                        <div id="asciinema-habits" class="asciinema-player-wrapper">
+                            <script src="https://asciinema.org/a/habits-demo.js" id="asciicast-habits-demo" async data-autoplay="false" data-loop="true" data-speed="1.5" data-theme="monokai" data-cols="100" data-rows="24"></script>
+                            <noscript>
+                                <a href="https://asciinema.org/a/habits-demo" target="_blank">
+                                    <img src="https://asciinema.org/a/habits-demo.svg" alt="Habit Tracking Demo" />
+                                </a>
+                            </noscript>
                         </div>
-                        <div class="terminal-body">
-<pre><span class="prompt">$</span> orbita habit list
+                        <div class="demo-description">
+                            <h4>Smart Habit Tracking</h4>
+                            <p>Build consistent habits with adaptive scheduling, streak tracking, and optimal time calculation based on your completion patterns.</p>
+                        </div>
+                    </div>
+                </div>
 
-<span class="table-header">Name                 Frequency    Streak    Best    Time</span>
-<span class="table-row">Morning workout      daily        12 days   28      06:00</span>
-<span class="table-row">Code review          daily        8 days    15      11:00</span>
-<span class="table-row">Read 30 minutes      daily        5 days    21      21:00</span>
-<span class="table-row">Weekly planning      weekly       4 weeks   8       Monday</span>
-
-<span class="prompt">$</span> orbita habit log "Morning workout"
-<span class="success">&#10004;</span> Habit completed: Morning workout
-   Streak: 13 days <span class="streak-fire">&#128293;</span>
-
-<span class="prompt">$</span> orbita habit create "Meditate" --frequency daily --time 07:00 --duration 15
-<span class="success">&#10004;</span> Habit created: Meditate
-   Frequency: daily | Time: 07:00 | Duration: 15m
-</pre>
+                <div class="demo-panel" id="panel-projects">
+                    <div class="asciinema-container">
+                        <div id="asciinema-projects" class="asciinema-player-wrapper">
+                            <script src="https://asciinema.org/a/projects-demo.js" id="asciicast-projects-demo" async data-autoplay="false" data-loop="true" data-speed="1.5" data-theme="monokai" data-cols="100" data-rows="24"></script>
+                            <noscript>
+                                <a href="https://asciinema.org/a/projects-demo" target="_blank">
+                                    <img src="https://asciinema.org/a/projects-demo.svg" alt="Projects Demo" />
+                                </a>
+                            </noscript>
+                        </div>
+                        <div class="demo-description">
+                            <h4>Projects & Milestones</h4>
+                            <p>Organize work into projects with milestones, link tasks with contribution weights, and track progress with risk assessment.</p>
                         </div>
                     </div>
                 </div>
@@ -763,7 +733,7 @@ meeting_prep        <span class="dim">Prepare for meetings</span>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2025 Orbita. Open source under MIT License.</p>
+                <p>&copy; 2026 Orbita. Open source under MIT License.</p>
             </div>
         </div>
     </footer>

@@ -987,3 +987,64 @@ p {
     margin-left: 2px;
     animation: blink 1s infinite;
 }
+
+/* Asciinema Container Styles */
+.asciinema-container {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.asciinema-player-wrapper {
+    background: var(--terminal-bg);
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.asciinema-player-wrapper iframe,
+.asciinema-player-wrapper .asciinema-player {
+    width: 100% !important;
+    max-width: 100%;
+}
+
+.demo-description {
+    padding: 24px;
+    text-align: left;
+    border-top: 1px solid var(--border-color);
+}
+
+.demo-description h4 {
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    font-size: 1.1rem;
+}
+
+.demo-description p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+/* Asciinema placeholder state (before recordings are added) */
+.asciinema-player-wrapper:empty::before,
+.asciinema-player-wrapper noscript + *:empty::before {
+    content: "Recording coming soon...";
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+}
+
+/* Override asciinema player theme */
+.asciinema-player .asciinema-terminal {
+    background: var(--terminal-bg) !important;
+}
+
+/* Responsive asciinema */
+@media (max-width: 768px) {
+    .asciinema-player-wrapper {
+        min-height: 300px;
+    }
+}

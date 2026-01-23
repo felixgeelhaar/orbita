@@ -76,7 +76,8 @@
     {
       "id": "task-scheduling-engine",
       "title": "Implement Scheduling Engine",
-      "description": "Central scheduling service consuming candidates from tasks, habits, meetings. Hard constraints, soft penalties, Ideal Week alignment.",
+      "description": "Central scheduling service consuming candidates from tasks, habits, meetings. Hard constraints, soft penalties, Ideal Week alignment. COMPLETED: CandidateCollector aggregates items from tasks/habits/meetings, IdealWeekConstraintProvider integrates ideal week templates, ScheduleDayHandler orchestrates scheduling with constraint-aware placement, comprehensive tests.",
+      "status": "done",
       "priority": "high",
       "estimate": "",
       "depends_on": [

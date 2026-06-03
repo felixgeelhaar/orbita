@@ -5,7 +5,7 @@ go 1.25.5
 require (
 	github.com/emersion/go-ical v0.0.0-20250609112844-439c63cef608
 	github.com/emersion/go-webdav v0.7.0
-	github.com/felixgeelhaar/mcp-go v1.4.0
+	github.com/felixgeelhaar/mcp-go v1.6.2
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-plugin v1.7.0

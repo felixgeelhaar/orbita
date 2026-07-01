@@ -11,7 +11,7 @@ require (
 	github.com/hashicorp/go-plugin v1.7.0
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/joho/godotenv v1.5.1
-	github.com/lib/pq v1.10.9
+	github.com/lib/pq v1.12.3
 	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/redis/go-redis/v9 v9.17.3
 	github.com/sony/gobreaker/v2 v2.4.0

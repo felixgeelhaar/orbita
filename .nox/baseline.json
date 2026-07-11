@@ -1,0 +1,894 @@
+{
+  "schema_version": "1.0.0",
+  "entries": [
+    {
+      "fingerprint": "e3d6df5b640b7ae56cd57ad449b35896df260ee028a89c2a88e5f1ee2594de3f",
+      "rule_id": "AI-006",
+      "file_path": "adapter/cli/habit/list.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "fb1290d40a8abdb7131a0182fc3d4e05d4396ccc00a00534c176930f642c244d",
+      "rule_id": "AI-006",
+      "file_path": "adapter/cli/habit/log.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "9db5bbd6de0b6790e57ec9234f12f8dd73c037a2c49f4ab374d554bb55f80596",
+      "rule_id": "AI-006",
+      "file_path": "adapter/cli/habit/log.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "816b90dbc46cc8c057c9b98074d213c838d00a0d2cbf53575520c1dc5befeb6c",
+      "rule_id": "AI-006",
+      "file_path": "adapter/cli/insights/compute.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "072202a543a4b12c11bd67f09fa894ef82fe8a2ed4cbca3f1f1ada91dad9a1bc",
+      "rule_id": "AI-006",
+      "file_path": "adapter/cli/insights/dashboard.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "5b8213d2190f36025c9716b4eca4586e1dde40a94eec12319c80e4d645e34a62",
+      "rule_id": "AI-006",
+      "file_path": "adapter/cli/insights/dashboard.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "e1d3c6bcd2f38bb2441d56c3c94d5eee2122d31eb5bc3cf5a0959007009bbabc",
+      "rule_id": "AI-006",
+      "file_path": "adapter/cli/insights/dashboard.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "8102ee072720cc33012dfc0748e2d800f41eea272e73a1c7bb3f701b1ab2870f",
+      "rule_id": "AI-006",
+      "file_path": "adapter/cli/insights/trends.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "fe48fd1ae6c70301dd3135572aa8e48c8dff5d2f6b5f1e5f42ea180872c10ec3",
+      "rule_id": "AI-006",
+      "file_path": "adapter/cli/insights/trends.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "dc0845179facaba5ed90c3632ddc7d80033568bf66cfc96875098d32cebdf9d5",
+      "rule_id": "AI-006",
+      "file_path": "adapter/cli/marketplace.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "f9fae20c44ca1a60104f908cffcb65a13358152a1466f0c8a64fa15214b3e0a8",
+      "rule_id": "AI-006",
+      "file_path": "adapter/cli/stats.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "05096aca367b30f722fc53a09da39177be7009fd5de2fcbf2447980ded320cf0",
+      "rule_id": "AI-006",
+      "file_path": "adapter/cli/stats.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "b612703ecbf86c0e4142dcebacd5d58ab0d6487c95c4d05f3f4ee2ee7c435938",
+      "rule_id": "AI-006",
+      "file_path": "internal/mcp/server.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "adaddd40a33286cd569ac1809da856d45248ddc35cc8ee61da5b3627123bda7e",
+      "rule_id": "AI-009",
+      "file_path": "internal/habits/infrastructure/persistence/postgres_habit_repo.go",
+      "severity": "critical",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "db56b0ebd6a34f7ec6dc6eb8da23af04cc42e6822cc44d0b7cd8ff0016df7006",
+      "rule_id": "CONT-001",
+      "file_path": "Dockerfile",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "1921ab8abb6b6f1f208b7c852fef22876ea3a83f3c7f5e39a443e4d8bf16b78d",
+      "rule_id": "CONT-001",
+      "file_path": "Dockerfile",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "c41ae3d376afc892ef36db4a01ad46ad81db42fef85f2c7bcb80714be9d6091c",
+      "rule_id": "DATA-001",
+      "file_path": "adapter/cli/inbox/inbox_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "e9d2c66b52f93b7cee9f6e6740b5ca46568c7c284d455e4350f1a92eb7dd1bbd",
+      "rule_id": "DATA-001",
+      "file_path": "adapter/cli/settings/settings_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "f756da6abc795b313c263f835ec2c5818e1e963fde509642b369a643a9f13249",
+      "rule_id": "DATA-001",
+      "file_path": "docs/src/content/docs/features/calendar.mdx",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "c2996953442ff3388d1837ed762aa77d72c695d3d1ecbcbc878e92505b8bec06",
+      "rule_id": "DATA-001",
+      "file_path": "docs/src/content/docs/features/meetings.mdx",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "b7b56d2b686851bdb7709a609014a9ab927dc3cbbe1c6f3a7d8b64edc33df1a0",
+      "rule_id": "DATA-001",
+      "file_path": "internal/app/container.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "9d5974ce44c5d9ede799e53249eae60daa06cfed5f778b37c7c20efcaaf349ec",
+      "rule_id": "DATA-001",
+      "file_path": "internal/automations/application/commands/update_rule_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "c796bdc84997cc6f0bac9d7d272ad696b635710fdf3946c03eebeb3456a801db",
+      "rule_id": "DATA-001",
+      "file_path": "internal/automations/infrastructure/persistence/sqlite_execution_repo_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "73ba9969c6ab1a9989cc81579fa173d03f4a53fd1b966ff938e8578672374beb",
+      "rule_id": "DATA-001",
+      "file_path": "internal/automations/infrastructure/persistence/sqlite_pending_action_repo_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "ae542c009d9971c876b67a31b43d21119d081e0e8a28ba1e89334763984c4894",
+      "rule_id": "DATA-001",
+      "file_path": "internal/automations/infrastructure/persistence/sqlite_pending_action_repo_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "e4cfc1978e0eaad00bc646730c90acc2cf1809ab165407155052305992a6f98f",
+      "rule_id": "DATA-001",
+      "file_path": "internal/automations/infrastructure/persistence/sqlite_rule_repo_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "65403a6d91dd3ebe6a8cfe52da349f7fd5e6196c1f2dc41b10cc24933fa33a7f",
+      "rule_id": "DATA-001",
+      "file_path": "internal/calendar/domain/connected_calendar.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "1a2b1d59c8115b7ce401557ab5294182bac151cf49448398645c0dd16383e7c5",
+      "rule_id": "DATA-001",
+      "file_path": "internal/calendar/domain/connected_calendar_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "51c9eeb0f0fd855651c44e818220b93715078e0cd895b7e2efe1a659c93855c8",
+      "rule_id": "DATA-001",
+      "file_path": "internal/calendar/domain/connected_calendar_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "f5cf14c01b02a95668b9b94780d3851979e91e6007c1a3548094bde5de379941",
+      "rule_id": "DATA-001",
+      "file_path": "internal/calendar/domain/sync_state_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "21cfe861e31fba7ccbbcb26e6b1cb78adc86744ffa44d61d99f609f3325c1223",
+      "rule_id": "DATA-001",
+      "file_path": "internal/calendar/infrastructure/google/syncer_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "16450240616f74d0db29a56e86c8f5882e36d28476270b6b5db4500d3e165494",
+      "rule_id": "DATA-001",
+      "file_path": "internal/calendar/infrastructure/google/syncer_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "ecf7b85ded6759cdc1fe2721c805dccc82833377e050502e60128cccbbfd4aac",
+      "rule_id": "DATA-001",
+      "file_path": "internal/calendar/infrastructure/google/syncer_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "5f737909b05ebdf7176ba7707e76fb95cc7cf7d48dc2b703662b976351d1d26f",
+      "rule_id": "DATA-001",
+      "file_path": "internal/calendar/infrastructure/google/syncer_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "923af4357669f395733ea4308876643bc251005d00875b3cf504f9f37958fdd2",
+      "rule_id": "DATA-001",
+      "file_path": "internal/calendar/infrastructure/google/syncer_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "06e225487c53509e3f0b0c3a5f53fbe2baf2ee7457bca25e4edff5f800183164",
+      "rule_id": "DATA-001",
+      "file_path": "internal/calendar/infrastructure/microsoft/syncer_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "80e19a8d135b62af1dfe123243d7478608296f9d733029e2967ad643d93274d1",
+      "rule_id": "DATA-001",
+      "file_path": "internal/calendar/infrastructure/microsoft/syncer_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "483b26521051d083f8ae5b8d1144fa546d09442740e43dec2baa01dcb4a14d5a",
+      "rule_id": "DATA-001",
+      "file_path": "internal/calendar/infrastructure/persistence/sqlite_connected_calendar_repo_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "5c39210396235eae8ca8af3224ba14d5c2ac97acb2ee662fed5026fa95c57194",
+      "rule_id": "DATA-001",
+      "file_path": "internal/calendar/setup/providers_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "dd93d53d20f6bad6ef222a054b2e255becceb3cf54eefc84a97c17f4b091c6e8",
+      "rule_id": "DATA-001",
+      "file_path": "internal/calendar/setup/providers_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "19d9c2018e2e54c2b2d208aa2fee7bc273fb1e762216babb031a193462218644",
+      "rule_id": "DATA-001",
+      "file_path": "internal/identity/domain/user_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "92db5665a121b9a143cac49d47dae8ded596518f6c5baeaf54358c84b9b22321",
+      "rule_id": "DATA-001",
+      "file_path": "internal/identity/domain/user_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "340722d703532650d79cc7ac4fe291928aeceadaef5596eb8f9c52a3a2c73cf7",
+      "rule_id": "DATA-001",
+      "file_path": "internal/identity/domain/value_objects_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "d39d33fee34f9168b8d04074b0b9560e7fd8ad1161063301cac2656df1f8fc3a",
+      "rule_id": "DATA-001",
+      "file_path": "internal/identity/domain/value_objects_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "be6158009aa2165c96d5502df17769099f6cc8aa5965e0b6faf185bd48e1723a",
+      "rule_id": "DATA-001",
+      "file_path": "internal/identity/domain/value_objects_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "812b41753f943c99f8f4eb38d8b42797cf10395af95b2bf8bc4fcd2791118514",
+      "rule_id": "DATA-001",
+      "file_path": "internal/identity/domain/value_objects_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "0a3422cfeb846067a6370ceb9af8f13df2f243099c3027679117cdd6dbc56926",
+      "rule_id": "DATA-001",
+      "file_path": "internal/identity/domain/value_objects_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "f535fa8112192bcddbb59aa8608056796d973ef2edc688e4f24276f359d0ca37",
+      "rule_id": "DATA-001",
+      "file_path": "internal/identity/domain/value_objects_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "dc93f81a9a6d9293a6fb281d9c74fd48102b7ac0329d7196f5f140917a990187",
+      "rule_id": "DATA-001",
+      "file_path": "internal/identity/infrastructure/persistence/sqlite_user_repo_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "e05639bb9681edfe6209ddc58b9fe9ef44177755f6b856ba19890532659df29d",
+      "rule_id": "DATA-001",
+      "file_path": "internal/identity/infrastructure/persistence/sqlite_user_repo_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "9c99b7a695afa3b4dfbb5232d3a253860e7e7b9ccee08b915f9c3ae537b6dd44",
+      "rule_id": "DATA-001",
+      "file_path": "internal/identity/infrastructure/persistence/sqlite_user_repo_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "9bbde7952783278e9951c5f13a5a79498fc22457bbdfc1ea7787917ead0b48a8",
+      "rule_id": "DATA-001",
+      "file_path": "internal/identity/infrastructure/persistence/sqlite_user_repo_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "1ec70582f15e563a387a5c29061f2fbfb17fefd8b2a5429d47d498712238a6c3",
+      "rule_id": "DATA-001",
+      "file_path": "internal/identity/infrastructure/persistence/sqlite_user_repo_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "bedbc4aa79a4de6086b062060b8683d687cdf07a545dff896317e9f1e9e9543f",
+      "rule_id": "DATA-001",
+      "file_path": "internal/identity/infrastructure/persistence/sqlite_user_repo_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "f695eb34f25240dbc71c2f0276ec1796b8e564cf5a12a9f4fe4c7e3ac3266203",
+      "rule_id": "DATA-001",
+      "file_path": "internal/identity/infrastructure/persistence/sqlite_user_repo_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "d12aef978d7a432abd204821c66dab7d94ae59547e92855cc4bb57ebbc18210a",
+      "rule_id": "DATA-001",
+      "file_path": "internal/identity/infrastructure/persistence/sqlite_user_repo_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "261644570c782db33d9233a8424f5520a3953e0972cf45b18aedd11d31c82241",
+      "rule_id": "DATA-001",
+      "file_path": "internal/inbox/persistence/sqlite_inbox_repo_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "316509f9f48f621ab4447f9a27e5e604609aadec21c2293440e23f13e239f171",
+      "rule_id": "DATA-001",
+      "file_path": "internal/licensing/domain/license_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "3c1b8f8b3842d3900daa6d1b991120f230c7b308d0c01b9ab3c4a6de2df590ab",
+      "rule_id": "DATA-001",
+      "file_path": "internal/licensing/infrastructure/persistence/file_repository_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "fcd9646a65d9a5bbcd0eb18165311c73c3127f15c1204d0c28d756ce1d40e19d",
+      "rule_id": "DATA-001",
+      "file_path": "internal/marketplace/application/commands/auth_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "574a92975b894cc226ca99e05e9954ec49d7f5358a17b16742593ab201e98584",
+      "rule_id": "DATA-001",
+      "file_path": "internal/marketplace/application/commands/publish_package_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "ab8a98ad253b3bb388bb3c45daa56f0d68c24d953101a72c905ddac5fc8dfdc7",
+      "rule_id": "DATA-001",
+      "file_path": "internal/marketplace/domain/publisher_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "f511a2166a285532a14d30f0ad60dad19e92814ecc1bdef4d2b23bbf71cf07f9",
+      "rule_id": "DATA-001",
+      "file_path": "internal/marketplace/domain/publisher_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "256161341a90e3f4a1934806b58d0455e2da1573605ae6b710613c8772935184",
+      "rule_id": "DATA-005",
+      "file_path": "adapter/api/server.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "c77847c164c1c3534484a1a594084222d052984d0c9a4c5a1c7ad92e584a3b1e",
+      "rule_id": "IAC-013",
+      "file_path": ".github/workflows/ci.yml",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "956cb66e1980efd7492bb7c3af5663f6ead86f5a561a061b0316fa1e6661b091",
+      "rule_id": "IAC-013",
+      "file_path": ".github/workflows/ci.yml",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "bbcc649cb24b6b89b1c1b6f1170c329d76515f55bc33d97bd53c06fde9e6e0f9",
+      "rule_id": "IAC-013",
+      "file_path": ".github/workflows/ci.yml",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "80fe34e0d23601b84fb126fad780e77ea348561ce886e02d6c9a3f514250ae53",
+      "rule_id": "IAC-013",
+      "file_path": ".github/workflows/ci.yml",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "94861655f1255b94c2e1ecc4f85c1e36645120486cec087e654e9b9f3a3ff385",
+      "rule_id": "IAC-013",
+      "file_path": ".github/workflows/release.yml",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "bc549bd83bda47b0f1e5c6cb3fc9d67db65f4fbd72cdd30697bdbc6657d167bb",
+      "rule_id": "IAC-018",
+      "file_path": ".github/workflows/ci.yml",
+      "severity": "low",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "1f14de1784bb17304196fb3e818cdaf80c90b0864da3da170ce1a502e8ae0222",
+      "rule_id": "IAC-254",
+      "file_path": ".github/workflows/ci.yml",
+      "severity": "info",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "379d395f9de86a7c312c87a2a66e92e32078aaa9883639a01ea4235ba961dfb5",
+      "rule_id": "IAC-254",
+      "file_path": "deploy/docker-compose.yml",
+      "severity": "critical",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "ba6d4862014f6ce0c10df45f4e79d1dc1eeb5f1774879cd7020d19b0577c9061",
+      "rule_id": "IAC-306",
+      "file_path": ".github/workflows/pages.yml",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "52922952e40b8c5ebd4fef0969dd782d57266e9ecccc4e9bddc9be74f0f6daa2",
+      "rule_id": "IAC-308",
+      "file_path": ".github/workflows/nox-remediate.yml",
+      "severity": "low",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "1bf5ffaf4038a450a301180174f387e03abc28da49ffe4c9f9980cc06e41b413",
+      "rule_id": "IAC-308",
+      "file_path": ".github/workflows/pages.yml",
+      "severity": "low",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "cc3fd855f1a5badf59b08227135b4d796c3509913767ccdb34f1d3cebf0c8984",
+      "rule_id": "IAC-308",
+      "file_path": ".github/workflows/release.yml",
+      "severity": "low",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "8c9a05e7d0c8a05b61d4c18aefce8e2dc91a85c3456246a1c92bea30dbb416d8",
+      "rule_id": "IAC-309",
+      "file_path": ".github/workflows/ci.yml",
+      "severity": "low",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "530e8464b73bb94d797aa233bcd4b2ea933dd8644a2b0a15d0bb6b7ba128980d",
+      "rule_id": "IAC-309",
+      "file_path": ".github/workflows/nox-scan.yml",
+      "severity": "low",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "faae53eee5aab123b480b37ae6df3775272ea7eb6546c6b64ee45cf14a19b173",
+      "rule_id": "IAC-310",
+      "file_path": ".github/workflows/ci.yml",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "8378df7a1d4adb5806616a668bc89e456b48fe9b7212ca5799b5b8eddbe0ae9c",
+      "rule_id": "IAC-314",
+      "file_path": ".github/workflows/nox-remediate.yml",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "e37e2faa5f7d812400d1323a31d22e93b710b881ea06f3b656d724454d47a8f4",
+      "rule_id": "IAC-314",
+      "file_path": ".github/workflows/release.yml",
+      "severity": "low",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "307ab20aae2f2f27436476564695197fe68909fd4d47156eb38e7719ec4d5142",
+      "rule_id": "IAC-351",
+      "file_path": ".github/workflows/ci.yml",
+      "severity": "info",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "22df83a7b52ce4b665c7463555bd49f17ae2cfdf0320c6447e4ccf97c8aa3773",
+      "rule_id": "IAC-351",
+      "file_path": ".github/workflows/pages.yml",
+      "severity": "critical",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "b5876fde378e2cd90f6702017f8252cd592f409db1691ee8b3273ed717ae5f2c",
+      "rule_id": "IAC-351",
+      "file_path": "deploy/docker-compose.yml",
+      "severity": "critical",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "92b8d28a4caa7ce940a3076317d14262900afc06cd2c04b918638425c778f76d",
+      "rule_id": "SEC-073",
+      "file_path": ".env.example",
+      "severity": "critical",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "3a52466bcfb495aeb9e4b4195c017b20556fe723e31d420cebdf6f563df4e8ae",
+      "rule_id": "SEC-073",
+      "file_path": ".github/workflows/ci.yml",
+      "severity": "info",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "4facf053d7c33410a4f14f772c35db09c5b8299f1a69ef3c38b5abac5e02ef49",
+      "rule_id": "SEC-073",
+      "file_path": "deploy/docker-compose.yml",
+      "severity": "critical",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "58d26ff989d256b5756fa6bb8265e13dc80b0dfe0741905bbca9686ade8e66fa",
+      "rule_id": "SEC-073",
+      "file_path": "docker-compose.prod.yml",
+      "severity": "critical",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "a78584c4f3541d8975d8c423ba7d72992bda82ec02a86f923a081e7cb7839f49",
+      "rule_id": "SEC-073",
+      "file_path": "pkg/config/config.go",
+      "severity": "critical",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "cc8241d7f2a0d3a7f50a4ee1b0853107dda1105787afd204fe3fe31eb75b69dc",
+      "rule_id": "SEC-080",
+      "file_path": "adapter/cli/auth/connect.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "2608c1d15bfea7edf646b3b8d2515520c555f2dbea3ccc9a9cd745ffc79784c3",
+      "rule_id": "SEC-080",
+      "file_path": "internal/calendar/infrastructure/caldav/syncer_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "3d06f4fda4fe89df09324e844106af6c8a4ef05f819e6e425ae28cd3bdef9699",
+      "rule_id": "SEC-080",
+      "file_path": "internal/calendar/setup/providers_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "97bbdb7ff48e2aba91bdef8f1c4808dfba000ede5ee42e5cef1eeae64fd694e3",
+      "rule_id": "SEC-085",
+      "file_path": "scripts/update-homebrew-tap.sh",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "70588687241c47f7454a9c8eeda3975ee269019bde721fa41cde3823108cce9b",
+      "rule_id": "SEC-163",
+      "file_path": "internal/app/container.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "af6ef1f6938186627c2c2332e5011ec8f7d578275b62eff57c6e97e943068c52",
+      "rule_id": "SEC-163",
+      "file_path": "internal/calendar/infrastructure/google/syncer.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "00a2bb94e76b30cbd21617c11908236f126f037f42601b549d6bf7b7c101fce5",
+      "rule_id": "SEC-163",
+      "file_path": "internal/identity/application/oauth/service_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "e1e302e64066e70d87347704f0662b7c95fb1bc245a851499ab0fdac57f3139e",
+      "rule_id": "SEC-163",
+      "file_path": "internal/marketplace/application/commands/auth.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "59ca7a4cd00d9db06c71a3b08a91171abbd1e8f1ed4be0d09b829f55b678542d",
+      "rule_id": "SEC-163",
+      "file_path": "internal/meetings/domain/events_test.go",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "7a7bd69b7e65510b1dbee147a1ac9ac5db740765abd57c960d6e6eeb0672d44a",
+      "rule_id": "SEC-163",
+      "file_path": "scripts/update-homebrew-tap.sh",
+      "severity": "medium",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "e0845c9a37291b752862c8601acb5992e483bcea2d75549531eb106acbdde1f6",
+      "rule_id": "SEC-356",
+      "file_path": "docker-compose.prod.yml",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "42b5fa4a5af3b73da65c235d0ddf691df802ce2ae17f24917fc97a1db13e3cc2",
+      "rule_id": "SEC-356",
+      "file_path": "internal/shared/infrastructure/database/driver.go",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "01da0595a81ee0d7f9da2beebe10ac55fdd826ed4bec44ba367ef360945c025d",
+      "rule_id": "SEC-360",
+      "file_path": ".env.example",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "66ca6f15b0392fc2b5dca24fc8ae6e4d0ad3a77283446bbec74ac5a8d6271370",
+      "rule_id": "SEC-360",
+      "file_path": "docker-compose.prod.yml",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "d2bd18e96d4478b0f6cfb6d6b0c46fd741ab2089e92e0fa86de2d541eac89382",
+      "rule_id": "SEC-360",
+      "file_path": "docs/src/content/docs/getting-started/configuration.mdx",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "ed4f0d79cea4370e7eeaaf838be915e3a759bde4b1eda1c77ad81b644502e95c",
+      "rule_id": "SEC-360",
+      "file_path": "pkg/config/config.go",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "19e48050abb4e26f96624ea7daa608df2f847bf9424b6c6fde696aa1c40a2486",
+      "rule_id": "SEC-364",
+      "file_path": "internal/shared/infrastructure/database/driver.go",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "f99fc400e6f00a0c22fdf462d9923e069f26d591230e2b5d70663ab92702d15d",
+      "rule_id": "SEC-364",
+      "file_path": "internal/shared/infrastructure/database/driver_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "4f16a37e858018ff10294608eaa3639c4db3433a9127b4403542a66d8a27afc7",
+      "rule_id": "SEC-430",
+      "file_path": ".env.example",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "394e5b3fedcd2b42fb6c80ed9af7a0641800dedf502cb75c1586b303bf0bba70",
+      "rule_id": "SEC-430",
+      "file_path": ".github/workflows/ci.yml",
+      "severity": "info",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "86da73296484303e8aaca31d2b47bdf9c0e623239edee44384dd40bc8b4ad1a4",
+      "rule_id": "SEC-430",
+      "file_path": "deploy/docker-compose.yml",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "11eb675cfcd7836caffbb989b566bcac84e73eaeb5503e3a4dcb7ccac3aea147",
+      "rule_id": "SEC-430",
+      "file_path": "internal/shared/infrastructure/database/driver.go",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "fa6beec9c1498c59a3f8c6df83156cd19b002295f7014373036773c1834977f8",
+      "rule_id": "SEC-430",
+      "file_path": "internal/shared/infrastructure/database/driver_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "59071ea6540d3650dde2b9d3650f5c94bd4d66a0b3269fa6df70e06fbce4efe0",
+      "rule_id": "SEC-430",
+      "file_path": "pkg/config/config.go",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "c810ba405aa6186c83e0b180552994ec66f367e62311459c592a01e80fe27e3b",
+      "rule_id": "SEC-433",
+      "file_path": ".env.example",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "3ca92a5675f34c7eb71b1a59e0ac57dceb43ee3904eca82910f71993ccbee49c",
+      "rule_id": "SEC-433",
+      "file_path": "docker-compose.prod.yml",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "19b0437cfad9578e0facc461ad203e910f96d8145b9428a835c7797510651fd8",
+      "rule_id": "SEC-433",
+      "file_path": "docs/src/content/docs/getting-started/configuration.mdx",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "6f4705ba42745360a55c73a0aca43f728c5d831e5f42bbd5ca6a11995423014d",
+      "rule_id": "SEC-433",
+      "file_path": "pkg/config/config.go",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "7a74fef74dcde0dc5b7ef897f29b0742e2fa479995e70c3ad39a6a4ff4a340c7",
+      "rule_id": "SEC-461",
+      "file_path": ".env.example",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "9bc9ae5428fa0c99dce8d74c717fcbc16f5ee70cbdb4f7f0990f122e4e0da177",
+      "rule_id": "SEC-461",
+      "file_path": ".github/workflows/ci.yml",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "b6ef362f6083d1828b7cd50eb5ccbeca2b32c74c8d3cf72578427a854a377db1",
+      "rule_id": "SEC-461",
+      "file_path": "adapter/cli/e2e_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "1e4520855643719e8e6fa8c8da4dd4744107ad66a2bc0f93efedfa5023e96d13",
+      "rule_id": "SEC-461",
+      "file_path": "adapter/cli/habit/e2e_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "605108466133bdabcf874a4561543a2ffc7c7a81c6aa128640679dcdc5151200",
+      "rule_id": "SEC-461",
+      "file_path": "adapter/cli/meeting/e2e_test.go",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "1a519dd2202c6c94b07c8e702f6dd067fd9ccbf251d40ed936b7c3278d4aa61c",
+      "rule_id": "SEC-461",
+      "file_path": "docker-compose.prod.yml",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "8a4b01fc9593de6416094768829a4ce758d485b1d88a5ba9a7e9538ff8249355",
+      "rule_id": "SEC-461",
+      "file_path": "docs/src/content/docs/getting-started/configuration.mdx",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "4512d008f7e5d12684f177955b252b303c2a4b697b232fba2c13ce3c4d50be41",
+      "rule_id": "SEC-461",
+      "file_path": "pkg/config/config.go",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "c846de96b70a6a3069372fa6d6404d573b3d11d6bed97b7f8353cc82958c644c",
+      "rule_id": "SEC-546",
+      "file_path": "internal/wellness/domain/events.go",
+      "severity": "high",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "c6e2ddd9d612edefac6d7b9467b3f17e58b58aac9fb2464ff96d40c95dd4d687",
+      "rule_id": "SLOP-001",
+      "file_path": "docs/src/content/config.ts",
+      "severity": "low",
+      "created_at": "2026-07-11T11:16:43.129143Z"
+    }
+  ]
+}

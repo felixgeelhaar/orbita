@@ -1,0 +1,49 @@
+# nox configuration — the security/dependency gate that replaces dependabot.
+# Schema reference: https://github.com/nox-hq/nox
+#
+# Only GENERATED, VENDORED, or PROSE/DATA artifacts are excluded here. All
+# first-party Go source — including *_test.go — is scanned. The remaining
+# first-party findings (default dev credentials in .env.example / compose
+# files, env-var names in config code and the docs config guide, CI workflow
+# permission blocks, entropy hits in test fixtures) are documented false
+# positives accepted via .nox/baseline.json, never by blinding whole source
+# directories.
+
+scan:
+  exclude:
+    # Go module checksum database — SHA-256 module digests read as high-entropy
+    # secrets/API keys to the entropy detector (28 medium FPs). Real dependency
+    # CVEs are surfaced via OSV lookups on go.mod, not go.sum text.
+    # Classification: False Positive (module digests). Last reviewed: 2026-07-11
+    - go.sum
+    - "**/go.sum"
+    # npm lockfile for the docs site (docs/, Astro Starlight): integrity hashes
+    # look like API keys to the entropy detector (8 FPs). Dependency CVEs are
+    # surfaced via OSV directly, not the lockfile text.
+    # Classification: False Positive (integrity hashes). Last reviewed: 2026-07-11
+    - "**/package-lock.json"
+    # Markdown is prose — README and repo docs. The secret/PII entropy rules
+    # fire on ordinary documentation. High-confidence real secret patterns are
+    # still caught in code, not prose.
+    # Classification: False Positive (prose). Last reviewed: 2026-07-11
+    - README.md
+    - "*.md"
+    - "**/*.md"
+    # Test fixtures — canned JSON request/response payloads used by unit tests.
+    # Field values trip the PII/entropy detectors but are synthetic data.
+    # Classification: False Positive (test data). Last reviewed: 2026-07-11
+    - testdata/
+    - "**/testdata/"
+    # Protobuf-generated Go — machine-generated, not hand-edited; excluded from
+    # code-level SAST like every other generated artifact.
+    # Classification: Acceptable Pattern (generated code). Last reviewed: 2026-07-11
+    - "*.pb.go"
+    - "**/*.pb.go"
+    # nox's own baseline/cache and report output — finding fingerprints are
+    # SHA-256 hex that re-trip the secret detector. Never scan the scanner.
+    # Classification: Acceptable Pattern (scanner state). Last reviewed: 2026-07-11
+    - .nox/
+    - nox-results/
+    - findings.json
+    - "*.sarif"
+    - "**/*.sarif"

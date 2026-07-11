@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/felixgeelhaar/orbita/adapter/cli"
 	internalApp "github.com/felixgeelhaar/orbita/internal/app"
@@ -171,10 +172,13 @@ func TestCreateCmd_WithDueDate(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Reset flags
+	// Reset flags. Use a relative future date (one month out) so the test
+	// does not rot: the domain rejects past due dates, so a hardcoded date
+	// would eventually fail once it slips into the past.
+	dueDate := time.Now().AddDate(0, 1, 0)
 	createDescription = ""
 	createStartDate = ""
-	createDueDate = "2026-06-30"
+	createDueDate = dueDate.Format("2006-01-02")
 
 	createCmd.SetContext(ctx)
 
@@ -190,9 +194,9 @@ func TestCreateCmd_WithDueDate(t *testing.T) {
 
 	assert.Equal(t, "Q2 Goals", projects[0].Name)
 	require.NotNil(t, projects[0].DueDate)
-	assert.Equal(t, 2026, projects[0].DueDate.Year())
-	assert.Equal(t, 6, int(projects[0].DueDate.Month()))
-	assert.Equal(t, 30, projects[0].DueDate.Day())
+	assert.Equal(t, dueDate.Year(), projects[0].DueDate.Year())
+	assert.Equal(t, int(dueDate.Month()), int(projects[0].DueDate.Month()))
+	assert.Equal(t, dueDate.Day(), projects[0].DueDate.Day())
 }
 
 func TestCreateCmd_InvalidDueDate(t *testing.T) {

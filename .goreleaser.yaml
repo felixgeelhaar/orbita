@@ -63,7 +63,7 @@ builds:
 
 archives:
   - id: orbita
-    builds:
+    ids:
       - orbita
     formats:
       - tar.gz
@@ -74,7 +74,7 @@ archives:
     name_template: "{{ .Binary }}"
 
   - id: orbita-mcp
-    builds:
+    ids:
       - orbita-mcp
     formats:
       - tar.gz
@@ -85,7 +85,7 @@ archives:
     name_template: "{{ .Binary }}"
 
   - id: orbita-worker
-    builds:
+    ids:
       - orbita-worker
     formats:
       - tar.gz

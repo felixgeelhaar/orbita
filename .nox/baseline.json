@@ -1073,6 +1073,30 @@
       "severity": "medium",
       "reason": "Reviewed false positive: dummy credential value in a unit-test fixture.",
       "created_at": "2026-11-15T10:48:05.344452Z"
+    },
+    {
+      "fingerprint": "739e462b5efd69933915ec7ad09def3fc36e907a51f855cc4986fe4b7c05c1b8",
+      "rule_id": "IAC-018",
+      "file_path": ".github/workflows/nox-scan.yml",
+      "severity": "low",
+      "reason": "Reviewed: continue-on-error on the plugin install is intentional (registry 404 is not a security failure); this workflow is replaced by the shared nox workflow in PR #58.",
+      "created_at": "2026-11-15T10:53:53Z"
+    },
+    {
+      "fingerprint": "28feb4bce289d8dfcaaa4d56e2793a202c7f988718a1299c81b8c0ce29f34845",
+      "rule_id": "IAC-310",
+      "file_path": ".github/workflows/nox-scan.yml",
+      "severity": "medium",
+      "reason": "Reviewed: same plugin-install step as IAC-018; replaced by the shared workflow in PR #58.",
+      "created_at": "2026-11-15T10:54:40Z"
+    },
+    {
+      "fingerprint": "2d14980a80d78ddf31fa12030649396746b6b4c12b5fe29b08b88237c6e1d2c7",
+      "rule_id": "SLOP-001",
+      "file_path": "docs/src/content.config.ts",
+      "severity": "low",
+      "reason": "False positive: astro:content is Astro virtual module provided by the astro dependency in docs/package.json.",
+      "created_at": "2026-11-15T10:54:40Z"
     }
   ]
 }

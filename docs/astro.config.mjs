@@ -13,9 +13,9 @@ export default defineConfig({
         src: './src/assets/logo.svg',
         replacesTitle: false,
       },
-      social: {
-        github: 'https://github.com/felixgeelhaar/orbita',
-      },
+      social: [
+        { icon: 'github', label: 'GitHub', href: 'https://github.com/felixgeelhaar/orbita' },
+      ],
       editLink: {
         baseUrl: 'https://github.com/felixgeelhaar/orbita/edit/main/docs/',
       },

@@ -1,6 +1,7 @@
 # Orbita
 
 [![CI](https://github.com/felixgeelhaar/orbita/actions/workflows/ci.yml/badge.svg)](https://github.com/felixgeelhaar/orbita/actions/workflows/ci.yml)
+[![nox security grade](.github/nox-badge.svg)](.github/workflows/nox-scan.yml)
 [![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 

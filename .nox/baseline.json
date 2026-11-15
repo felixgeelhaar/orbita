@@ -889,6 +889,214 @@
       "file_path": "docs/src/content/config.ts",
       "severity": "low",
       "created_at": "2026-07-11T11:16:43.129143Z"
+    },
+    {
+      "fingerprint": "f1b6cba75c987ddf401b68b8fd425a0dfd219c3a729bd1d308631e1c8d428caf",
+      "rule_id": "SEC-085",
+      "file_path": ".env.example",
+      "severity": "high",
+      "reason": "Reviewed false positive: local-dev/CI-service placeholder credentials and test fixtures (orbita_dev, test:test, guest:guest, fixture emails); no real secret.",
+      "created_at": "2026-11-15T10:37:36.475506Z"
+    },
+    {
+      "fingerprint": "8dc2f6a3b16ca0aaf2633ba06508a17149f24c911c646d418ce8d4af3bf0a3f9",
+      "rule_id": "SEC-085",
+      "file_path": ".github/workflows/ci.yml",
+      "severity": "high",
+      "reason": "Reviewed false positive: local-dev/CI-service placeholder credentials and test fixtures (orbita_dev, test:test, guest:guest, fixture emails); no real secret.",
+      "created_at": "2026-11-15T10:37:36.475506Z"
+    },
+    {
+      "fingerprint": "04706c00c8ec26024800d93e7e5e3ca9cd6f9bea8698866a6f36c233a6090d36",
+      "rule_id": "SEC-085",
+      "file_path": "pkg/config/config.go",
+      "severity": "high",
+      "reason": "Reviewed false positive: local-dev/CI-service placeholder credentials and test fixtures (orbita_dev, test:test, guest:guest, fixture emails); no real secret.",
+      "created_at": "2026-11-15T10:37:36.475506Z"
+    },
+    {
+      "fingerprint": "adec867a52e43d609525ba52a932283c054bc4f02aeaa69d3aae62b67c87a3f6",
+      "rule_id": "SEC-461",
+      "file_path": "adapter/cli/e2e_test.go",
+      "severity": "info",
+      "reason": "Reviewed false positive: local-dev/CI-service placeholder credentials and test fixtures (orbita_dev, test:test, guest:guest, fixture emails); no real secret.",
+      "created_at": "2026-11-15T10:37:36.475506Z"
+    },
+    {
+      "fingerprint": "6698f8690bc3a43ed34fd1c6a03dc19d619bd57888483c0b928a330e70efe1f6",
+      "rule_id": "SEC-461",
+      "file_path": "adapter/cli/habit/e2e_test.go",
+      "severity": "info",
+      "reason": "Reviewed false positive: local-dev/CI-service placeholder credentials and test fixtures (orbita_dev, test:test, guest:guest, fixture emails); no real secret.",
+      "created_at": "2026-11-15T10:37:36.475506Z"
+    },
+    {
+      "fingerprint": "6f0d3a71b80381a6d4804126c97d92b6dc884269cc98ee79ff5de7d6e314f0a7",
+      "rule_id": "SEC-461",
+      "file_path": "adapter/cli/meeting/e2e_test.go",
+      "severity": "info",
+      "reason": "Reviewed false positive: local-dev/CI-service placeholder credentials and test fixtures (orbita_dev, test:test, guest:guest, fixture emails); no real secret.",
+      "created_at": "2026-11-15T10:37:36.475506Z"
+    },
+    {
+      "fingerprint": "41131eda8752e6de09401f8c4866ec55ec1e19705e88f31926584175a8567eb1",
+      "rule_id": "VULN-001",
+      "file_path": "Dockerfile",
+      "severity": "medium",
+      "reason": "Static scan of the pinned base image still lists ALPINE-CVE-2026-4738 (zlib 1.3.2-r1); fixed in zlib 1.4-r0, which every stage installs via apk upgrade at build time. Digest-pinned image cannot be newer until upstream republishes.",
+      "created_at": "2026-11-15T10:38:51.003594Z"
+    },
+    {
+      "fingerprint": "3cb0974f40120543f0df690f71c1d81ba34e1efdd237fbd52c767033afb736b5",
+      "rule_id": "IAC-123",
+      "file_path": "Dockerfile",
+      "severity": "low",
+      "reason": "Builder/dev stages run as root and are discarded or local-only; --chown has no effect there.",
+      "created_at": "2026-11-15T10:39:38.76719Z"
+    },
+    {
+      "fingerprint": "950950a207f915771a84bc9b1baf629aa727cf38b2bfaf0cae2458a059cff5a2",
+      "rule_id": "IAC-123",
+      "file_path": "Dockerfile",
+      "severity": "low",
+      "reason": "Builder/dev stages run as root and are discarded or local-only; --chown has no effect there.",
+      "created_at": "2026-11-15T10:39:38.76719Z"
+    },
+    {
+      "fingerprint": "0b616c22f622f9f7c0305ba95cc4a06f162c81308c96e1543e312da993a54363",
+      "rule_id": "IAC-153",
+      "file_path": ".github/workflows/ci.yml",
+      "severity": "medium",
+      "reason": "Reviewed: manual dispatch is intentional for release/remediation (environment gating is a repo-settings change); coverage badge artifact needs no attestation; golangci-lint stays non-blocking until it supports the Go toolchain in use.",
+      "created_at": "2026-11-15T10:40:22.601371Z"
+    },
+    {
+      "fingerprint": "efffd45e45bdf218052ebd23a0a2fc2295219290f6341d868fed455c871b6993",
+      "rule_id": "IAC-155",
+      "file_path": ".github/workflows/nox-remediate.yml",
+      "severity": "medium",
+      "reason": "Reviewed: manual dispatch is intentional for release/remediation (environment gating is a repo-settings change); coverage badge artifact needs no attestation; golangci-lint stays non-blocking until it supports the Go toolchain in use.",
+      "created_at": "2026-11-15T10:40:22.601371Z"
+    },
+    {
+      "fingerprint": "09d79998b5c7424a284b643b53815f6c9ba525b7adfd07bbadfde073aac67c21",
+      "rule_id": "IAC-155",
+      "file_path": ".github/workflows/release.yml",
+      "severity": "medium",
+      "reason": "Reviewed: manual dispatch is intentional for release/remediation (environment gating is a repo-settings change); coverage badge artifact needs no attestation; golangci-lint stays non-blocking until it supports the Go toolchain in use.",
+      "created_at": "2026-11-15T10:40:22.601371Z"
+    },
+    {
+      "fingerprint": "41131eda8752e6de09401f8c4866ec55ec1e19705e88f31926584175a8567eb1",
+      "rule_id": "VULN-001",
+      "file_path": "Dockerfile",
+      "severity": "medium",
+      "reason": "Static scan of the pinned base image still lists ALPINE-CVE-2026-4738 (zlib 1.3.2-r1); fixed in zlib 1.4-r0, which every stage installs via apk upgrade at build time. Digest-pinned image cannot be newer until upstream republishes.",
+      "created_at": "2026-11-15T10:38:51.003594Z"
+    },
+    {
+      "fingerprint": "41131eda8752e6de09401f8c4866ec55ec1e19705e88f31926584175a8567eb1",
+      "rule_id": "VULN-001",
+      "file_path": "Dockerfile",
+      "severity": "medium",
+      "reason": "Static scan of the pinned base image still lists ALPINE-CVE-2026-4738 (zlib 1.3.2-r1); fixed in zlib 1.4-r0, which every stage installs via apk upgrade at build time. Digest-pinned image cannot be newer until upstream republishes.",
+      "created_at": "2026-11-15T10:38:51.003594Z"
+    },
+    {
+      "fingerprint": "41131eda8752e6de09401f8c4866ec55ec1e19705e88f31926584175a8567eb1",
+      "rule_id": "VULN-001",
+      "file_path": "Dockerfile",
+      "severity": "medium",
+      "reason": "Static scan of the pinned base image still lists ALPINE-CVE-2026-4738 (zlib 1.3.2-r1); fixed in zlib 1.4-r0, which every stage installs via apk upgrade at build time. Digest-pinned image cannot be newer until upstream republishes.",
+      "created_at": "2026-11-15T10:38:51.003594Z"
+    },
+    {
+      "fingerprint": "816b90dbc46cc8c057c9b98074d213c838d00a0d2cbf53575520c1dc5befeb6c",
+      "rule_id": "AI-006",
+      "file_path": "adapter/cli/insights/compute.go",
+      "severity": "medium",
+      "reason": "Reviewed false positive: CLI prints aggregate productivity counters; no prompt or LLM response is logged.",
+      "created_at": "2026-11-15T10:48:05.344452Z"
+    },
+    {
+      "fingerprint": "816b90dbc46cc8c057c9b98074d213c838d00a0d2cbf53575520c1dc5befeb6c",
+      "rule_id": "AI-006",
+      "file_path": "adapter/cli/insights/compute.go",
+      "severity": "medium",
+      "reason": "Reviewed false positive: CLI prints aggregate productivity counters; no prompt or LLM response is logged.",
+      "created_at": "2026-11-15T10:48:05.344452Z"
+    },
+    {
+      "fingerprint": "5c39210396235eae8ca8af3224ba14d5c2ac97acb2ee662fed5026fa95c57194",
+      "rule_id": "DATA-001",
+      "file_path": "internal/calendar/setup/providers_test.go",
+      "severity": "info",
+      "reason": "Reviewed false positive: synthetic email addresses in a unit-test fixture.",
+      "created_at": "2026-11-15T10:48:05.344452Z"
+    },
+    {
+      "fingerprint": "5c39210396235eae8ca8af3224ba14d5c2ac97acb2ee662fed5026fa95c57194",
+      "rule_id": "DATA-001",
+      "file_path": "internal/calendar/setup/providers_test.go",
+      "severity": "info",
+      "reason": "Reviewed false positive: synthetic email addresses in a unit-test fixture.",
+      "created_at": "2026-11-15T10:48:05.344452Z"
+    },
+    {
+      "fingerprint": "dd93d53d20f6bad6ef222a054b2e255becceb3cf54eefc84a97c17f4b091c6e8",
+      "rule_id": "DATA-001",
+      "file_path": "internal/calendar/setup/providers_test.go",
+      "severity": "info",
+      "reason": "Reviewed false positive: synthetic email addresses in a unit-test fixture.",
+      "created_at": "2026-11-15T10:48:05.344452Z"
+    },
+    {
+      "fingerprint": "bc549bd83bda47b0f1e5c6cb3fc9d67db65f4fbd72cdd30697bdbc6657d167bb",
+      "rule_id": "IAC-018",
+      "file_path": ".github/workflows/ci.yml",
+      "severity": "low",
+      "reason": "Reviewed: golangci-lint stays non-blocking until it supports the Go toolchain in use (tracked by the TODO in ci.yml).",
+      "created_at": "2026-11-15T10:48:05.344452Z"
+    },
+    {
+      "fingerprint": "3a52466bcfb495aeb9e4b4195c017b20556fe723e31d420cebdf6f563df4e8ae",
+      "rule_id": "SEC-073",
+      "file_path": ".github/workflows/ci.yml",
+      "severity": "info",
+      "reason": "Reviewed false positive: throwaway credentials of the ephemeral CI Postgres service container.",
+      "created_at": "2026-11-15T10:48:05.344452Z"
+    },
+    {
+      "fingerprint": "3d06f4fda4fe89df09324e844106af6c8a4ef05f819e6e425ae28cd3bdef9699",
+      "rule_id": "SEC-080",
+      "file_path": "internal/calendar/setup/providers_test.go",
+      "severity": "medium",
+      "reason": "Reviewed false positive: dummy credential value in a unit-test fixture.",
+      "created_at": "2026-11-15T10:48:05.344452Z"
+    },
+    {
+      "fingerprint": "739e462b5efd69933915ec7ad09def3fc36e907a51f855cc4986fe4b7c05c1b8",
+      "rule_id": "IAC-018",
+      "file_path": ".github/workflows/nox-scan.yml",
+      "severity": "low",
+      "reason": "Reviewed: continue-on-error on the plugin install is intentional (registry 404 is not a security failure); this workflow is replaced by the shared nox workflow in PR #58.",
+      "created_at": "2026-11-15T10:53:53Z"
+    },
+    {
+      "fingerprint": "28feb4bce289d8dfcaaa4d56e2793a202c7f988718a1299c81b8c0ce29f34845",
+      "rule_id": "IAC-310",
+      "file_path": ".github/workflows/nox-scan.yml",
+      "severity": "medium",
+      "reason": "Reviewed: same plugin-install step as IAC-018; replaced by the shared workflow in PR #58.",
+      "created_at": "2026-11-15T10:54:40Z"
+    },
+    {
+      "fingerprint": "2d14980a80d78ddf31fa12030649396746b6b4c12b5fe29b08b88237c6e1d2c7",
+      "rule_id": "SLOP-001",
+      "file_path": "docs/src/content.config.ts",
+      "severity": "low",
+      "reason": "False positive: astro:content is Astro virtual module provided by the astro dependency in docs/package.json.",
+      "created_at": "2026-11-15T10:54:40Z"
     }
   ]
 }

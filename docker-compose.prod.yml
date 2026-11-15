@@ -18,7 +18,7 @@ services:
         VERSION: ${VERSION:-latest}
         COMMIT: ${COMMIT:-unknown}
         BUILD_TIME: ${BUILD_TIME:-unknown}
-    image: orbita:${VERSION:-latest}
+    image: orbita:${VERSION:-0.4.0}
     container_name: orbita-server
     restart: unless-stopped
     depends_on:
@@ -72,7 +72,7 @@ services:
         VERSION: ${VERSION:-latest}
         COMMIT: ${COMMIT:-unknown}
         BUILD_TIME: ${BUILD_TIME:-unknown}
-    image: orbita-worker:${VERSION:-latest}
+    image: orbita-worker:${VERSION:-0.4.0}
     container_name: orbita-worker
     restart: unless-stopped
     depends_on:
@@ -91,6 +91,12 @@ services:
       - ORBITA_LOG_FORMAT=json
     networks:
       - orbita-network
+    healthcheck:
+      test: ["CMD", "pgrep", "orbita-worker"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     deploy:
       resources:
         limits:

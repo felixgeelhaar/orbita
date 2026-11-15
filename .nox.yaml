@@ -29,6 +29,8 @@ scan:
     - README.md
     - "*.md"
     - "**/*.md"
+    - "*.mdx"
+    - "**/*.mdx"
     # Test fixtures — canned JSON request/response payloads used by unit tests.
     # Field values trip the PII/entropy detectors but are synthetic data.
     # Classification: False Positive (test data). Last reviewed: 2026-07-11

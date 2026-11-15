@@ -6,13 +6,13 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "^7.4.12"
   },
   "dependencies": {
-    "@astrojs/starlight": "^0.38.3",
-    "@astrojs/vue": "^6.0.1",
-    "astro": "^6.4.3",
-    "sharp": "^0.33.0",
+    "@astrojs/starlight": "^0.43.1",
+    "@astrojs/vue": "^7.1.6",
+    "astro": "^7.4.12",
+    "sharp": "^0.35.5",
     "vue": "^3.5.0"
   },
   "devDependencies": {

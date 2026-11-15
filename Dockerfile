@@ -6,10 +6,11 @@
 # -----------------------------------------------------------------------------
 # Stage 1: Build
 # -----------------------------------------------------------------------------
-FROM golang:1.25-alpine AS builder
+FROM golang:1.27-alpine@sha256:eb61c3873c97416fff0116553fff65d67a3549f72e11d9758849a689cdd8b523 AS builder
 
 # Install build dependencies
-RUN apk add --no-cache \
+RUN apk upgrade --no-cache && \
+    apk add --no-cache \
     git \
     ca-certificates \
     tzdata
@@ -46,10 +47,11 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 # -----------------------------------------------------------------------------
 # Stage 2: Production image
 # -----------------------------------------------------------------------------
-FROM alpine:3.19 AS production
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS production
 
 # Install runtime dependencies
-RUN apk add --no-cache \
+RUN apk upgrade --no-cache && \
+    apk add --no-cache \
     ca-certificates \
     tzdata \
     tini
@@ -66,11 +68,11 @@ RUN mkdir -p /app/data /app/plugins /app/config && \
 WORKDIR /app
 
 # Copy binaries from builder
-COPY --from=builder /app/bin/orbita /usr/local/bin/orbita
-COPY --from=builder /app/bin/orbita-worker /usr/local/bin/orbita-worker
+COPY --chown=orbita:orbita --from=builder /app/bin/orbita /usr/local/bin/orbita
+COPY --chown=orbita:orbita --from=builder /app/bin/orbita-worker /usr/local/bin/orbita-worker
 
 # Copy migrations
-COPY --from=builder /app/migrations /app/migrations
+COPY --chown=orbita:orbita --from=builder /app/migrations /app/migrations
 
 # Set permissions
 RUN chmod +x /usr/local/bin/orbita /usr/local/bin/orbita-worker
@@ -86,7 +88,7 @@ ENV ORBITA_DATA_DIR=/app/data \
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD orbita health || exit 1
+    CMD ["orbita", "health"]
 
 # Use tini as init system for proper signal handling
 ENTRYPOINT ["/sbin/tini", "--"]
@@ -96,6 +98,7 @@ CMD ["orbita", "serve"]
 
 # Labels
 LABEL org.opencontainers.image.title="Orbita" \
+      org.opencontainers.image.authors="Felix Geelhaar" \
       org.opencontainers.image.description="CLI-first adaptive productivity operating system" \
       org.opencontainers.image.vendor="Orbita" \
       org.opencontainers.image.source="https://github.com/felixgeelhaar/orbita"
@@ -106,10 +109,11 @@ EXPOSE 8080
 # -----------------------------------------------------------------------------
 # Stage 3: Worker image (optional separate image for workers)
 # -----------------------------------------------------------------------------
-FROM alpine:3.19 AS worker
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS worker
 
 # Install runtime dependencies
-RUN apk add --no-cache \
+RUN apk upgrade --no-cache && \
+    apk add --no-cache \
     ca-certificates \
     tzdata \
     tini
@@ -122,7 +126,7 @@ RUN addgroup -g 1000 orbita && \
 WORKDIR /app
 
 # Copy worker binary from builder
-COPY --from=builder /app/bin/orbita-worker /usr/local/bin/orbita-worker
+COPY --chown=orbita:orbita --from=builder /app/bin/orbita-worker /usr/local/bin/orbita-worker
 
 # Set permissions
 RUN chmod +x /usr/local/bin/orbita-worker
@@ -135,7 +139,7 @@ ENV TZ=UTC
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD pgrep orbita-worker || exit 1
+    CMD ["pgrep", "orbita-worker"]
 
 # Use tini as init system
 ENTRYPOINT ["/sbin/tini", "--"]
@@ -151,10 +155,11 @@ LABEL org.opencontainers.image.title="Orbita Worker" \
 # -----------------------------------------------------------------------------
 # Stage 4: Development image with hot reload
 # -----------------------------------------------------------------------------
-FROM golang:1.25-alpine AS development
+FROM golang:1.27-alpine@sha256:eb61c3873c97416fff0116553fff65d67a3549f72e11d9758849a689cdd8b523 AS development
 
 # Install development tools
-RUN apk add --no-cache \
+RUN apk upgrade --no-cache && \
+    apk add --no-cache \
     git \
     ca-certificates \
     tzdata \
@@ -173,7 +178,7 @@ RUN addgroup -g 1000 orbita && \
 WORKDIR /app
 
 # Copy go mod files
-COPY go.mod go.sum ./
+COPY --chown=orbita:orbita go.mod go.sum ./
 RUN go mod download
 
 # Set ownership

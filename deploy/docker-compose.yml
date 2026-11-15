@@ -6,7 +6,7 @@ services:
     container_name: orbita-postgres
     environment:
       POSTGRES_USER: orbita
-      POSTGRES_PASSWORD: orbita_dev
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-orbita_dev}
       POSTGRES_DB: orbita
     ports:
       - "5432:5432"
@@ -17,6 +17,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
 
   redis:
     image: redis:7-alpine
@@ -31,6 +36,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 192M
 
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
@@ -48,6 +58,11 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
 
   migrate:
     image: migrate/migrate:v4.16.0
@@ -62,8 +77,15 @@ services:
       - "postgres://orbita:orbita_dev@postgres:5432/orbita?sslmode=disable"
       - "up"
     volumes:
-      - ../migrations:/migrations
+      - ../migrations:/migrations:ro
     restart: "no"
+    healthcheck:
+      disable: true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
 
 volumes:
   postgres_data:
